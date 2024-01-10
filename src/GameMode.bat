@@ -26,6 +26,11 @@ call :ADDGPU "java.exe"
 call :ADDGPU "javaw.exe"
 call :ADDGPU "py.exe"
 call :ADDGPU "pyw.exe"
+REM ## WARN USER ##
+echo Increase CPU usage by Disabling Windows Defender Realtime and Tamper Proection while gaming but NEVER While the WEB BROWSER or EMAILS are open^.
+REM ## Fix Power Plan Performance ##
+powercfg /setacvalueindex SCHEME_CURRENT SUB_ENERGYSAVER ESBATTTHRESHOLD 0
+powercfg /setdcvalueindex SCHEME_CURRENT SUB_ENERGYSAVER ESBATTTHRESHOLD 0
 
 REM ################################### START DISABLING ANOYING THINGS ####################################
 REM ## Disable Sticky Keys REQUIRES Logging Off and Back On ##
