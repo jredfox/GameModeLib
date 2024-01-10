@@ -5,6 +5,8 @@ reg add "HKCU\Software\Microsoft\GameBar" /v AllowAutoGameMode /t REG_DWORD /d 1
 reg add "HKCU\Software\Microsoft\GameBar" /v AutoGameModeEnabled /t REG_DWORD /d 1 /f
 REM ## Enable GPU Schedualing ##
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v HwSchMode /t REG_DWORD /d 2 /f
+REM ## Enable Graphic Settings Variable Refresh Rate Auto HDR and Optimize Windows Games##
+reg add "HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" /v "DirectXUserGlobalSettings" /t REG_SZ /d "SwapEffectUpgradeEnable=1;AutoHDREnable=1;VRROptimizeEnable=1;" /f
 REM ## Enable HDR Settings ##
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\HDR" /v "UseHDR" /t REG_DWORD /d 1 /f
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\HDR" /v "AllowHDRForGames" /t REG_DWORD /d 1 /f
@@ -31,26 +33,29 @@ echo Increase CPU usage by Disabling Windows Defender Realtime and Tamper Proect
 REM ## Fix Power Plan Performance ##
 powercfg /setacvalueindex SCHEME_CURRENT SUB_ENERGYSAVER ESBATTTHRESHOLD 0
 powercfg /setdcvalueindex SCHEME_CURRENT SUB_ENERGYSAVER ESBATTTHRESHOLD 0
+set BestPP=ded574b5-45a0-4f42-8737-46345c09c238
+REM TODO give myself permission to write to the powerschemes
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActiveOverlayAcPowerScheme" /t REG_SZ /d "!BestPP!" /f
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActiveOverlayDcPowerScheme" /t REG_SZ /d "!BestPP!" /f
+REM TODO EXE to apply current PPOverlay without reboot
 
 REM ################################### START DISABLING ANOYING THINGS ####################################
 REM ## Disable Sticky Keys REQUIRES Logging Off and Back On ##
 reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
+REM TODO disable sticky keys on lock screen is checked
+reg add "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
 
-REM ## Enable Default Graphic Settings ##
-
-REM ## Enable Variable Refresh Rate ## HKEY_CURRENT_USER\SOFTWARE\Microsoft\DirectX\UserGpuPreferences\DirectXUserGlobalSettings && HKEY_CURRENT_USER\Software\Microsoft\DirectX\UserGpuPreferences
-REM ## VALUES = SwapEffectUpgradeEnable=1;AutoHDREnable=1;VRROptimizeEnable=1;
-FOR /F "tokens=3*" %%a in ('reg query "HKEY_CURRENT_USER\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" /v "DirectXUserGlobalSettings" 2^>nul') DO (set VRR=%%a)
-echo !VRR!
-pause
+:END
 exit /b
 
 :ADDGPU
 set exe=%~1
 FOR /F "delims=" %%I IN ('where "!exe!"') DO (
+IF "%%I" NEQ "" (
 reg query HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences /v "%%I" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (
 reg add "HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" /v "%%I" /t REG_SZ /d "GpuPreference=2;" /f >nul 2>&1
+)
 )
 )
 exit /b
