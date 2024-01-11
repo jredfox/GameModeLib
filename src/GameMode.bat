@@ -38,7 +38,6 @@ REM TODO give myself permission to write to the powerschemes
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActiveOverlayAcPowerScheme" /t REG_SZ /d "!BestPP!" /f
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActiveOverlayDcPowerScheme" /t REG_SZ /d "!BestPP!" /f
 call "%~dp0dp0Executables\PowerModeOverlay.exe" "HighPerformance"
-REM TODO EXE to apply current PPOverlay without reboot
 
 REM ################################### START DISABLING ANOYING THINGS ####################################
 REM ## Disable Sticky Keys ##
