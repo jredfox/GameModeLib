@@ -34,10 +34,10 @@ REM ## Fix Power Plan Performance ##
 powercfg /setacvalueindex SCHEME_CURRENT SUB_ENERGYSAVER ESBATTTHRESHOLD 0
 powercfg /setdcvalueindex SCHEME_CURRENT SUB_ENERGYSAVER ESBATTTHRESHOLD 0
 set BestPP=ded574b5-45a0-4f42-8737-46345c09c238
+call "%~dp0Executables\PowerModeOverlay.exe" "!BestPP!"
 REM TODO give myself permission to write to the powerschemes
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActiveOverlayAcPowerScheme" /t REG_SZ /d "!BestPP!" /f
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActiveOverlayDcPowerScheme" /t REG_SZ /d "!BestPP!" /f
-call "%~dp0dp0Executables\PowerModeOverlay.exe" "HighPerformance"
 
 REM ################################### START DISABLING ANOYING THINGS ####################################
 REM ## Disable Sticky Keys ##
@@ -51,7 +51,7 @@ exit /b
 
 :ADDGPU
 set exe=%~1
-FOR /F "delims=" %%I IN ('where "!exe!"') DO (
+FOR /F "delims=" %%I IN ('where "!exe!" 2^>nul') DO (
 IF "%%I" NEQ "" (
 reg query HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences /v "%%I" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (
