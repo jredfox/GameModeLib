@@ -35,7 +35,7 @@ powercfg /setacvalueindex SCHEME_CURRENT SUB_ENERGYSAVER ESBATTTHRESHOLD 0
 powercfg /setdcvalueindex SCHEME_CURRENT SUB_ENERGYSAVER ESBATTTHRESHOLD 0
 set BestPP=ded574b5-45a0-4f42-8737-46345c09c238
 call "%~dp0Executables\PowerModeOverlay.exe" "!BestPP!"
-REM TODO give myself permission to write to the powerschemes
+call "%~dp0\Executables\GrantReg.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes"
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActiveOverlayAcPowerScheme" /t REG_SZ /d "!BestPP!" /f
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActiveOverlayDcPowerScheme" /t REG_SZ /d "!BestPP!" /f
 
