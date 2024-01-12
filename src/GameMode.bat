@@ -43,7 +43,6 @@ REM ################################### START DISABLING ANOYING THINGS #########
 REM ## Disable Sticky Keys ##
 reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
 call "%~dp0Executables\DisableStickyKeys.exe"
-REM TODO disable sticky keys on lock screen is checked
 reg add "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
 
 :END
