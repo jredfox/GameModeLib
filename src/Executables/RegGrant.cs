@@ -8,7 +8,7 @@ class Program
 {
     static void Main(string[] args)
     {
-        if(args.Length < 1)
+        if (args.Length < 1)
         {
             Console.Error.WriteLine("GrantReg.exe <RegistryPath>");
             return;
@@ -22,9 +22,9 @@ class Program
             AddPrivilege("SeTakeOwnershipPrivilege");
             AddPrivilege("SeSecurityPrivilege");
             RegistryKey TREE = GetRegTree(registryKeyPath);
-            if(TREE == null)
+            if (TREE == null)
             {
-                Console.Error.WriteLine(@"Registry Tree is Invalid. Examples Include HKLM\Path or HKCU\Path");
+                Console.Error.WriteLine(@"Invalid Registry Tree Examples Include HKLM\Path or HKCU\Path");
                 return;
             }
             registryKeyPath = registryKeyPath.Substring(registryKeyPath.IndexOf('\\') + 1);
@@ -40,15 +40,15 @@ class Program
     static RegistryKey GetRegTree(string k)
     {
         string u = k.ToUpper();
-        if(u.StartsWith("HKLM") || u.StartsWith("HKEY_LOCAL_MACHINE"))
+        if (u.StartsWith("HKLM") || u.StartsWith("HKEY_LOCAL_MACHINE"))
         {
             return Registry.LocalMachine;
         }
-        else if(u.StartsWith("HKCU") || u.StartsWith("HKEY_CURRENT_USER"))
+        else if (u.StartsWith("HKCU") || u.StartsWith("HKEY_CURRENT_USER"))
         {
             return Registry.CurrentUser;
         }
-        else if(u.StartsWith("HKCR") || u.StartsWith("HKEY_CLASSES_ROOT"))
+        else if (u.StartsWith("HKCR") || u.StartsWith("HKEY_CLASSES_ROOT"))
         {
             return Registry.ClassesRoot;
         }
@@ -65,12 +65,12 @@ class Program
 
     static void AddPrivilege(string privKey)
     {
-        if(!TokenManipulator.AddPrivilege(privKey))
+        if (!TokenManipulator.AddPrivilege(privKey))
         {
             Console.Error.WriteLine("Error Setting Privilege " + privKey);
         }
     }
-
+    //Registry Files AKA Values Do not contain permissions only the Directories aka Keys which hold the indivdual tags
     static void TakeOwnRecurse(string regPath, RegistryKey TREE)
     {
         TakeOwn(regPath, TREE);
@@ -78,18 +78,12 @@ class Program
         try
         {
             key = TREE.OpenSubKey(regPath);
-            foreach (string valueName in key.GetValueNames())
-            {
-                string subPath = regPath + "\\" + valueName;
-                //TakeOwn(subPath, TREE);
-                //Console.WriteLine(subPath);
-            }
             string[] subkeynames = key.GetSubKeyNames();
             key.Close();
             foreach (string valueName in subkeynames)
             {
                 string subPath = regPath + "\\" + valueName;
-               // Console.WriteLine(subPath);
+                // Console.WriteLine(subPath);
                 TakeOwnRecurse(subPath, TREE);
             }
         }
@@ -144,7 +138,7 @@ class Program
         {
             key.Close();
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             Console.Error.WriteLine(e.Message);
         }
