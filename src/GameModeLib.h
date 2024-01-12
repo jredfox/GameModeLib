@@ -4,6 +4,8 @@ namespace GAMEMODELIB {
 //DEFINE METHODS HERE
 void SetPriority(unsigned long PID, unsigned long Priority);
 void SetHighPriority();
+void AddGPUPreference(std::string s);
+void AddGPUPreference();
 
 //DEFINE IMPL DEFINITIONS HERE
 #ifdef COMPILE_WINDOWS
