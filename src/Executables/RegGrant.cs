@@ -13,6 +13,11 @@ class Program
             Console.Error.WriteLine("GrantReg.exe <RegistryPath>");
             return;
         }
+        bool recurse = false;
+        if (args.Length > 1)
+        {
+            recurse = args[1].Trim().Substring(0, 1).ToUpper().Equals("T");
+        }
         string registryKeyPath = args[0].Trim().Replace('/', '\\');
 
         try
@@ -28,8 +33,14 @@ class Program
                 return;
             }
             registryKeyPath = registryKeyPath.Substring(registryKeyPath.IndexOf('\\') + 1);
-            Console.WriteLine(registryKeyPath);
-            TakeOwnRecurse(registryKeyPath, TREE);
+            if (recurse)
+            {
+                TakeOwnRecurse(registryKeyPath, TREE);
+            }
+            else
+            {
+                TakeOwn(registryKeyPath, TREE);
+            }
         }
         catch (Exception ex)
         {
@@ -83,17 +94,16 @@ class Program
             foreach (string valueName in subkeynames)
             {
                 string subPath = regPath + "\\" + valueName;
-                // Console.WriteLine(subPath);
                 TakeOwnRecurse(subPath, TREE);
             }
         }
-        catch
+        catch (Exception e)
         {
-            Console.WriteLine("WTF:");
+            Console.WriteLine(e.StackTrace);
         }
         finally
         {
-            key.Close();
+            closeKey(key);
         }
     }
 
