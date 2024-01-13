@@ -58,7 +58,7 @@ void AddGPUPreference(string e, bool force)
     LONG result = RegCreateKeyExA(
     	HKEY_CURRENT_USER,  // Hive (root key)
         "SOFTWARE\\Microsoft\\DirectX\\UserGpuPreferences",
-        0,                   // Reserved, must be zero
+        0,                  // Reserved, must be zero
         NULL,                // Class (not used)
         REG_OPTION_NON_VOLATILE,  // Options
         KEY_WRITE | KEY_WOW64_64KEY | KEY_QUERY_VALUE,           // Desired access
@@ -84,7 +84,16 @@ void AddGPUPreference(bool force)
 
 void AddGPUPreference()
 {
-	AddGPUPreference(true);
+	AddGPUPreference(false);
+}
+
+void printGUID(GUID* guid)
+{
+	printf("{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}",
+	  guid->Data1, guid->Data2, guid->Data3,
+	  guid->Data4[0], guid->Data4[1], guid->Data4[2], guid->Data4[3],
+	  guid->Data4[4], guid->Data4[5], guid->Data4[6], guid->Data4[7]);
+	cout << endl;
 }
 
 //Power Plan Start
@@ -95,21 +104,15 @@ void AddPowerPlan()
 	//Generated from string {GAMEMODELIB'SPP}
     const wchar_t* GameModeLibPP = L"{b8e6d75e-26e8-5e8f-efef-e94a209a3467}";
     const wchar_t* StrHighPerf = L"{8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c}";
-    GUID gmlpp;
-    GUID hppp;
-
-    // Convert the string to a GUID
-    HRESULT hr = CLSIDFromString(GameModeLibPP, &gmlpp);
-    HRESULT hr2 = CLSIDFromString(StrHighPerf, &hppp);
-    if(hr != NOERROR || hr2 != NOERROR) {
-    	cout << "ERR GUID" << endl;
-    	return;
+    const wchar_t* GameModeLibPPName = L"GameModeLib";
+    GUID HighPerfGUID, GameModeGUID;
+    CLSIDFromString(StrHighPerf, &HighPerfGUID);
+    CLSIDFromString(GameModeLibPP, &GameModeGUID);
+    GUID* GameModeGUIDRef = &GameModeGUID;
+    PowerDuplicateScheme(0, &HighPerfGUID, &GameModeGUIDRef);
+    if (PowerSetActiveScheme(NULL, GameModeGUIDRef) != ERROR_SUCCESS) {
+        cerr << "ERROR setting active scheme: " << GetLastError() << endl;
     }
-    GUID* GUID1 = &gmlpp;
-//	if(PowerDuplicateScheme(0, HighPerfGUID, &GameModeGUID) != ERROR_SUCCESS)
-//	{
-//		cerr << "ERROR " << GetLastError() << endl;
-//	}
 }
 
 };
