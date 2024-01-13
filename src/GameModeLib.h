@@ -4,8 +4,12 @@ namespace GAMEMODELIB {
 //DEFINE METHODS HERE
 void SetPriority(unsigned long PID, unsigned long Priority);
 void SetHighPriority();
-void AddGPUPreference(std::string s);
-void AddGPUPreference();
+void AddGPUPreference(std::string e, bool force);//Adds a specific EXE to the Dedicated GPU Entries with force being an option to always overwrite it
+void AddGPUPreference(bool force);//Adds current EXE to Dedicated GPU Entries if it doesn't exist or forcibly if force is true
+void AddGPUPreference();//Adds current EXE forcibly to Dedicated GPU Entries always
+void AddPowerPlan();
+void init();
+void uninit();
 
 //DEFINE IMPL DEFINITIONS HERE
 #ifdef COMPILE_WINDOWS
