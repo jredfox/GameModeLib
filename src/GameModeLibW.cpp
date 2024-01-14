@@ -3,6 +3,7 @@
 #include <string>
 #include <stdexcept>
 #include <iostream>
+#include "GameModeLib.h"
 using namespace std;
 
 namespace GAMEMODELIB {

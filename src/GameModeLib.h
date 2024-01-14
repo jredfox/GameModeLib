@@ -1,7 +1,13 @@
 #ifndef GAMEMODELIB_H_
 #define GAMEMODELIB_H_
 namespace GAMEMODELIB {
-//DEFINE METHODS HERE
+
+//DECLARE VARIABLES HERE
+extern const DWORD HIGH;
+extern const DWORD NORMAL;
+extern const DWORD LOW;
+
+//DECLARE METHODS HERE
 void SetPriority(unsigned long PID, unsigned long Priority);
 void SetHighPriority();
 void AddGPUPreference(std::string e, bool force);//Adds a specific EXE to the Dedicated GPU Entries with force being an option to always overwrite it
