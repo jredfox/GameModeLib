@@ -52,7 +52,7 @@ exit /b
 set exe=%~1
 FOR /F "delims=" %%I IN ('where "!exe!" 2^>nul') DO (
 IF "%%I" NEQ "" (
-reg query HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences /v "%%I" >nul 2>&1
+reg query "HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" /v "%%I" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (
 reg add "HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" /v "%%I" /t REG_SZ /d "GpuPreference=2;" /f >nul 2>&1
 )
