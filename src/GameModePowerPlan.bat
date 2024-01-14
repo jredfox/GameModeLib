@@ -1,9 +1,15 @@
 @Echo Off
 setlocal enableDelayedExpansion
 REM ## Create the GameMode Power Plan Via Batch ##
+IF "%~1" EQU "" (
 set gm=b8e6d75e-26e8-5e8f-efef-e94a209a3467
+set name=Game Mode
+) ELSE (
+set gm=%~1
+set name=%~2
+)
 powercfg /DUPLICATESCHEME "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c" "!gm!" >nul 2>&1
-powercfg /CHANGENAME "!gm!" "Game Mode"
+powercfg /CHANGENAME "!gm!" "!name!"
 REM ## Start Configuring Default Windows Power Plan ##
 powercfg /SETACVALUEINDEX "!gm!" SUB_DISK DISKIDLE 2100
 powercfg /SETACVALUEINDEX "!gm!" 02f815b5-a5cf-4c84-bf20-649d1f75d3d8 4c793e7d-a264-42e1-87d3-7a0d2f523ccd 1

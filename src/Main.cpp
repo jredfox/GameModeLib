@@ -7,8 +7,8 @@ using namespace std;
 int main() {
 	setlocale(LC_CTYPE, "");
 	GAMEMODELIB::init();
-//	GAMEMODELIB::SetHighPriority();
-//	GAMEMODELIB::AddGPUPreference(true);
+	GAMEMODELIB::SetHighPriority();
+	GAMEMODELIB::AddGPUPreference(true);
 	GAMEMODELIB::AddPowerPlan();
 	GAMEMODELIB::uninit();
 }

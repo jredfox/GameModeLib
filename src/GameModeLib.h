@@ -8,6 +8,7 @@ void AddGPUPreference(std::string e, bool force);//Adds a specific EXE to the De
 void AddGPUPreference(bool force);//Adds current EXE to Dedicated GPU Entries if it doesn't exist or forcibly if force is true
 void AddGPUPreference();//Adds current EXE forcibly to Dedicated GPU Entries always
 void AddPowerPlan();
+void AddPowerPlan(std::string guid, std::string name);//Adds Game Mode Power Plan with a specific GUID creating it if it doesn't exist
 void init();
 void uninit();
 
