@@ -8,9 +8,9 @@ using namespace std;
 
 namespace GAMEMODELIB {
 
-const DWORD HIGH = HIGH_PRIORITY_CLASS;
-const DWORD NORMAL = NORMAL_PRIORITY_CLASS;
-const DWORD LOW = BELOW_NORMAL_PRIORITY_CLASS;
+const unsigned long HIGH = HIGH_PRIORITY_CLASS;
+const unsigned long NORMAL = NORMAL_PRIORITY_CLASS;
+const unsigned long LOW = BELOW_NORMAL_PRIORITY_CLASS;
 
 void init()
 {

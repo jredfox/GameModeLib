@@ -3,9 +3,9 @@
 namespace GAMEMODELIB {
 
 //DECLARE VARIABLES HERE
-extern const DWORD HIGH;
-extern const DWORD NORMAL;
-extern const DWORD LOW;
+extern const unsigned long HIGH;
+extern const unsigned long NORMAL;
+extern const unsigned long LOW;
 
 //DECLARE METHODS HERE
 void SetPriority(unsigned long PID, unsigned long Priority);
