@@ -6,6 +6,12 @@
 #include "GameModeLib.h"
 using namespace std;
 
+/**
+ * WINDOWS LIBS USED
+ *  psapi
+ *  PowrProf
+ *  ole32
+ */
 namespace GAMEMODELIB {
 
 const unsigned long HIGH = HIGH_PRIORITY_CLASS;
