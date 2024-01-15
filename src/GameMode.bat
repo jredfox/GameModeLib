@@ -30,6 +30,8 @@ call :ADDGPU "py.exe"
 call :ADDGPU "pyw.exe"
 REM ## WARN USER ##
 echo Increase CPU usage by Disabling Windows Defender Realtime and Tamper Proection while gaming but NEVER While the WEB BROWSER or EMAILS are open^.
+REM ## Create Game Mode Power Plan ##
+call "%~dp0GameModePowerPlan.bat"
 REM ## Fix Power Plan Performance ##
 powercfg /setacvalueindex SCHEME_CURRENT SUB_ENERGYSAVER ESBATTTHRESHOLD 0
 powercfg /setdcvalueindex SCHEME_CURRENT SUB_ENERGYSAVER ESBATTTHRESHOLD 0
@@ -38,8 +40,6 @@ call "%~dp0Executables\PowerModeOverlay.exe" "!BestPP!"
 call "%~dp0Executables\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes"
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActiveOverlayAcPowerScheme" /t REG_SZ /d "!BestPP!" /f
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActiveOverlayDcPowerScheme" /t REG_SZ /d "!BestPP!" /f
-REM ## Create Game Mode Power Plan ##
-call "%~dp0GameModePowerPlan.bat"
 
 REM ################################### START DISABLING ANOYING THINGS ####################################
 REM ## Disable Sticky Keys ##

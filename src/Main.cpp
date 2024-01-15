@@ -6,7 +6,7 @@ using namespace std;
 //TODO:
 /**
  * -SetPriority:<PRIORITY>:<Optional PID>
--CreatePowerPlan
+ * -CreatePowerPlan
  */
 
 int main() {
