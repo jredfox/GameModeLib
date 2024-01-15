@@ -259,4 +259,31 @@ void SetPowerPlan()
 	SetPowerPlan("{b8e6d75e-26e8-5e8f-efef-e94a209a3467}", "Game Mode");
 }
 
+/**
+ * Install GameModeLib Requires Admin Rights
+ */
+void Install()
+{
+	string exe = GetProcessName(GetCurrentProcessId());
+	string batch = exe.substr(0, exe.rfind('\\')) + "\\GameMode.bat";
+	wstring params = toWString("/c call \"" + batch + "\"");
+
+	SHELLEXECUTEINFOW shExInfo = {0};
+	shExInfo.cbSize = sizeof(shExInfo);
+	shExInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+	shExInfo.hwnd = 0;
+	shExInfo.lpVerb = L"runas";                // Operation to perform
+	shExInfo.lpFile = L"cmd.exe";       // Application to start
+	shExInfo.lpParameters = params.c_str();                  // Additional parameters
+	shExInfo.lpDirectory = 0;
+	shExInfo.nShow = SW_SHOW;
+	shExInfo.hInstApp = 0;
+
+	if (ShellExecuteExW(&shExInfo))
+	{
+	    WaitForSingleObject(shExInfo.hProcess, INFINITE);
+	    CloseHandle(shExInfo.hProcess);
+	}
+}
+
 };

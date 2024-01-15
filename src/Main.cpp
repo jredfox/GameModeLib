@@ -14,7 +14,11 @@ int main() {
 	{
 		wstring s = cargs[i];
 		wstring t = GAMEMODELIB::toupper(GAMEMODELIB::trim(s));
-		if (t == L"-SETPOWERPLAN")
+		if(t == L"-INSTALL")
+		{
+			GAMEMODELIB::Install();
+		}
+		else if (t == L"-SETPOWERPLAN")
 		{
 			GAMEMODELIB::SetActivePP = true;
 		}
