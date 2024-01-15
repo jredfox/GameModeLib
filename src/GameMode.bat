@@ -30,7 +30,8 @@ call :ADDGPU "javaw.exe"
 call :ADDGPU "py.exe"
 call :ADDGPU "pyw.exe"
 REM ## WARN USER ##
-echo Increase CPU usage by Disabling Windows Defender Realtime and Tamper Proection while gaming but NEVER While the WEB BROWSER or EMAILS are open^.
+echo Increase CPU Performance by Disabling Windows Defender Realtime and Tamper Proection while gaming but NEVER While the WEB BROWSER or EMAILS are open^.
+echo Increase Disk ^(SSD or HDD^) Performance by disabling bitlocker if you don't need the Security
 REM ## Create Game Mode Power Plan ##
 call "%~dp0GameModePowerPlan.bat"
 REM ## Fix Power Plan Performance ##
