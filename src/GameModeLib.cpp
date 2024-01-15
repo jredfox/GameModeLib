@@ -53,6 +53,12 @@ bool parseBool(std::wstring str)
 	return toupper(str) == L"TRUE";
 }
 
+unsigned long ParseUnsignedLong(wstring str)
+{
+	int base = GAMEMODELIB::startsWith(str, L"0X") ? 16 : 10;
+	return stoul(GAMEMODELIB::toString(str), NULL, base);
+}
+
 void Help()
 {
 	cout << "GameModeLib {Options}" << endl;
@@ -61,8 +67,9 @@ void Help()
 	cout << "-GPUEntry {EXE|true;EXE2}" << endl;
 	cout << "-GPUEntryCurrent:{Bool Force}" << endl;
 	cout << "-PowerPlan" << endl;
-	cout << "-CreatePowerPlan {GUID:NAME}" << endl << endl;
+	cout << "-CreatePowerPlan {GUID:NAME}" << endl;
 	cout << "-SetPowerPlan" << endl;
+	cout << endl;
 	cout << "Example: GameModeLib -SetHighPriority -PowerPlan" << endl;
 	cout << "Example: GameModeLib -CreatePowerPlan \"a8bb3a1c-6456-5ec6-8070-566dc60e4022:Epic Power Plan\"" << endl;
 	cout << "Example: GameModeLib -SetPriority:LOW -GPUEntry \"C:\\Program Files\\Java\\jre-1.8\\bin\\java.exe\\;C:\\Program Files\\Java\\jre-1.8\\bin\\javaw.exe|True\"" << endl;

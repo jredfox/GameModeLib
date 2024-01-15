@@ -3,12 +3,6 @@
 #include "GameModeLib.h"
 using namespace std;
 
-//TODO:
-/**
- * -SetPriority:<PRIORITY>:<Optional PID>
- * -CreatePowerPlan
- */
-
 int main() {
 	setlocale(LC_CTYPE, "");
 	wstring cmdline = GetCommandLineW();
@@ -37,20 +31,40 @@ int main() {
 		{
 			GAMEMODELIB::SetPowerPlan();
 		}
+		else if(GAMEMODELIB::startsWith(t, L"-CREATEPOWERPLAN"))
+		{
+			wstring unparsed = GAMEMODELIB::trim(cargs[i + 1]);
+			vector<wstring> argp = GAMEMODELIB::split(unparsed, ':');
+			wstring guid = argp[0];
+			wstring name = argp[1];
+			GAMEMODELIB::SetPowerPlan(GAMEMODELIB::toString(guid), GAMEMODELIB::toString(name));
+		}
 		else if(GAMEMODELIB::startsWith(t, L"-SETHIGHPRIORITY"))
 		{
 			vector<wstring> argp = GAMEMODELIB::split(t, ':');
-			if(argp.size() < 2)
-			{
-				GAMEMODELIB::SetHighPriority(GAMEMODELIB::GetParentPID());
+			unsigned long PID = argp.size() < 2 ? GAMEMODELIB::GetParentPID() : GAMEMODELIB::ParseUnsignedLong(argp[1]);
+			GAMEMODELIB::SetHighPriority(PID);
+		}
+		else if(GAMEMODELIB::startsWith(t, L"-SETPRIORITY"))
+		{
+			vector<wstring> secs = GAMEMODELIB::split(t, ':');
+			wstring p = secs[1].substr(0, 1);
+			unsigned long PRIORITY;
+			if(p == L"H") {
+				PRIORITY = GAMEMODELIB::HIGH;
 			}
-			else
-			{
-				wstring strpid = argp[1];
-				int base = GAMEMODELIB::startsWith(strpid, L"0X") ? 16 : 10;
-				unsigned long PID = stoul(GAMEMODELIB::toString(strpid), NULL, base);
-				GAMEMODELIB::SetHighPriority(PID);
+			else if(p == L"N") {
+				PRIORITY = GAMEMODELIB::NORMAL;
 			}
+			else if(p == L"L") {
+				PRIORITY = GAMEMODELIB::LOW;
+			}
+			else {
+				cerr << "Maulformed -SetPriority" << endl;
+				exit(-1);
+			}
+			unsigned long PID = secs.size() > 2 ? GAMEMODELIB::ParseUnsignedLong(secs[2]) : GAMEMODELIB::GetParentPID();
+			GAMEMODELIB::SetPriority(PID, PRIORITY);
 		}
 		else if(GAMEMODELIB::startsWith(t, L"-GPUENTRYCURRENT"))
 		{

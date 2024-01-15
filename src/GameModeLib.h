@@ -19,6 +19,7 @@ void SetGPUPreference();//Adds current EXE forcibly to Dedicated GPU Entries alw
 void SetPowerPlan();
 void SetPowerPlan(std::string guid, std::string name);//Adds Game Mode Power Plan with a specific GUID creating it if it doesn't exist
 std::string GetProcessName(unsigned long PID);
+unsigned long GetParentPID();
 void init();
 void uninit();
 void Help();//the help command
@@ -30,7 +31,7 @@ bool startsWith(std::wstring str, std::wstring key);
 std::vector<std::wstring> split(const std::wstring& input, wchar_t c);
 std::string toString(const std::wstring& wide_string);
 bool parseBool(std::wstring str);
-unsigned long GetParentPID();
+unsigned long ParseUnsignedLong(std::wstring str);
 
 //DEFINE IMPL DEFINITIONS HERE
 #ifdef COMPILE_WINDOWS
