@@ -276,7 +276,7 @@ void Install()
 	shExInfo.lpFile = L"cmd.exe";       // Application to start
 	shExInfo.lpParameters = params.c_str();                  // Additional parameters
 	shExInfo.lpDirectory = 0;
-	shExInfo.nShow = SW_SHOW;
+	shExInfo.nShow = SW_SHOWNORMAL;
 	shExInfo.hInstApp = 0;
 
 	if (ShellExecuteExW(&shExInfo))
