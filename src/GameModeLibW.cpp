@@ -3,6 +3,7 @@
 #include <string>
 #include <stdexcept>
 #include <iostream>
+#include <tlhelp32.h>
 #include "GameModeLib.h"
 using namespace std;
 
@@ -17,6 +18,7 @@ namespace GAMEMODELIB {
 const unsigned long HIGH = HIGH_PRIORITY_CLASS;
 const unsigned long NORMAL = NORMAL_PRIORITY_CLASS;
 const unsigned long LOW = BELOW_NORMAL_PRIORITY_CLASS;
+bool SetActivePP = false;
 
 void init()
 {
@@ -102,6 +104,28 @@ int runProcess(const wstring& cmd)
 	return exitCode;
 }
 
+unsigned long GetParentPID()
+{
+	unsigned long pid = GetCurrentProcessId();
+	unsigned long ppid = -1;
+	PROCESSENTRY32 entry;
+	entry.dwSize = sizeof(PROCESSENTRY32);
+	HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+	if (Process32First(snapshot, &entry))
+	{
+		while (Process32Next(snapshot, &entry))
+		{
+			if (entry.th32ProcessID == pid)
+        	{
+				ppid = entry.th32ParentProcessID;
+				break;
+        	}
+		}
+	}
+	CloseHandle(snapshot);
+	return ppid;
+}
+
 void SetPriority(unsigned long PID, unsigned long Priority)
 {
 	 HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
@@ -111,15 +135,20 @@ void SetPriority(unsigned long PID, unsigned long Priority)
 	 CloseHandle(hProcess);
 }
 
+void SetHighPriority(unsigned long PID)
+{
+	SetPriority(PID, GAMEMODELIB::HIGH);
+}
+
 void SetHighPriority()
 {
-	SetPriority(GetCurrentProcessId(), GAMEMODELIB::HIGH);
+	SetHighPriority(GetCurrentProcessId());
 }
 
 /**
  * returns the full executable path of the running process
  */
-string getProcessName(unsigned long pid)
+string GetProcessName(unsigned long pid)
 {
 	string name = "";
 	HANDLE phandle = OpenProcess( PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
@@ -134,7 +163,7 @@ bool RegExists(HKEY hKey, wstring &val)
 	return RegQueryValueExW(hKey, val.c_str(), NULL, NULL, NULL, NULL) == ERROR_SUCCESS;
 }
 
-void AddGPUPreference(string e, bool force)
+void SetGPUPreference(string e, bool force)
 {
 	wstring exe = toWString(e);
 	wstring data = L"GpuPreference=2;";
@@ -160,15 +189,15 @@ void AddGPUPreference(string e, bool force)
     RegCloseKey(hKey);
 }
 
-void AddGPUPreference(bool force)
+void SetGPUPreference(bool force)
 {
-	string s = getProcessName(GetCurrentProcessId());
-	AddGPUPreference(s, force);
+	string s = GetProcessName(GetCurrentProcessId());
+	SetGPUPreference(s, force);
 }
 
-void AddGPUPreference()
+void SetGPUPreference()
 {
-	AddGPUPreference(false);
+	SetGPUPreference(false);
 }
 
 void printGUID(GUID* guid)
@@ -201,7 +230,7 @@ bool PowerPlanExists(GUID id)
     return false;
 }
 
-void AddPowerPlan(string guid, string name)
+void SetPowerPlan(string guid, string name)
 {
 	wstring str = toWString(guid);
 	const wchar_t* GameModeLibPP = str.c_str();
@@ -212,15 +241,22 @@ void AddPowerPlan(string guid, string name)
     if(!PowerPlanExists(GameModeGUID))
     {
     	cout << "Creating Power Plan:\"" << name << "\" GUID:" << guid << endl;
-    	string exe = getProcessName(GetCurrentProcessId());
+    	string exe = GetProcessName(GetCurrentProcessId());
     	string batch = exe.substr(0, exe.rfind('\\')) + "\\GameModePowerPlan.bat";
     	runProcess(toWString("cmd /c call \"" + batch + "\" \"" + guid.substr(1, guid.size() - 2) + "\" \"" + name + "\""));
     }
+    //Set Active Power Plan if true regardless of whether or not the power plan was created
+    if(SetActivePP)
+    {
+        if (PowerSetActiveScheme(NULL, &GameModeGUID) != ERROR_SUCCESS) {
+            cerr << "ERROR setting active scheme: " << GetLastError() << endl;
+        }
+    }
 }
 
-void AddPowerPlan()
+void SetPowerPlan()
 {
-	AddPowerPlan("{b8e6d75e-26e8-5e8f-efef-e94a209a3467}", "Game Mode");
+	SetPowerPlan("{b8e6d75e-26e8-5e8f-efef-e94a209a3467}", "Game Mode");
 }
 
 };
