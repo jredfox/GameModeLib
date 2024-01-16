@@ -90,8 +90,8 @@ IF !ERRORLEVEL! NEQ 0 (set sanity=F)
 powercfg query "381b4222-f694-41f0-9685-ff5bb260df2e" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (set sanity=F)
 IF "!sanity!" NEQ "T" (
-set /p respwer="PowerPlan Missing (High Performance or Balanced) Would You Like To Reset All PowerPlans [Y/N]?"
-IF /I "!respwer!" EQU "Y" (call :RSTPWR)
+echo Restoring Power Plans High Performance and Balanced
+call :RSTPWR
 )
 exit /b
 
