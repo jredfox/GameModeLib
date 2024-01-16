@@ -8,6 +8,7 @@ set name=Game Mode
 set gm=%~1
 set name=%~2
 )
+call :SANITYCHK
 powercfg /DUPLICATESCHEME "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c" "!gm!" >nul 2>&1
 powercfg /CHANGENAME "!gm!" "!name!"
 REM ## Start Configuring Default Windows Power Plan ##
@@ -80,3 +81,16 @@ powercfg /SETDCVALUEINDEX "!gm!" 44f3beca-a7c0-460e-9df2-bb8b99e0cba6 3619c3f2-a
 
 REM ## Set the active Power Plan to be Game Mode Power Plan ##
 powercfg /SETACTIVE "!gm!"
+exit /b
+
+:SANITYCHK
+set sanity=T
+powercfg query "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c" >nul 2>&1
+IF !ERRORLEVEL! NEQ 0 (set sanity=F)
+powercfg query "381b4222-f694-41f0-9685-ff5bb260df2e" >nul 2>&1
+IF !ERRORLEVEL! NEQ 0 (set sanity=F)
+IF "!sanity!" NEQ "T" (
+set /p respwer="PowerPlan Missing (High Performance or Balanced) Would You Like To Reset All PowerPlans [Y/N]?"
+IF /I "!respwer!" EQU "Y" (powercfg -RESTOREDEFAULTSCHEMES)
+)
+exit /b
