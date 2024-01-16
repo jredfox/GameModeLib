@@ -26,10 +26,13 @@ namespace DisableStickyKeys
 
         static void Main(string[] args)
         {
+            if (args.Length == 0)
+                return;
+            string strflag = args[0].ToLower();
+            uint flag = Convert.ToUInt32(strflag, strflag.StartsWith("0x") ? 16 : 10);
             STICKYKEYS skOff = new STICKYKEYS { cbSize = Marshal.SizeOf(typeof(STICKYKEYS)), dwFlags = 0 };
             SystemParametersInfo(SPI_GETSTICKYKEYS, (uint)Marshal.SizeOf(typeof(STICKYKEYS)), ref skOff, 0);
-            skOff.dwFlags &= ~SKF_HOTKEYACTIVE;
-            skOff.dwFlags &= ~SKF_CONFIRMHOTKEY;
+            skOff.dwFlags = flag;
             SystemParametersInfo(SPI_SETSTICKYKEYS, (uint)Marshal.SizeOf(typeof(STICKYKEYS)), ref skOff, 0);
         }
     }

@@ -35,6 +35,7 @@ REM Generate uninstalls to GameModeUninstall.bat
 	call :QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" "ActiveOverlayAcPowerScheme"
 	call :QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" "ActiveOverlayDcPowerScheme"
 	call :QUERY "HKCU\Control Panel\Accessibility\StickyKeys" "Flags"
+	echo call "%%~dp0Executables\StickyKeysSetFlag.exe" "!datval!"
 	call :QUERY "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" "Flags"
 )>"%~dp0GameModeUninstall.bat"
 exit /b
@@ -51,6 +52,7 @@ FOR /F "delims=" %%A IN ('reg query "%key%" /v "%val%"') DO (
 IF "%%A" NEQ "%key%" (
 For /F "tokens=2,3*" %%B IN ("%%A") DO (
 	echo reg add "%key%" /v "%val%" /t %%B /d "%%C" /f
+	set datval=%%C
 )
 )
 )

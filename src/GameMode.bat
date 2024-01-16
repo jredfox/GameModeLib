@@ -49,7 +49,7 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "Acti
 REM ################################### START DISABLING ANOYING THINGS ####################################
 REM ## Disable Sticky Keys ##
 reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
-call "%~dp0Executables\DisableStickyKeys.exe"
+call "%~dp0Executables\StickyKeysSetFlag.exe" "506"
 reg add "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
 
 :END
