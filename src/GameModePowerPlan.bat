@@ -97,6 +97,7 @@ exit /b
 
 :RSTPWR
 set batdir=%TMP%\TMPBAT
+set dummypp=0319040a-eec8-a92b-85c8-e6f1958b6fdd
 del /F /Q /A !batdir! >nul 2>&1
 RD !batdir! >nul 2>&1
 mkdir "!batdir!"
@@ -106,13 +107,23 @@ set guid=%%D
 powercfg /EXPORT "!batdir!\!guid!" "!guid!"
 )
 )
+REM ## Re-Create Default Power Plans ##
 powercfg -RESTOREDEFAULTSCHEMES
+REM ## Create Dummy TMP Plan ##
+FOR /F "tokens=3*" %%A IN ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActivePowerScheme"') DO (set PrevPowerPlan=%%A)
+powercfg /DUPLICATESCHEME SCHEME_CURRENT "!dummypp!" >nul 2>&1
+powercfg /SETACTIVE "!dummypp!" >nul 2>&1
+REM ## RE-IMPORT Everything ##
 FOR /F "delims=" %%I IN ('dir /A /B !batdir!') DO (
+powercfg /DELETE "%%I" >nul 2>&1
 powercfg /IMPORT "!batdir!\%%I" "%%I" 2>nul
 IF !ERRORLEVEL! EQU 0 (
 echo[
 )
 )
+REM ## Restore PowerPlan and delete the Dummy ##
+powercfg /SETACTIVE "!PrevPowerPlan!" >nul 2>&1
+powercfg /DELETE "!dummypp!" >nul 2>&1
 del /F /Q /A !batdir! >nul 2>&1
 RD !batdir! >nul 2>&1
 exit /b
