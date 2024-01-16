@@ -27,6 +27,10 @@ void Help();//the help command
  * Install GameModeLib Requires ADMIN or SUDO Rights
  */
 void Install();
+/**
+ * UnInstall Revert any changes made by the Install Script
+ */
+void UnInstall();
 //START UTILITY METHODS
 std::wstring toupper(std::wstring s);
 std::wstring trim(std::wstring str);

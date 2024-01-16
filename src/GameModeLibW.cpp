@@ -260,20 +260,16 @@ void SetPowerPlan()
 }
 
 /**
- * Install GameModeLib Requires Admin Rights
+ * Run Process As Admin with Visible Window
  */
-void Install()
+void RunAdmin(wstring exe, wstring params)
 {
-	string exe = GetProcessName(GetCurrentProcessId());
-	string batch = exe.substr(0, exe.rfind('\\')) + "\\GameMode.bat";
-	wstring params = toWString("/c call \"" + batch + "\"");
-
 	SHELLEXECUTEINFOW shExInfo = {0};
 	shExInfo.cbSize = sizeof(shExInfo);
 	shExInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
 	shExInfo.hwnd = 0;
 	shExInfo.lpVerb = L"runas"; //Force ADMIN UAC Prompt
-	shExInfo.lpFile = L"cmd.exe"; //EXE
+	shExInfo.lpFile = exe.c_str(); //EXE
 	shExInfo.lpParameters = params.c_str(); //ARGS
 	shExInfo.lpDirectory = 0;
 	shExInfo.nShow = SW_SHOWNORMAL;
@@ -284,6 +280,22 @@ void Install()
 	    WaitForSingleObject(shExInfo.hProcess, INFINITE);
 	    CloseHandle(shExInfo.hProcess);
 	}
+}
+
+void UnInstall()
+{
+	string exe = GetProcessName(GetCurrentProcessId());
+	string batch = exe.substr(0, exe.rfind('\\')) + "\\GameModeUninstall.bat";
+	wstring params = toWString("/c call \"" + batch + "\"");
+	RunAdmin(L"cmd.exe", params);
+}
+
+void Install()
+{
+	string exe = GetProcessName(GetCurrentProcessId());
+	string batch = exe.substr(0, exe.rfind('\\')) + "\\GameMode.bat";
+	wstring params = toWString("/c call \"" + batch + "\"");
+	RunAdmin(L"cmd.exe", params);
 }
 
 };

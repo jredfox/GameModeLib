@@ -18,6 +18,10 @@ int main() {
 		{
 			GAMEMODELIB::Install();
 		}
+		if(t == L"-UNINSTALL")
+		{
+			GAMEMODELIB::UnInstall();
+		}
 		else if (t == L"-SETPOWERPLAN")
 		{
 			GAMEMODELIB::SetActivePP = true;
