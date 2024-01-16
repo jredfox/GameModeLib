@@ -91,6 +91,28 @@ powercfg query "381b4222-f694-41f0-9685-ff5bb260df2e" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (set sanity=F)
 IF "!sanity!" NEQ "T" (
 set /p respwer="PowerPlan Missing (High Performance or Balanced) Would You Like To Reset All PowerPlans [Y/N]?"
-IF /I "!respwer!" EQU "Y" (powercfg -RESTOREDEFAULTSCHEMES)
+IF /I "!respwer!" EQU "Y" (call :RSTPWR)
 )
+exit /b
+
+:RSTPWR
+set batdir=%TMP%\TMPBAT
+del /F /Q /A !batdir! >nul 2>&1
+RD !batdir! >nul 2>&1
+mkdir "!batdir!"
+FOR /F "tokens=2* delims=:" %%I IN ('powercfg ^/L') DO (
+FOR /F %%D IN ("%%I") DO (
+set guid=%%D
+powercfg /EXPORT "!batdir!\!guid!" "!guid!"
+)
+)
+powercfg -RESTOREDEFAULTSCHEMES
+FOR /F "delims=" %%I IN ('dir /A /B !batdir!') DO (
+powercfg /IMPORT "!batdir!\%%I" "%%I" 2>nul
+IF !ERRORLEVEL! EQU 0 (
+echo[
+)
+)
+del /F /Q /A !batdir! >nul 2>&1
+RD !batdir! >nul 2>&1
 exit /b
