@@ -2,10 +2,7 @@
 setlocal enableDelayedExpansion
 REM ## Get the Current AC or DC PowerModeOverlay ##
 FOR /F "tokens=3*" %%A IN ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActivePowerScheme"') DO (set PrevPowerPlan=%%A)
-powercfg /SETACTIVE "381b4222-f694-41f0-9685-ff5bb260df2e"
-cscript /NOLOGO "%~dp0Executables\Sleep.vbs" "250"
-FOR /F "tokens=1*" %%A IN ('call "%~dp0Executables\PowerModeOverlay.exe" "GET"') DO (set PrevPPMode=%%A)
-powercfg /SETACTIVE "!PrevPowerPlan!"
+FOR /F "tokens=3*" %%A IN ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActiveOverlayAcPowerScheme"') DO (set PrevPPMode=%%A)
 set gm=b8e6d75e-26e8-5e8f-efef-e94a209a3467
 IF "!PrevPowerPlan!" EQU "!gm!" (set PrevPowerPlan=381b4222-f694-41f0-9685-ff5bb260df2e)
 REM Generate uninstalls to GameModeUninstall.bat
