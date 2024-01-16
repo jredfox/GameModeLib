@@ -13,12 +13,46 @@ namespace PowerMode
 
         [DllImportAttribute("powrprof.dll", EntryPoint = "PowerSetActiveOverlayScheme")]
         public static extern uint PowerSetActiveOverlayScheme(out Guid OverlaySchemeGuid);
+
+        [DllImportAttribute("powrprof.dll", EntryPoint = "PowerGetEffectiveOverlayScheme")]
+        private static extern uint PowerGetEffectiveOverlayScheme(out Guid EffectiveOverlayPolicyGuid);
         static int Main(string[] args)
         {
             if (args.Length == 0)
                 return -1;
 
             string strguid = args[0].ToLower();
+            if(strguid.Equals("get"))
+            {
+                uint result = PowerGetEffectiveOverlayScheme(out Guid currentMode);
+                Console.WriteLine(currentMode);
+                return result == 0 ? 0 : -1;
+            }
+            else if(strguid.Equals("getname"))
+            {
+                uint result = PowerGetEffectiveOverlayScheme(out Guid currentMode);
+                if(currentMode.Equals(PowerSaver))
+                {
+                    Console.WriteLine("PowerSaver");
+                }
+                else if (currentMode.Equals(Balanced))
+                {
+                    Console.WriteLine("Balanced");
+                }
+                else if (currentMode.Equals(Performance))
+                {
+                    Console.WriteLine("Performance");
+                }
+                else if (currentMode.Equals(HighPerformance))
+                {
+                    Console.WriteLine("HighPerformance");
+                }
+                else
+                {
+                    Console.WriteLine(currentMode);
+                }
+                return result == 0 ? 0 : -1;
+            }
             Guid powerMode = HighPerformance;
             if (strguid.Equals("powersaver"))
             {
