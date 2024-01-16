@@ -1,8 +1,15 @@
 @ECHO OFF
 setlocal enableDelayedExpansion
-echo Generating The Uninstall Script
+REM ## Generate the Uninstall Script If It Doesn't Exist ##
 set uinstall=%~dp0GameModeUninstall.bat
+set gpuuinstall=%~dp0GameModeUninstallGPU.bat
+IF EXIST "!uinstall!" (
+set GenUInstall=F
+) ELSE (
+echo Generating The Uninstall Script
 call "%~dp0GameModeGenUninstall.bat"
+set GenUInstall=T
+)
 echo Installing GameModeLib Full Version
 REM ## Enable GameMode ##
 reg add "HKCU\Software\Microsoft\GameBar" /v AllowAutoGameMode /t REG_DWORD /d 1 /f
@@ -62,8 +69,10 @@ IF "%%I" NEQ "" (
 reg query "HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" /v "%%I" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (
 reg add "HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" /v "%%I" /t REG_SZ /d "GpuPreference=2;" /f >nul 2>&1
-REM ## Update the Uninstall Script to uninstall this new GPU entry ##
-echo reg delete "HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" /v "%%I" /f >>"!uinstall!"
+REM ## Update GPU Entry UnInstall Script ##
+(
+IF "!GenUInstall!" EQU "T" (echo reg delete "HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" /v "%%I" /f)
+)>>"!gpuuinstall!"
 )
 )
 )

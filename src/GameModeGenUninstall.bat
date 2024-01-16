@@ -6,6 +6,8 @@ powercfg /SETACTIVE "381b4222-f694-41f0-9685-ff5bb260df2e"
 cscript /NOLOGO "%~dp0Executables\Sleep.vbs" "250"
 FOR /F "tokens=1*" %%A IN ('call "%~dp0Executables\PowerModeOverlay.exe" "GET"') DO (set PrevPPMode=%%A)
 powercfg /SETACTIVE "!PrevPowerPlan!"
+set gm=b8e6d75e-26e8-5e8f-efef-e94a209a3467
+IF "!PrevPowerPlan!" EQU "!gm!" (set PrevPowerPlan=381b4222-f694-41f0-9685-ff5bb260df2e)
 REM Generate uninstalls to GameModeUninstall.bat
 (
 	echo ^@ECHO OFF
@@ -29,15 +31,24 @@ REM Generate uninstalls to GameModeUninstall.bat
 	call :QUERY "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\VideoSettings" "DisableHDRSupportOnBattery"
 	echo powercfg /SETACTIVE "!PrevPowerPlan!"
 	echo If %%ERRORLEVEL%% NEQ 0 ^(powercfg /SETACTIVE "381b4222-f694-41f0-9685-ff5bb260df2e"^)
-	echo powercfg /DELETE "b8e6d75e-26e8-5e8f-efef-e94a209a3467"
+	echo powercfg /DELETE "!gm!"
 	echo call "%%~dp0Executables\PowerModeOverlay.exe" "!PrevPPMode!"
 	echo call "%%~dp0Executables\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes"
 	call :QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" "ActiveOverlayAcPowerScheme"
 	call :QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" "ActiveOverlayDcPowerScheme"
-	call :QUERY "HKCU\Control Panel\Accessibility\StickyKeys" "Flags"
+	call :QUERY "HKEY_CURRENT_USER\Control Panel\Accessibility\StickyKeys" "Flags"
 	echo call "%%~dp0Executables\StickyKeysSetFlag.exe" "!datval!"
 	call :QUERY "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" "Flags"
+	echo call "%%~dp0GameModeUninstallGPU.bat"
+	REM ## Cleanup Delete GPU Entries added and Itself ##
+	echo del /F /Q /A "%%~dp0GameModeUninstallGPU.bat"
+	echo ^(goto^) 2^>nul ^& del /F /Q /A "%%~f0" ^& title %%CD%% ^& cmd /c exit /b
 )>"%~dp0GameModeUninstall.bat"
+REM ## Generate the GPU Preferences Uninstall Script ##
+(
+	echo ^@ECHO OFF
+	echo setlocal enableDelayedExpansion
+)>"%~dp0GameModeUninstallGPU.bat"
 exit /b
 
 :QUERY

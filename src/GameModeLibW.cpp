@@ -282,18 +282,24 @@ void RunAdmin(wstring exe, wstring params)
 	}
 }
 
-void UnInstall()
-{
-	string exe = GetProcessName(GetCurrentProcessId());
-	string batch = exe.substr(0, exe.rfind('\\')) + "\\GameModeUninstall.bat";
-	wstring params = toWString("/c call \"" + batch + "\"");
-	RunAdmin(L"cmd.exe", params);
-}
-
+/**
+ * Install GameModeLib Requires ADMIN or SUDO Rights
+ */
 void Install()
 {
 	string exe = GetProcessName(GetCurrentProcessId());
 	string batch = exe.substr(0, exe.rfind('\\')) + "\\GameMode.bat";
+	wstring params = toWString("/c call \"" + batch + "\"");
+	RunAdmin(L"cmd.exe", params);
+}
+
+/**
+ * UnInstall Revert any changes made by the Install Script
+ */
+void UnInstall()
+{
+	string exe = GetProcessName(GetCurrentProcessId());
+	string batch = exe.substr(0, exe.rfind('\\')) + "\\GameModeUninstall.bat";
 	wstring params = toWString("/c call \"" + batch + "\"");
 	RunAdmin(L"cmd.exe", params);
 }
