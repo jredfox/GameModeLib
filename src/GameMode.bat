@@ -1,5 +1,6 @@
 @ECHO OFF
 setlocal enableDelayedExpansion
+set UnlockBitLocker=%~1
 REM ## Enable Registry Access ##
 call "%~dp0Executables\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes"
 REM ## Generate the Uninstall Script If It Doesn't Exist ##
@@ -63,6 +64,11 @@ REM ## Disable Sticky Keys ##
 reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
 call "%~dp0Executables\StickyKeysSetFlag.exe" "506"
 reg add "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
+REM ## Disable BitLocker to Dramtically Improve SSD Performance ##
+IF "%UnlockBitLocker:~0,1%" EQU "T" (
+manage-bde -unlock C^: >nul 2>&1
+manage-bde -off C^: >nul 2>&1
+)
 
 :END
 exit /b
