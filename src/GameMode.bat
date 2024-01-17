@@ -65,7 +65,8 @@ reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "5
 call "%~dp0Executables\StickyKeysSetFlag.exe" "506"
 reg add "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
 REM ## Disable BitLocker to Dramtically Improve SSD Performance ##
-IF "%UnlockBitLocker:~0,1%" EQU "T" (
+IF /I "%UnlockBitLocker:~0,1%" EQU "T" (
+echo Disabling Bitlocker OS "C:" Drive
 manage-bde -unlock C^: >nul 2>&1
 manage-bde -off C^: >nul 2>&1
 )

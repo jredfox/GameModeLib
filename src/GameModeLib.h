@@ -26,7 +26,7 @@ void Help();//the help command
 /**
  * Install GameModeLib Requires ADMIN or SUDO Rights
  */
-void Install();
+void Install(bool DisableDriveEncryption);
 /**
  * UnInstall Revert any changes made by the Install Script
  */
@@ -38,6 +38,7 @@ int IndexOf(std::wstring str, std::wstring key);
 bool startsWith(std::wstring str, std::wstring key);
 std::vector<std::wstring> split(const std::wstring& input, wchar_t c);
 std::string toString(const std::wstring& wide_string);
+std::string toString(bool b);
 bool parseBool(std::wstring str);
 unsigned long ParseUnsignedLong(std::wstring str);
 

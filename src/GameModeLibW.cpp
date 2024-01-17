@@ -285,11 +285,12 @@ void RunAdmin(wstring exe, wstring params)
 /**
  * Install GameModeLib Requires ADMIN or SUDO Rights
  */
-void Install()
+void Install(bool DisableBitLocker)
 {
 	string exe = GetProcessName(GetCurrentProcessId());
 	string batch = exe.substr(0, exe.rfind('\\')) + "\\GameMode.bat";
-	wstring params = toWString("/c call \"" + batch + "\"");
+	string bitlocker = DisableBitLocker ? " \"TRUE\"" : "";
+	wstring params = toWString("/c call \"" + batch + "\"" + bitlocker);
 	RunAdmin(L"cmd.exe", params);
 }
 

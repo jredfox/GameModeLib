@@ -59,6 +59,11 @@ unsigned long ParseUnsignedLong(wstring str)
 	return stoul(GAMEMODELIB::toString(str), NULL, base);
 }
 
+std::string toString(bool b)
+{
+	return b ? "true" : "false";
+}
+
 void Help()
 {
 	cout << "GameModeLib {Options}" << endl;

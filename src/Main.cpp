@@ -14,9 +14,11 @@ int main() {
 	{
 		wstring s = cargs[i];
 		wstring t = GAMEMODELIB::toupper(GAMEMODELIB::trim(s));
-		if(t == L"-INSTALL")
+		if(GAMEMODELIB::startsWith(t, L"-INSTALL"))
 		{
-			GAMEMODELIB::Install();
+			vector<wstring> arr = GAMEMODELIB::split(t, L':');
+			bool DisableOsEncryption = arr.size() > 1 ? GAMEMODELIB::parseBool(arr[1]) : false;
+			GAMEMODELIB::Install(DisableOsEncryption);
 		}
 		if(t == L"-UNINSTALL")
 		{
