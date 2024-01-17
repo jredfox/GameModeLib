@@ -33,7 +33,7 @@ REM Generate uninstalls to GameModeUninstall.bat
 	echo call "%%~dp0Executables\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes"
 	call :QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" "ActiveOverlayAcPowerScheme"
 	call :QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" "ActiveOverlayDcPowerScheme"
-	call :QUERY "HKEY_CURRENT_USER\SOFTWARE\Intel\Display\igfxcui\3D" "Default"
+	call :QUERY "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" "Default"
 	call :QUERY "HKEY_CURRENT_USER\Control Panel\Accessibility\StickyKeys" "Flags"
 	echo call "%%~dp0Executables\StickyKeysSetFlag.exe" "!datval!"
 	call :QUERY "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" "Flags"

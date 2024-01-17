@@ -1,5 +1,7 @@
 @ECHO OFF
 setlocal enableDelayedExpansion
+REM ## Enable Registry Access ##
+call "%~dp0Executables\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes"
 REM ## Generate the Uninstall Script If It Doesn't Exist ##
 set uinstall=%~dp0GameModeUninstall.bat
 set gpuuinstall=%~dp0GameModeUninstallGPU.bat
@@ -49,13 +51,12 @@ powercfg /setacvalueindex SCHEME_CURRENT SUB_ENERGYSAVER ESBATTTHRESHOLD 0
 powercfg /setdcvalueindex SCHEME_CURRENT SUB_ENERGYSAVER ESBATTTHRESHOLD 0
 set BestPP=ded574b5-45a0-4f42-8737-46345c09c238
 call "%~dp0Executables\PowerModeOverlay.exe" "!BestPP!"
-call "%~dp0Executables\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes"
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActiveOverlayAcPowerScheme" /t REG_SZ /d "!BestPP!" /f
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActiveOverlayDcPowerScheme" /t REG_SZ /d "!BestPP!" /f
-REM ################################### Enable GPU 3D Settings to Game Mode Performance ####################################
+REM ################################### Enable OEM GPU 3D Settings to Game Mode Performance ####################################
 ::Intel HD Graphics Control Pannel Performance Settings
-reg query "HKEY_CURRENT_USER\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" >nul 2>&1
-IF !ERRORLEVEL! EQU 0 (reg add "HKEY_CURRENT_USER\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" /t REG_BINARY /d 0300000000000000000000000000000000000000000000000000000002000000 /f)
+reg query "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" >nul 2>&1
+IF !ERRORLEVEL! EQU 0 (reg add "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" /t REG_BINARY /d 0300000000000000000000000000000000000000000000000000000002000000 /f)
 
 REM ################################### START DISABLING ANOYING THINGS ####################################
 REM ## Disable Sticky Keys ##
