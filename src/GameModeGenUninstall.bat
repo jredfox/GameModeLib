@@ -1,5 +1,5 @@
 @ECHO OFF
-setlocal enableDelayedExpansion 
+setlocal enableDelayedExpansion
 REM ## Get the Current AC or DC PowerModeOverlay ##
 FOR /F "tokens=3*" %%A IN ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActivePowerScheme"') DO (set PrevPowerPlan=%%A)
 FOR /F "tokens=3*" %%A IN ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActiveOverlayAcPowerScheme"') DO (set PrevPPMode=%%A)
