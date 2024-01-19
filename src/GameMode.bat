@@ -1,6 +1,7 @@
 @ECHO OFF
 setlocal enableDelayedExpansion
 set UnlockBitLocker=%~1
+set WDLowCPU=%~2
 REM ## Enable Registry Access ##
 call "%~dp0Executables\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes"
 REM ## Generate the Uninstall Script If It Doesn't Exist ##
@@ -70,6 +71,13 @@ echo Disabling Bitlocker OS "C:" Drive
 manage-bde -unlock C^: >nul 2>&1
 manage-bde -off C^: >nul 2>&1
 )
+REM ## Make Windows Defender Realtime protection Low priority so it doesn't take up more then 15 percent of CPU Usage when running games ##
+IF /I "%WDLowCPU:~0,1%" EQU "T" (
+echo Enabling Windows Defender Low CPU Priority
+call :CHKTAMPER
+echo powershell Set-MpPreference -Force -EnableLowCpuPriority ^$true
+powershell Set-MpPreference -Force -EnableLowCpuPriority ^$true
+)
 
 :END
 exit /b
@@ -87,5 +95,21 @@ IF "!GenUInstall!" EQU "T" (echo reg delete "HKCU\SOFTWARE\Microsoft\DirectX\Use
 )>>"!gpuuinstall!"
 )
 )
+)
+exit /b
+
+:CHKTAMPER
+set tameper=F
+FOR /F "delims=" %%I IN ('powershell "Get-MpComputerStatus | select IsTamperProtected"') DO (
+set a=%%I
+set a=!a: =!
+IF "!a!" EQU "True" (set tameper=T)
+IF "!a!" EQU "true" (set tameper=T)
+)
+IF "!tameper!" EQU "T" (
+cscript /NOLOGO "%~dp0Executables\MSG.vbs" "Disable Tamper Protection"
+start windowsdefender://threatsettings/
+set /p a="Press ENTER To Continue..."
+GOTO CHKTAMPER
 )
 exit /b

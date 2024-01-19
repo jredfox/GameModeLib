@@ -1,5 +1,5 @@
 @ECHO OFF
-setlocal enableDelayedExpansion
+setlocal enableDelayedExpansion 
 REM ## Get the Current AC or DC PowerModeOverlay ##
 FOR /F "tokens=3*" %%A IN ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActivePowerScheme"') DO (set PrevPowerPlan=%%A)
 FOR /F "tokens=3*" %%A IN ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" /v "ActiveOverlayAcPowerScheme"') DO (set PrevPPMode=%%A)
@@ -37,6 +37,11 @@ REM Generate uninstalls to GameModeUninstall.bat
 	call :QUERY "HKEY_CURRENT_USER\Control Panel\Accessibility\StickyKeys" "Flags"
 	echo call "%%~dp0Executables\StickyKeysSetFlag.exe" "!datval!"
 	call :QUERY "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" "Flags"
+	IF /I "%WDLowCPU:~0,1%" EQU "T" (
+		echo echo Disabling Windows Defender Low CPU Priority
+		echo call "%%~dp0CheckTamper.bat"
+		echo powershell Set-MpPreference -Force -EnableLowCpuPriority ^^$false
+	)
 	echo call "%%~dp0GameModeUninstallGPU.bat"
 	REM ## Cleanup Delete GPU Entries added and Itself ##
 	echo del /F /Q /A "%%~dp0GameModeUninstallGPU.bat"
