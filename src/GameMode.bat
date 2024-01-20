@@ -79,7 +79,7 @@ call :CHKTAMPER
 echo powershell Set-MpPreference -Force -EnableLowCpuPriority ^$true
 powershell Set-MpPreference -Force -EnableLowCpuPriority ^$true
 )
-REM ## Fully Disable Windows Defender Real Time Protection ##
+REM ## Fully Disable Windows Defender Except FireWall ##
 IF /I "%WDFullDisable:~0,1%" EQU "T" (
 echo Disabling Windows Defender
 call :CHKTAMPER
