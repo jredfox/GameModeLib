@@ -77,8 +77,8 @@ IF /I "%WDLowCPU:~0,1%" EQU "T" (
 echo Enabling Windows Defender Low CPU Priority
 call :CHKTAMPER
 REM ## EnableLowCpuPriority Win 10 1809 ##
-powershell Set-MpPreference -Force -EnableLowCpuPriority ^$true
-powershell Set-MpPreference -Force -ScanAvgCPULoadFactor 15
+powershell Set-MpPreference -Force -EnableLowCpuPriority ^$true >nul 2>&1
+powershell Set-MpPreference -Force -ScanAvgCPULoadFactor 15 >nul 2>&1
 )
 REM ## Fully Disable Windows Defender Except FireWall ##
 IF /I "%WDFullDisable:~0,1%" EQU "T" (

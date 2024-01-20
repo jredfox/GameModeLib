@@ -39,9 +39,9 @@ REM Generate uninstalls to GameModeUninstall.bat
 	call :QUERY "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" "Flags"
 	IF /I "%WDLowCPU:~0,1%" EQU "T" (
 		echo call "%%~dp0Executables\CheckTamper.bat"
-		echo powershell Set-MpPreference -Force -EnableLowCpuPriority ^^$false
+		echo powershell Set-MpPreference -Force -EnableLowCpuPriority ^^$false ^>nul 2^>^&1
 		call :GETLOADFAC
-		echo powershell Set-MpPreference -Force -ScanAvgCPULoadFactor !loadfac!
+		echo powershell Set-MpPreference -Force -ScanAvgCPULoadFactor !loadfac! ^>nul 2^>^&1
 	)
 	IF /I "%WDFullDisable:~0,1%" EQU "T" (
 		echo call "%%~dp0Executables\CheckTamper.bat"
