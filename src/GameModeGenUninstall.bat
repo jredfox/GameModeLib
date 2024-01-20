@@ -42,6 +42,10 @@ REM Generate uninstalls to GameModeUninstall.bat
 		echo call "%%~dp0Executables\CheckTamper.bat"
 		echo powershell Set-MpPreference -Force -EnableLowCpuPriority ^^$false
 	)
+	IF /I "%WDFullDisable:~0,1%" EQU "T" (
+		echo call "%%~dp0Executables\CheckTamper.bat"
+		echo call "%%~dp0Executables\WDStaticEnable.bat"
+	)
 	echo schtasks /DELETE /tn "WDStaticDisabler" /F
 	echo call "%%~dp0GameModeUninstallGPU.bat"
 	REM ## Cleanup Delete GPU Entries added and Itself ##

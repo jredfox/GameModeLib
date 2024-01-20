@@ -2,6 +2,7 @@
 setlocal enableDelayedExpansion
 set UnlockBitLocker=%~1
 set WDLowCPU=%~2
+set WDFullDisable=%~3
 REM ## Enable Registry Access ##
 call "%~dp0Executables\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes"
 REM ## Generate the Uninstall Script If It Doesn't Exist ##
@@ -77,6 +78,12 @@ echo Enabling Windows Defender Low CPU Priority
 call :CHKTAMPER
 echo powershell Set-MpPreference -Force -EnableLowCpuPriority ^$true
 powershell Set-MpPreference -Force -EnableLowCpuPriority ^$true
+)
+REM ## Fully Disable Windows Defender Real Time Protection ##
+IF /I "%WDFullDisable:~0,1%" EQU "T" (
+echo Disabling Windows Defender
+call :CHKTAMPER
+call "%~dp0Executables\WDStaticDisable.bat"
 )
 
 :END
