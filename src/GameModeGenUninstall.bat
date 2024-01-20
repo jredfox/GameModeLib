@@ -45,6 +45,10 @@ REM Generate uninstalls to GameModeUninstall.bat
 	IF /I "%WDFullDisable:~0,1%" EQU "T" (
 		echo call "%%~dp0Executables\CheckTamper.bat"
 		echo call "%%~dp0Executables\WDStaticEnable.bat"
+		call :QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender Security Center\Notifications" "DisableNotifications"
+		call :QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender Security Center\Notifications" "DisableEnhancedNotifications"
+		call :QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender Security Center\Notifications" "DisableNotifications"
+		call :QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender Security Center\Notifications" "DisableEnhancedNotifications"
 	)
 	echo schtasks /DELETE /tn "WDStaticDisabler" /F
 	echo call "%%~dp0GameModeUninstallGPU.bat"
