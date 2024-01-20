@@ -39,9 +39,10 @@ REM Generate uninstalls to GameModeUninstall.bat
 	call :QUERY "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" "Flags"
 	IF /I "%WDLowCPU:~0,1%" EQU "T" (
 		echo echo Disabling Windows Defender Low CPU Priority
-		echo call "%%~dp0CheckTamper.bat"
+		echo call "%%~dp0Executables\CheckTamper.bat"
 		echo powershell Set-MpPreference -Force -EnableLowCpuPriority ^^$false
 	)
+	echo schtasks /DELETE /tn "WDStaticDisabler" /F
 	echo call "%%~dp0GameModeUninstallGPU.bat"
 	REM ## Cleanup Delete GPU Entries added and Itself ##
 	echo del /F /Q /A "%%~dp0GameModeUninstallGPU.bat"
