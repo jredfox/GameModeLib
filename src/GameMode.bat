@@ -76,8 +76,9 @@ REM ## Make Windows Defender Realtime protection Low priority so it doesn't take
 IF /I "%WDLowCPU:~0,1%" EQU "T" (
 echo Enabling Windows Defender Low CPU Priority
 call :CHKTAMPER
-echo powershell Set-MpPreference -Force -EnableLowCpuPriority ^$true
+REM ## EnableLowCpuPriority Win 10 1809 ##
 powershell Set-MpPreference -Force -EnableLowCpuPriority ^$true
+powershell Set-MpPreference -Force -ScanAvgCPULoadFactor 15
 )
 REM ## Fully Disable Windows Defender Except FireWall ##
 IF /I "%WDFullDisable:~0,1%" EQU "T" (

@@ -38,9 +38,10 @@ REM Generate uninstalls to GameModeUninstall.bat
 	echo call "%%~dp0Executables\StickyKeysSetFlag.exe" "!datval!"
 	call :QUERY "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" "Flags"
 	IF /I "%WDLowCPU:~0,1%" EQU "T" (
-		echo echo Disabling Windows Defender Low CPU Priority
 		echo call "%%~dp0Executables\CheckTamper.bat"
 		echo powershell Set-MpPreference -Force -EnableLowCpuPriority ^^$false
+		call :GETLOADFAC
+		echo powershell Set-MpPreference -Force -ScanAvgCPULoadFactor !loadfac!
 	)
 	IF /I "%WDFullDisable:~0,1%" EQU "T" (
 		echo call "%%~dp0Executables\CheckTamper.bat"
@@ -78,5 +79,13 @@ For /F "tokens=2,3*" %%B IN ("%%A") DO (
 	set datval=%%C
 )
 )
+)
+exit /b
+
+:GETLOADFAC
+FOR /F "delims=" %%I IN ('powershell "Get-MpPreference | select ScanAvgCPULoadFactor"') DO (
+set l=%%I
+set l=!l: =!
+IF "!l!" NEQ "" (set loadfac=!l!)
 )
 exit /b
