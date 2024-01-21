@@ -60,12 +60,6 @@ REM ################################### Enable OEM GPU 3D Settings to Game Mode 
 ::Intel HD Graphics Control Pannel Performance Settings
 reg query "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" >nul 2>&1
 IF !ERRORLEVEL! EQU 0 (reg add "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" /t REG_BINARY /d 0300000000000000000000000000000000000000000000000000000002000000 /f)
-
-REM ################################### START DISABLING ANOYING THINGS ####################################
-REM ## Disable Sticky Keys ##
-reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
-call "%~dp0Executables\StickyKeysSetFlag.exe" "506"
-reg add "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
 REM ## Disable BitLocker to Dramtically Improve SSD Performance ##
 IF /I "%UnlockBitLocker:~0,1%" EQU "T" (
 echo Disabling Bitlocker OS "C:" Drive
@@ -86,6 +80,11 @@ echo Disabling Windows Defender
 call :CHKTAMPER
 call "%~dp0Executables\WDStaticDisable.bat"
 )
+REM ################################### START DISABLING ANOYING THINGS ####################################
+REM ## Disable Sticky Keys ##
+reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
+call "%~dp0Executables\StickyKeysSetFlag.exe" "506"
+reg add "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
 
 :END
 exit /b
