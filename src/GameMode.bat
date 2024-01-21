@@ -85,6 +85,38 @@ REM ## Disable Sticky Keys ##
 reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
 call "%~dp0Executables\StickyKeysSetFlag.exe" "506"
 reg add "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
+echo Starting TouchPad
+REM ## Allows TouchPad Buttons to work on Dell Laptops While Gaming Requires SignOut ##
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad" /v AAPThreshold /t REG_BINARY /d 0 /f
+REM ## Disable PalmCheck on Elantech touchpads ##
+reg query "HKCU\SOFTWARE\Elantech" >nul 2>&1
+IF !ERRORLEVEL! EQU 0 (
+reg add "HKEY_CURRENT_USER\SOFTWARE\Elantech\Other settings" /v "DisableWhenType_Enable" /d 0 /f
+reg add "HKEY_CURRENT_USER\SOFTWARE\Elantech\Other settings" /v "DisableWhenType_DelayTime_Move" /d 0 /f
+reg add "HKEY_CURRENT_USER\SOFTWARE\Elantech\Othersetting" /v "DisableWhenType_Enable" /d 0 /f
+reg add "HKEY_CURRENT_USER\SOFTWARE\Elantech\Othersetting" /v "DisableWhenType_DelayTime_Move" /d 0 /f
+reg add "HKEY_CURRENT_USER\Software\Elantech\SmartPad" /v "DisableWhenType_Enable" /d 0 /f
+reg add "HKEY_CURRENT_USER\Software\Elantech\SmartPad" /v "DisableWhenType_DelayTime_Move" /d 0 /f
+)
+REM ## Disable PalmCheck Synaptics Touchpad Requires Loggoff or Reboot ##
+reg query "HKLM\SOFTWARE\Synaptics" >nul 2>&1
+IF !ERRORLEVEL! NEQ 0 (GOTO ENDSYN)
+reg add "HKLM\SOFTWARE\Synaptics\OEM\TouchPad" /v "PalmDetectConfig" /t REG_DWORD /d 0 /f
+reg add "HKLM\SOFTWARE\Synaptics\OEM\TouchPad" /v "PalmRejectAlways" /t REG_DWORD /d 0 /f
+reg add "HKLM\SOFTWARE\Synaptics\SynTP\TouchPad" /v "PalmDetectConfig" /t REG_DWORD /d 0 /f
+reg add "HKLM\SOFTWARE\Synaptics\SynTP\TouchPad" /v "PalmRejectAlways" /t REG_DWORD /d 0 /f
+FOR /F "tokens=* delims=" %%A in ('reg query "HKEY_CURRENT_USER\SOFTWARE\Synaptics\SynTP" /f "TouchPad*" ^| findstr /I /B /C:"HKEY_CURRENT_USER\\SOFTWARE\\Synaptics\\SynTP\\"') DO (
+echo Disabling PalmCheck^: %%A
+reg query "%%A" /v "PalmDetectConfig_Backup" >nul 2>&1
+IF !ERRORLEVEL! NEQ 0 (
+call :QUERYVAL "%%A" "PalmDetectConfig"
+echo !datval!
+reg add "%%A" /v "PalmDetectConfig_Backup" /t REG_DWORD /d !datval! /f
+)
+reg add "%%A" /v "PalmDetectConfig" /t REG_DWORD /d 0 /f
+reg add "%%A" /v "PalmRejectAlways" /t REG_DWORD /d 0 /f
+)
+:ENDSYN
 
 :END
 exit /b
@@ -118,5 +150,20 @@ cscript /NOLOGO "%~dp0Executables\MSG.vbs" "Disable Tamper Protection"
 start windowsdefender://threatsettings/
 set /p a="Press ENTER To Continue..."
 GOTO CHKTAMPER
+)
+exit /b
+
+:QUERYVAL
+set datval=NUL
+set key=%~1
+set val=%~2
+reg query "%key%" /v "%val%" >nul 2>&1
+IF !ERRORLEVEL! NEQ 0 (exit /b)
+FOR /F "delims=" %%A IN ('reg query "%key%" /v "%val%"') DO (
+IF "%%A" NEQ "%key%" (
+For /F "tokens=3*" %%B IN ("%%A") DO (
+    set datval=%%B
+)
+)
 )
 exit /b

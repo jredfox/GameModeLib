@@ -52,8 +52,11 @@ REM Generate uninstalls to GameModeUninstall.bat
 		call :QUERY "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender Security Center\Notifications" "DisableEnhancedNotifications"
 	)
 	echo schtasks /DELETE /tn "WDStaticDisabler" /F
+	REM ## Start Mouse and Keyboard ##
+	call :QUERY "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad" "AAPThreshold"
+	REM TODO GET OEM Generation of defaults
+	REM ## Start Cleanup ##
 	echo call "%%~dp0GameModeUninstallGPU.bat"
-	REM ## Cleanup Delete GPU Entries added and Itself ##
 	echo del /F /Q /A "%%~dp0GameModeUninstallGPU.bat"
 	echo ^(goto^) 2^>nul ^& del /F /Q /A "%%~f0" ^& title %%CD%% ^& cmd /c exit /b
 )>"%~dp0GameModeUninstall.bat"
