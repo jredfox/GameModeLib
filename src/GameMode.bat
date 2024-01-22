@@ -91,12 +91,48 @@ reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad" /v AA
 REM ## Disable PalmCheck on Elantech touchpads ##
 reg query "HKCU\SOFTWARE\Elantech" >nul 2>&1
 IF !ERRORLEVEL! EQU 0 (
+REM ## start HKCU edits ##
 reg add "HKEY_CURRENT_USER\SOFTWARE\Elantech\Other settings" /v "DisableWhenType_Enable" /d 0 /f
 reg add "HKEY_CURRENT_USER\SOFTWARE\Elantech\Other settings" /v "DisableWhenType_DelayTime_Move" /d 0 /f
-reg add "HKEY_CURRENT_USER\SOFTWARE\Elantech\Othersetting" /v "DisableWhenType_Enable" /d 0 /f
-reg add "HKEY_CURRENT_USER\SOFTWARE\Elantech\Othersetting" /v "DisableWhenType_DelayTime_Move" /d 0 /f
-reg add "HKEY_CURRENT_USER\Software\Elantech\SmartPad" /v "DisableWhenType_Enable" /d 0 /f
-reg add "HKEY_CURRENT_USER\Software\Elantech\SmartPad" /v "DisableWhenType_DelayTime_Move" /d 0 /f
+reg add "HKEY_CURRENT_USER\SOFTWARE\Elantech\Other settings" /v "DisableWhenKeyStroke_AllArea" /d 0 /f
+reg add "HKEY_CURRENT_USER\SOFTWARE\Elantech\Other settings" /v "DisableWhenKeyStroke_Enable" /d 0 /f
+reg add "HKEY_CURRENT_USER\SOFTWARE\Elantech\Other settings" /v "DisableWhenType_AllArea" /d 0 /f
+reg add "HKEY_CURRENT_USER\SOFTWARE\Elantech\Other settings" /v "DisableWhenType_Enabled" /d 0 /f
+
+reg add "HKCU\SOFTWARE\Elantech\Othersetting" /v "DisableWhenType_Enable" /d 0 /f
+reg add "HKCU\SOFTWARE\Elantech\Othersetting" /v "DisableWhenType_DelayTime_Move" /d 0 /f
+reg add "HKCU\SOFTWARE\Elantech\Othersetting" /v "DisableWhenKeyStroke_AllArea" /d 0 /f
+reg add "HKCU\SOFTWARE\Elantech\Othersetting" /v "DisableWhenKeyStroke_Enable" /d 0 /f
+reg add "HKCU\SOFTWARE\Elantech\Othersetting" /v "DisableWhenType_AllArea" /d 0 /f
+reg add "HKCU\SOFTWARE\Elantech\Othersetting" /v "DisableWhenType_Enabled" /d 0 /f
+
+reg add "HKCU\SOFTWARE\Elantech\SmartPad" /v "DisableWhenType_Enable" /d 0 /f
+reg add "HKCU\SOFTWARE\Elantech\SmartPad" /v "DisableWhenType_DelayTime_Move" /d 0 /f
+reg add "HKCU\SOFTWARE\Elantech\SmartPad" /v "DisableWhenKeyStroke_AllArea" /d 0 /f
+reg add "HKCU\SOFTWARE\Elantech\SmartPad" /v "DisableWhenKeyStroke_Enable" /d 0 /f
+reg add "HKCU\SOFTWARE\Elantech\SmartPad" /v "DisableWhenType_AllArea" /d 0 /f
+reg add "HKCU\SOFTWARE\Elantech\SmartPad" /v "DisableWhenType_Enabled" /d 0 /f
+REM ## Change Lock Screen and Default Settings ##
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Elantech\Other settings" /v "DisableWhenType_Enable" /d 0 /f
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Elantech\Other settings" /v "DisableWhenType_DelayTime_Move" /d 0 /f
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Elantech\Other settings" /v "DisableWhenKeyStroke_AllArea" /d 0 /f
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Elantech\Other settings" /v "DisableWhenKeyStroke_Enable" /d 0 /f
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Elantech\Other settings" /v "DisableWhenType_AllArea" /d 0 /f
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Elantech\Other settings" /v "DisableWhenType_Enabled" /d 0 /f
+
+reg add "HKLM\SOFTWARE\Elantech\Othersetting" /v "DisableWhenType_Enable" /d 0 /f
+reg add "HKLM\SOFTWARE\Elantech\Othersetting" /v "DisableWhenType_DelayTime_Move" /d 0 /f
+reg add "HKLM\SOFTWARE\Elantech\Othersetting" /v "DisableWhenKeyStroke_AllArea" /d 0 /f
+reg add "HKLM\SOFTWARE\Elantech\Othersetting" /v "DisableWhenKeyStroke_Enable" /d 0 /f
+reg add "HKLM\SOFTWARE\Elantech\Othersetting" /v "DisableWhenType_AllArea" /d 0 /f
+reg add "HKLM\SOFTWARE\Elantech\Othersetting" /v "DisableWhenType_Enabled" /d 0 /f
+
+reg add "HKLM\SOFTWARE\Elantech\SmartPad" /v "DisableWhenType_Enable" /d 0 /f
+reg add "HKLM\SOFTWARE\Elantech\SmartPad" /v "DisableWhenType_DelayTime_Move" /d 0 /f
+reg add "HKLM\SOFTWARE\Elantech\SmartPad" /v "DisableWhenKeyStroke_AllArea" /d 0 /f
+reg add "HKLM\SOFTWARE\Elantech\SmartPad" /v "DisableWhenKeyStroke_Enable" /d 0 /f
+reg add "HKLM\SOFTWARE\Elantech\SmartPad" /v "DisableWhenType_AllArea" /d 0 /f
+reg add "HKLM\SOFTWARE\Elantech\SmartPad" /v "DisableWhenType_Enabled" /d 0 /f
 )
 REM ## Disable PalmCheck Synaptics Touchpad Requires Loggoff or Reboot ##
 reg query "HKLM\SOFTWARE\Synaptics" >nul 2>&1
