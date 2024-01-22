@@ -90,7 +90,7 @@ REM ## Allows TouchPad Buttons to work on Dell Laptops While Gaming Requires Sig
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad" /v AAPThreshold /t REG_BINARY /d 0 /f
 REM ## Disable PalmCheck on Elantech touchpads ##
 reg query "HKCU\SOFTWARE\Elantech" >nul 2>&1
-IF !ERRORLEVEL! EQU 0 (
+IF !ERRORLEVEL! NEQ 0 (GOTO ENDELANTECH)
 REM ## start HKCU edits ##
 reg add "HKEY_CURRENT_USER\SOFTWARE\Elantech\Other settings" /v "DisableWhenType_Enable" /d 0 /f
 reg add "HKEY_CURRENT_USER\SOFTWARE\Elantech\Other settings" /v "DisableWhenType_DelayTime_Move" /d 0 /f
@@ -133,7 +133,7 @@ reg add "HKLM\SOFTWARE\Elantech\SmartPad" /v "DisableWhenKeyStroke_AllArea" /d 0
 reg add "HKLM\SOFTWARE\Elantech\SmartPad" /v "DisableWhenKeyStroke_Enable" /d 0 /f
 reg add "HKLM\SOFTWARE\Elantech\SmartPad" /v "DisableWhenType_AllArea" /d 0 /f
 reg add "HKLM\SOFTWARE\Elantech\SmartPad" /v "DisableWhenType_Enabled" /d 0 /f
-)
+:ENDELANTECH
 REM ## Disable PalmCheck Synaptics Touchpad Requires Loggoff or Reboot ##
 reg query "HKLM\SOFTWARE\Synaptics" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (GOTO ENDSYN)
