@@ -169,6 +169,8 @@ reg add "%%A" /v "PalmDetectConfig_Backup" /t REG_DWORD /d !datval! /f
 )
 reg add "%%A" /v "PalmDetectConfig" /t REG_DWORD /d 0 /f
 reg add "%%A" /v "PalmRejectAlways" /t REG_DWORD /d 0 /f
+REM ## Set the Palm Rejection Slider just in case for the current user only ##
+reg add "%%A" /v "PalmRT" /t REG_DWORD /d 0 /f
 )
 :ENDSYN
 
