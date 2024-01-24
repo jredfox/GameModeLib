@@ -37,6 +37,9 @@ powercfg /SETACVALUEINDEX "!gm!" 9596fb26-9850-41fd-ac3e-f7c3c00afd4b 03680956-9
 powercfg /SETACVALUEINDEX "!gm!" 9596fb26-9850-41fd-ac3e-f7c3c00afd4b 10778347-1370-4ee0-8bbd-33bdacaade49 1
 powercfg /SETACVALUEINDEX "!gm!" 9596fb26-9850-41fd-ac3e-f7c3c00afd4b 34c7b99f-9a6d-4b3c-8dc7-b6693b78cef4 0
 powercfg /SETACVALUEINDEX "!gm!" 7516b95f-f776-4464-8c53-06167f40cc99 17aaa29b-8b43-4b94-aafe-35f64daaf1ee 600
+::GPU Power Policy
+powercfg /SETACVALUEINDEX "!gm!" 5fb4938d-1ee8-4b0f-9a3c-5036b0ab995c dd848b2a-8a5d-4451-9ae2-39cd41658f6c 0
+powercfg /SETDCVALUEINDEX "!gm!" 5fb4938d-1ee8-4b0f-9a3c-5036b0ab995c dd848b2a-8a5d-4451-9ae2-39cd41658f6c 0
 REM ## Start DC Power Plan ##
 powercfg /SETDCVALUEINDEX "!gm!" SUB_DISK DISKIDLE 2100
 powercfg /SETDCVALUEINDEX "!gm!" 02f815b5-a5cf-4c84-bf20-649d1f75d3d8 4c793e7d-a264-42e1-87d3-7a0d2f523ccd 1
