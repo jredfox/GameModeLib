@@ -87,7 +87,7 @@ call "%~dp0Executables\StickyKeysSetFlag.exe" "506"
 reg add "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
 echo Starting TouchPad
 REM ## Allows TouchPad Buttons to work on Dell Laptops While Gaming Requires SignOut ##
-reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad" /v AAPThreshold /t REG_BINARY /d 0 /f
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad" /v AAPThreshold /t REG_DWORD /d 0 /f
 REM ## Disable PalmCheck on Elantech touchpads ##
 reg query "HKCU\SOFTWARE\Elantech" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (GOTO ENDELANTECH)

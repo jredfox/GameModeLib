@@ -29,8 +29,8 @@ REM Generate uninstalls to GameModeUninstall.bat
 	echo powercfg /SETACTIVE "!PrevPowerPlan!"
 	echo If %%ERRORLEVEL%% NEQ 0 ^(powercfg /SETACTIVE "381b4222-f694-41f0-9685-ff5bb260df2e"^)
 	echo powercfg /DELETE "!gm!"
-	echo call "%%~dp0Executables\PowerModeOverlay.exe" "!PrevPPMode!"
 	echo call "%%~dp0Executables\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes"
+	echo call "%%~dp0Executables\PowerModeOverlay.exe" "!PrevPPMode!"
 	call :QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" "ActiveOverlayAcPowerScheme"
 	call :QUERY "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" "ActiveOverlayDcPowerScheme"
 	call :QUERY "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" "Default"
