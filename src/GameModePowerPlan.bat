@@ -80,6 +80,15 @@ powercfg /SETDCVALUEINDEX "!gm!" f693fb01-e858-4f00-b20f-f30e12ac06d6 191f65b5-d
 ::INTEL HD Integrated Graphics
 powercfg /SETACVALUEINDEX "!gm!" 44f3beca-a7c0-460e-9df2-bb8b99e0cba6 3619c3f2-afb2-4afc-b0e9-e7fef372de36 2
 powercfg /SETDCVALUEINDEX "!gm!" 44f3beca-a7c0-460e-9df2-bb8b99e0cba6 3619c3f2-afb2-4afc-b0e9-e7fef372de36 2
+::NVIDIA GRAPHICS SUPPORT
+powercfg /SETACVALUEINDEX "!gm!" 528259f7-7bae-4f30-8321-8afa6e155c4c 332f614f-c023-47bd-a74d-324c7fe0ae2b 1
+powercfg /SETDCVALUEINDEX "!gm!" 528259f7-7bae-4f30-8321-8afa6e155c4c 332f614f-c023-47bd-a74d-324c7fe0ae2b 1
+::NVIDIA DISPLAY
+powercfg /SETACVALUEINDEX "!gm!" 7516b95f-f776-4464-8c53-06167f40cc99 684c3e69-a4f7-4014-8754-d45179a56167 1
+powercfg /SETDCVALUEINDEX "!gm!" 7516b95f-f776-4464-8c53-06167f40cc99 684c3e69-a4f7-4014-8754-d45179a56167 1
+::NVIDIA Display Power Saving technology
+powercfg /SETACVALUEINDEX "!gm!" 7516b95f-f776-4464-8c53-06167f40cc99 89cc76a4-f226-4d4b-a040-6e9a1da9b882 0
+powercfg /SETDCVALUEINDEX "!gm!" 7516b95f-f776-4464-8c53-06167f40cc99 89cc76a4-f226-4d4b-a040-6e9a1da9b882 0
 
 REM ## Set the active Power Plan to be Game Mode Power Plan ##
 powercfg /SETACTIVE "!gm!"
