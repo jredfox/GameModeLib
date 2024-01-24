@@ -67,16 +67,15 @@ powercfg /SETDCVALUEINDEX "!gm!" 7516b95f-f776-4464-8c53-06167f40cc99 17aaa29b-8
 REM ####################### START OEM SPECIFIC PowerPlan Editing ##################################################################################################
 ::AMD Performance Slider
 powercfg /SETACVALUEINDEX "!gm!" c763b4ec-0e50-4b6b-9bed-2b92a6ee884e 7ec1751b-60ed-4588-afb5-9819d3d77d90 3
+powercfg /SETDCVALUEINDEX "!gm!" c763b4ec-0e50-4b6b-9bed-2b92a6ee884e 7ec1751b-60ed-4588-afb5-9819d3d77d90 3
 ::AMD Switchable Dynamic Graphics To Dedicated GPU
 powercfg /SETACVALUEINDEX "!gm!" e276e160-7cb0-43c6-b20b-73f5dce39954 a1662ab2-9d34-4e53-ba8b-2639b9e20857 3
+powercfg /SETDCVALUEINDEX "!gm!" e276e160-7cb0-43c6-b20b-73f5dce39954 a1662ab2-9d34-4e53-ba8b-2639b9e20857 3
 ::AMD PowerPlay Settings Max Performance
 powercfg /SETACVALUEINDEX "!gm!" f693fb01-e858-4f00-b20f-f30e12ac06d6 191f65b5-d45c-4a4f-8aae-1ab8bfd980e6 1
+powercfg /SETDCVALUEINDEX "!gm!" f693fb01-e858-4f00-b20f-f30e12ac06d6 191f65b5-d45c-4a4f-8aae-1ab8bfd980e6 1
 ::INTEL HD Integrated Graphics
 powercfg /SETACVALUEINDEX "!gm!" 44f3beca-a7c0-460e-9df2-bb8b99e0cba6 3619c3f2-afb2-4afc-b0e9-e7fef372de36 2
-REM ## Start DC Power Plan ##
-powercfg /SETDCVALUEINDEX "!gm!" c763b4ec-0e50-4b6b-9bed-2b92a6ee884e 7ec1751b-60ed-4588-afb5-9819d3d77d90 3
-powercfg /SETDCVALUEINDEX "!gm!" e276e160-7cb0-43c6-b20b-73f5dce39954 a1662ab2-9d34-4e53-ba8b-2639b9e20857 3
-powercfg /SETDCVALUEINDEX "!gm!" f693fb01-e858-4f00-b20f-f30e12ac06d6 191f65b5-d45c-4a4f-8aae-1ab8bfd980e6 1
 powercfg /SETDCVALUEINDEX "!gm!" 44f3beca-a7c0-460e-9df2-bb8b99e0cba6 3619c3f2-afb2-4afc-b0e9-e7fef372de36 2
 
 REM ## Set the active Power Plan to be Game Mode Power Plan ##
