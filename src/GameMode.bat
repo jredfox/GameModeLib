@@ -26,6 +26,7 @@ reg add "HKCU\SOFTWARE\Microsoft\DirectX\UserGpuPreferences" /v "DirectXUserGlob
 REM ## Enable HDR Settings ##
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\HDR" /v "UseHDR" /t REG_DWORD /d 1 /f
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\HDR" /v "AllowHDRForGames" /t REG_DWORD /d 1 /f
+REM ## Enable Xbox Bar ##
 reg add "HKCU\System\GameConfigStore" /v "GameDVR_StreamingEnabled" /t REG_DWORD /d 1 /f
 reg add "HKCU\System\GameConfigStore" /v "GameDVR_Enabled" /t REG_DWORD /d 1 /f
 REM ## Enable Video Quality Settings ##
@@ -44,9 +45,6 @@ call :ADDGPU "java.exe"
 call :ADDGPU "javaw.exe"
 call :ADDGPU "py.exe"
 call :ADDGPU "pyw.exe"
-REM ## WARN USER ##
-echo Increase CPU Performance by Disabling Windows Defender Realtime and Tamper Proection while gaming but NEVER While the WEB BROWSER or EMAILS are open^.
-echo Increase Disk ^(SSD or HDD^) Performance by disabling bitlocker if you don't need the Security
 REM ## Create Game Mode Power Plan ##
 call "%~dp0GameModePowerPlan.bat"
 REM ## Fix Power Plan Performance ##
