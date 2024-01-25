@@ -64,20 +64,7 @@ IF !ERRORLEVEL! NEQ 0 (GOTO ENDSYN)
 echo Enabling TouchPad While Key Is Down Synaptics
 set touch=T
 reg import "%~dp0Synaptics.reg"
-REM ## Support For TouchPad on all Synaptic Devices ##
-FOR /F "tokens=* delims=" %%A in ('reg query "HKEY_CURRENT_USER\SOFTWARE\Synaptics\SynTP" /f "TouchPad*" ^| findstr /I /B /C:"HKEY_CURRENT_USER\\SOFTWARE\\Synaptics\\SynTP\\" 2^>nul') DO (
-echo Disabling PalmCheck^: %%A
-reg query "%%A" /v "PalmDetectConfig_Backup" >nul 2>&1
-IF !ERRORLEVEL! NEQ 0 (
-call :QUERYVAL "%%A" "PalmDetectConfig"
-reg add "%%A" /v "PalmDetectConfig_Backup" /t REG_DWORD /d !datval! /f
-)
-reg add "%%A" /v "PalmDetectConfig" /t REG_DWORD /d 0 /f
-reg add "%%A" /v "PalmRejectAlways" /t REG_DWORD /d 0 /f
-reg add "%%A" /v "PalmRT" /t REG_DWORD /d 0 /f
-)
-REM ## Support For ThinkPads OEM Middle Mouse Button Thing ##
-FOR /F "tokens=* delims=" %%A in ('reg query "HKEY_CURRENT_USER\SOFTWARE\Synaptics\SynTP" /f "Stick*" ^| findstr /I /B /C:"HKEY_CURRENT_USER\\SOFTWARE\\Synaptics\\SynTP\\" 2^>nul') DO (
+FOR /F "tokens=* delims=" %%A in ('reg query "HKEY_CURRENT_USER\SOFTWARE\Synaptics\SynTP" /f "TouchPad*" ^| findstr /I /B /C:"HKEY_CURRENT_USER\\SOFTWARE\\Synaptics\\SynTP\\"') DO (
 echo Disabling PalmCheck^: %%A
 reg query "%%A" /v "PalmDetectConfig_Backup" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (
