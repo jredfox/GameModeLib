@@ -46,9 +46,8 @@ call "%~dp0Executables\WDStaticDisable.bat"
 REM ## Disable Sticky Keys ##
 IF /I "%gmset:~5,1%" NEQ "T" (GOTO STKYKYS)
 echo Disabling Sticky Keys
-reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
+reg import "%~dp0StickyKeys.reg"
 call "%~dp0Executables\StickyKeysSetFlag.exe" "506"
-reg add "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
 :STKYKYS
 
 REM ## Start Disabling PalmRejction,PalmCheck, SmartSense and Disable Touchpad While Typing ##
