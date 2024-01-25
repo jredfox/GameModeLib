@@ -10,7 +10,8 @@ echo Installing GameModeLib Main Settings
 call "%~dp0Executables\PowerModeOverlay.exe" "ded574b5-45a0-4f42-8737-46345c09c238"
 reg import "%~dp0Main.reg"
 REM ## Create GameMode Power Plan and Enable Dedicated Graphics for Java and Python ##
-call "%~dp0GameModeLib.exe" -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPlan -SetPowerPlan
+call :GETGMEXE
+call "!gmexe!" -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPlan -SetPowerPlan
 :MAIN
 
 REM ## Start OEM 3d Graphics Settings ##
@@ -69,12 +70,10 @@ echo Disabling PalmCheck^: %%A
 reg query "%%A" /v "PalmDetectConfig_Backup" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (
 call :QUERYVAL "%%A" "PalmDetectConfig"
-echo !datval!
 reg add "%%A" /v "PalmDetectConfig_Backup" /t REG_DWORD /d !datval! /f
 )
 reg add "%%A" /v "PalmDetectConfig" /t REG_DWORD /d 0 /f
 reg add "%%A" /v "PalmRejectAlways" /t REG_DWORD /d 0 /f
-REM ## Set the Palm Rejection Slider just in case for the current user only ##
 reg add "%%A" /v "PalmRT" /t REG_DWORD /d 0 /f
 )
 :ENDSYN
@@ -116,4 +115,14 @@ For /F "tokens=3*" %%B IN ("%%A") DO (
 )
 )
 )
+exit /b
+
+:GETGMEXE
+IF /I "!PROCESSOR_ARCHITECTURE!" EQU "ARM64" (
+set gmexe=%~dp0GameModeLib-ARM64.exe
+exit /b
+)
+set gmexe=%~dp0GameModeLib-x64.exe
+call "!gmexe!" "/?" >nul 2>&1
+IF !ERRORLEVEL! NEQ 0 (set gmexe=%~dp0GameModeLib-x86.exe)
 exit /b
