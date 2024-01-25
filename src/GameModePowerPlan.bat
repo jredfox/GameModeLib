@@ -46,6 +46,9 @@ powercfg /SETDCVALUEINDEX "!gm!" 7516b95f-f776-4464-8c53-06167f40cc99 684c3e69-a
 ::Disable Power Saving Policy
 powercfg /SETACVALUEINDEX "!gm!" de830923-a562-41af-a086-e3a2c6bad2da 5c5bb349-ad29-4ee2-9d0b-2b25270f7a81 0
 powercfg /SETDCVALUEINDEX "!gm!" de830923-a562-41af-a086-e3a2c6bad2da 5c5bb349-ad29-4ee2-9d0b-2b25270f7a81 0
+::Disable Energy Saver
+powercfg /SETACVALUEINDEX "!gm!" de830923-a562-41af-a086-e3a2c6bad2da e69653ca-cf7f-4f05-aa73-cb833fa90ad4 0
+powercfg /SETDCVALUEINDEX "!gm!" de830923-a562-41af-a086-e3a2c6bad2da e69653ca-cf7f-4f05-aa73-cb833fa90ad4 0
 REM ## Start DC Power Plan ##
 powercfg /SETDCVALUEINDEX "!gm!" SUB_DISK DISKIDLE 2100
 powercfg /SETDCVALUEINDEX "!gm!" 02f815b5-a5cf-4c84-bf20-649d1f75d3d8 4c793e7d-a264-42e1-87d3-7a0d2f523ccd 1

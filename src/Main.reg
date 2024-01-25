@@ -1,0 +1,51 @@
+Windows Registry Editor Version 5.00
+
+; ## Enable GameMode ##
+[HKEY_CURRENT_USER\Software\Microsoft\GameBar]
+"AllowAutoGameMode"=dword:00000001
+"AutoGameModeEnabled"=dword:00000001
+; ## Disable Anoying Startup Screen Tips ##
+"ShowStartupPanel"=dword:00000000
+"ShowTipsOnGameStart"=dword:00000000
+
+; ## Enable GPU Schedualing ##
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers]
+"HwSchMode"=dword:00000002
+
+; ## Enable Graphic Settings Variable Refresh Rate Auto HDR and Optimize Windows Games##
+[HKEY_CURRENT_USER\SOFTWARE\Microsoft\DirectX\UserGpuPreferences]
+"DirectXUserGlobalSettings"="SwapEffectUpgradeEnable=1;AutoHDREnable=1;VRROptimizeEnable=1;"
+
+; ## Xbox Game Bar Disable Automatic Recording and Enable Screenshots ##
+[HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR]
+"HistoricalCaptureEnabled"=dword:00000000
+"AppCaptureEnabled"=dword:00000001
+
+; ## Enable Xbox Bar ##
+[HKEY_CURRENT_USER\System\GameConfigStore]
+"GameDVR_StreamingEnabled"=dword:00000001
+"GameDVR_Enabled"=dword:00000001
+
+; ## Enable Xbox Bar ##
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR]
+"value"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\GameDVR]
+"AllowGameDVR"=-
+
+; ## Enable HDR Settings ##
+[HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\HDR]
+"UseHDR"=dword:00000001
+"AllowHDRForGames"=dword:00000001
+
+; Video Quality Settings
+[HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\VideoSettings]
+"AllowLowResolution"=dword:00000000
+"DecreaseResolutionOnBattery"=dword:00000000
+"DisableAutoLightingOnBattery"=dword:00000000
+"EnableHDRForPlayback"=dword:00000001
+"HDColorQualityOnBattery"=dword:00000001
+"VideoQualityOnBattery"=dword:00000001
+"DisableOtherEnhancementsOnBattery"=dword:00000000
+"DisableHDROnBattery"=dword:00000000
+"DisableHDRSupportOnBattery"=dword:00000000
