@@ -82,6 +82,12 @@ reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad" /v AA
 )
 :TOUCHPAD
 
+REM ## Disable Full Screen Optimizations That May Cause Input Lag ##
+IF /I "%gmset:~7,1%" NEQ "T" (GOTO DISFSO)
+echo Disabling Full Screen Optimizations
+reg import "%~dp0DisableFSO.reg"
+:DISFSO
+
 :END
 exit /b
 
