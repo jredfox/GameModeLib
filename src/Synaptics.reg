@@ -1,0 +1,14 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad]
+"AAPThreshold"=dword:00000000
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Synaptics\OEM\TouchPad]
+"PalmDetectConfig"=dword:00000000
+"PalmRejectAlways"=dword:00000000
+"PalmRT"=dword:00000000
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Synaptics\SynTP\TouchPad]
+"PalmDetectConfig"=dword:00000000
+"PalmRejectAlways"=dword:00000000
+"PalmRT"=dword:00000000

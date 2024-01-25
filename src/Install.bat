@@ -42,6 +42,48 @@ call :CHKTAMPER
 call "%~dp0Executables\WDStaticDisable.bat"
 :WDDISABLE
 
+REM ## Disable Sticky Keys ##
+IF /I "%gmset:~5,1%" NEQ "T" (GOTO STKYKYS)
+echo Disabling Sticky Keys
+reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
+call "%~dp0Executables\StickyKeysSetFlag.exe" "506"
+reg add "HKEY_USERS\.DEFAULT\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "506" /f
+:STKYKYS
+
+REM ## Start Disabling PalmRejction,PalmCheck, SmartSense and Disable Touchpad While Typing ##
+IF /I "%gmset:~6,1%" NEQ "T" (GOTO TOUCHPAD)
+set touch=F
+reg query "HKCU\SOFTWARE\Elantech" >nul 2>&1
+IF !ERRORLEVEL! NEQ 0 (GOTO ENDELANTECH)
+echo Enabling TouchPad While Key Is Down ElanTech
+set touch=T
+reg import "%~dp0Elantech.reg"
+:ENDELANTECH
+reg query "HKLM\SOFTWARE\Synaptics" >nul 2>&1
+IF !ERRORLEVEL! NEQ 0 (GOTO ENDSYN)
+echo Enabling TouchPad While Key Is Down Synaptics
+set touch=T
+reg import "%~dp0Synaptics.reg"
+FOR /F "tokens=* delims=" %%A in ('reg query "HKEY_CURRENT_USER\SOFTWARE\Synaptics\SynTP" /f "TouchPad*" ^| findstr /I /B /C:"HKEY_CURRENT_USER\\SOFTWARE\\Synaptics\\SynTP\\"') DO (
+echo Disabling PalmCheck^: %%A
+reg query "%%A" /v "PalmDetectConfig_Backup" >nul 2>&1
+IF !ERRORLEVEL! NEQ 0 (
+call :QUERYVAL "%%A" "PalmDetectConfig"
+echo !datval!
+reg add "%%A" /v "PalmDetectConfig_Backup" /t REG_DWORD /d !datval! /f
+)
+reg add "%%A" /v "PalmDetectConfig" /t REG_DWORD /d 0 /f
+reg add "%%A" /v "PalmRejectAlways" /t REG_DWORD /d 0 /f
+REM ## Set the Palm Rejection Slider just in case for the current user only ##
+reg add "%%A" /v "PalmRT" /t REG_DWORD /d 0 /f
+)
+:ENDSYN
+IF "!touch!" NEQ "T" (
+echo Enabling TouchPad While Key Is Down Unknown
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad" /v AAPThreshold /t REG_DWORD /d 0 /f
+)
+:TOUCHPAD
+
 :END
 exit /b
 
@@ -58,5 +100,20 @@ cscript /NOLOGO "%~dp0Executables\MSG.vbs" "Disable Tamper Protection"
 start windowsdefender://threatsettings/
 set /p a="Press ENTER To Continue..."
 GOTO CHKTAMPER
+)
+exit /b
+
+:QUERYVAL
+set datval=NUL
+set key=%~1
+set val=%~2
+reg query "%key%" /v "%val%" >nul 2>&1
+IF !ERRORLEVEL! NEQ 0 (exit /b)
+FOR /F "delims=" %%A IN ('reg query "%key%" /v "%val%"') DO (
+IF "%%A" NEQ "%key%" (
+For /F "tokens=3*" %%B IN ("%%A") DO (
+    set datval=%%B
+)
+)
 )
 exit /b
