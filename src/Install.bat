@@ -64,12 +64,12 @@ IF !ERRORLEVEL! NEQ 0 (GOTO ENDSYN)
 echo Enabling TouchPad While Key Is Down Synaptics
 set touch=T
 reg import "%~dp0Synaptics.reg"
-FOR /F "tokens=* delims=" %%A in ('reg query "HKEY_CURRENT_USER\SOFTWARE\Synaptics\SynTP" /f "TouchPad*" ^| findstr /I /B /C:"HKEY_CURRENT_USER\\SOFTWARE\\Synaptics\\SynTP\\"') DO (
+FOR /F "tokens=* delims=" %%A in ('reg query "HKEY_CURRENT_USER\SOFTWARE\Synaptics\SynTP" ^| findstr /I /B /C:"HKEY_CURRENT_USER\\SOFTWARE\\Synaptics\\SynTP\\"') DO (
 echo Disabling PalmCheck^: %%A
 reg query "%%A" /v "PalmDetectConfig_Backup" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (
 call :QUERYVAL "%%A" "PalmDetectConfig"
-reg add "%%A" /v "PalmDetectConfig_Backup" /t REG_DWORD /d !datval! /f
+reg add "%%A" /v "PalmDetectConfig_Backup" /t REG_DWORD /d !datval! /f >nul 2>&1
 )
 reg add "%%A" /v "PalmDetectConfig" /t REG_DWORD /d 0 /f
 reg add "%%A" /v "PalmRejectAlways" /t REG_DWORD /d 0 /f
