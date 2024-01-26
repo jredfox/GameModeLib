@@ -36,18 +36,24 @@ manage-bde -unlock C^: >nul 2>&1
 manage-bde -off C^: >nul 2>&1
 :BTLCKR
 
+REM ## Disable Tamper Protection From User Input ##
+IF /I "%gmset:~2,1%" EQU "T" (call :CHKTAMPER) ELSE (
+IF /I "%gmset:~3,1%" EQU "T" (call :CHKTAMPER)
+)
+
 REM ## Enable Windows Defender Low CPU Priority ##
 IF /I "%gmset:~3,1%" NEQ "T" (GOTO WDLOWCPU)
 echo Enabling Windows Defender Low CPU Priority
-call :CHKTAMPER
-powershell -ExecutionPolicy Bypass -File "%~dp0Executables\WDEnableLowCPU.ps1"
+start /MIN cmd /c call powershell -ExecutionPolicy Bypass -File "%~dp0Executables\WDEnableLowCPU.ps1"
 :WDLOWCPU
 
 REM ## Fully Disable Windows Defender Except FireWall ##
 IF /I "%gmset:~4,1%" NEQ "T" (GOTO WDDISABLE)
+set umain=%~dp0Uninstall\WDNotifications.reg
+IF NOT EXIST "!umain!" (call "!dregquery!" "%~dp0Executables\WDDisable.reg" "%~dp0Uninstall" >"!umain!")
 echo Disabling Windows Defender
-call :CHKTAMPER
-call "%~dp0Executables\WDStaticDisable.bat"
+REM ## start in new minimized window to not slow down process ##
+start /MIN cmd /c call "%~dp0Executables\WDStaticDisable.bat"
 :WDDISABLE
 
 REM ## Disable Sticky Keys ##
