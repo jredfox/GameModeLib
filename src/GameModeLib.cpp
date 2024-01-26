@@ -64,6 +64,46 @@ std::string toString(bool b)
 	return b ? "true" : "false";
 }
 
+int revIndexOf(wstring str, wstring key)
+{
+	size_t found = str.rfind(key);
+	if(found != std::string::npos)
+		 return static_cast<int>(found);
+	return -1;
+}
+
+wstring parent(wstring path)
+{
+	int index = revIndexOf(path, L"\\");
+	return path.substr(0, index);
+}
+
+wstring RemSlash(wstring str)
+{
+	if(str.size() > 2 && (EndsWith(str, L"\\") || EndsWith(str, L"/")) )
+	{
+		str = str.substr(0, str.length() - 1);
+	}
+	return str;
+}
+
+wstring ReplaceAll(wstring& str, const wstring& from, const wstring& to) {
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+    }
+    return str;
+}
+
+bool EndsWith (const std::wstring &fullString, const std::wstring &ending) {
+    if (fullString.length() >= ending.length()) {
+        return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
+    } else {
+        return false;
+    }
+}
+
 void Help()
 {
 	cout << "GameModeLib {Options}" << endl;
@@ -71,6 +111,7 @@ void Help()
 	cout << "-SetPriority:{High, Normal, Low}:{Optional PID}" << endl;
 	cout << "-GPUEntry {EXE|true;EXE2}" << endl;
 	cout << "-GPUEntryCurrent:{Bool Force}" << endl;
+	cout << "-UGPUEntry" << endl;
 	cout << "-PowerPlan" << endl;
 	cout << "-CreatePowerPlan {GUID:NAME}" << endl;
 	cout << "-SetPowerPlan" << endl;

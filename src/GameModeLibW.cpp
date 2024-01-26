@@ -2,8 +2,10 @@
 #include <psapi.h>
 #include <string>
 #include <stdexcept>
+#include <algorithm>
 #include <iostream>
 #include <tlhelp32.h>
+#include <fstream>
 #include "GameModeLib.h"
 using namespace std;
 
@@ -19,51 +21,48 @@ const unsigned long HIGH = HIGH_PRIORITY_CLASS;
 const unsigned long NORMAL = NORMAL_PRIORITY_CLASS;
 const unsigned long LOW = BELOW_NORMAL_PRIORITY_CLASS;
 bool SetActivePP = false;
+bool UGPUEntry = false;
+string WorkingDir;
+wstring WorkingDirW;
+std::wofstream ugpu;
+vector<wstring> ugpulines;
 
-void init()
+void init(string dir)
 {
 	CoInitialize(NULL);
+	WorkingDir = dir;
+	WorkingDirW = GAMEMODELIB::toWString(WorkingDir);
+	wstring udir = WorkingDirW + L"\\Uninstall";
+	wstring ustall = udir + L"\\UGpuEntry.reg";
+	CreateDirectoryW(udir.c_str(), NULL);
+	bool printHeader = !GAMEMODELIB::isFile(ustall);
+	//cache previous installation
+	if(!printHeader)
+	{
+		std::wifstream ureg(ustall.c_str());
+        std::wstring line;
+        while (std::getline(ureg, line))
+        {
+        	line = trim(line);
+        	if(line != L"")
+        	{
+        		ugpulines.push_back(line);
+        	}
+        }
+	}
+	ugpu = std::wofstream(ustall.c_str(), std::ios::app);
+	if (ugpu.is_open())
+	{
+		if(printHeader)
+			ugpu << L"Windows Registry Editor Version 5.00" << endl << endl << L"[HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\DirectX\\UserGpuPreferences]" << endl;
+	}
 }
 
 void uninit()
 {
 	CoUninitialize();
-}
-
-std::wstring toWString(const std::string& string)
-{
-    if (string.empty())
-    {
-        return L"";
-    }
-
-    const auto size_needed = MultiByteToWideChar(CP_UTF8, 0, &string.at(0), (int)string.size(), nullptr, 0);
-    if (size_needed <= 0)
-    {
-        throw std::runtime_error("MultiByteToWideChar() failed: " + std::to_string(size_needed));
-    }
-
-    std::wstring result(size_needed, 0);
-    MultiByteToWideChar(CP_UTF8, 0, &string.at(0), (int)string.size(), &result.at(0), size_needed);
-    return result;
-}
-
-std::string toString(const std::wstring& wide_string)
-{
-    if (wide_string.empty())
-    {
-        return "";
-    }
-
-    const auto size_needed = WideCharToMultiByte(CP_UTF8, 0, &wide_string.at(0), (int)wide_string.size(), nullptr, 0, nullptr, nullptr);
-    if (size_needed <= 0)
-    {
-        throw std::runtime_error("WideCharToMultiByte() failed: " + std::to_string(size_needed));
-    }
-
-    std::string result(size_needed, 0);
-    WideCharToMultiByte(CP_UTF8, 0, &wide_string.at(0), (int)wide_string.size(), &result.at(0), size_needed, nullptr, nullptr);
-    return result;
+	ugpulines.clear();
+	ugpu.close();
 }
 
 /**
@@ -163,6 +162,7 @@ bool RegExists(HKEY hKey, wstring &val)
 	return RegQueryValueExW(hKey, val.c_str(), NULL, NULL, NULL, NULL) == ERROR_SUCCESS;
 }
 
+
 void SetGPUPreference(string e, bool force)
 {
 	wstring exe = toWString(e);
@@ -182,9 +182,23 @@ void SetGPUPreference(string e, bool force)
     if (result != ERROR_SUCCESS) {
     	wcout << L"Failed To Create Registry Directory of HKCU\\SOFTWARE\\Microsoft\\DirectX\\UserGpuPreferences" << endl;
     }
-    if((force || !RegExists(hKey, exe)) && RegSetValueExW(hKey, exe.c_str(), 0, REG_SZ, reinterpret_cast<const BYTE*>(data.c_str()), (data.length() + 1) * sizeof(wchar_t)) != ERROR_SUCCESS)
+    if((force || !RegExists(hKey, exe)))
     {
-    	cout << "Failed To Add GPU Entry:" << e << endl;
+        if(RegSetValueExW(hKey, exe.c_str(), 0, REG_SZ, reinterpret_cast<const BYTE*>(data.c_str()), (data.length() + 1) * sizeof(wchar_t)) != ERROR_SUCCESS)
+        {
+        	cout << "Failed To Add GPU Entry:" << e << endl;
+        }
+        else if(UGPUEntry)
+        {
+        	wstring exereg = exe;
+        	ReplaceAll(exereg, L"\\", L"\\\\");
+        	wstring uentry = L"\"" + exereg + L"\"=-";
+        	if (std::find(ugpulines.begin(), ugpulines.end(), uentry) == ugpulines.end())
+        	{
+        		ugpulines.push_back(uentry);
+        		ugpu << uentry << std::endl;
+        	}
+        }
     }
     RegCloseKey(hKey);
 }
@@ -246,7 +260,7 @@ void SetPowerPlan(string guid, string name)
     	runProcess(toWString("cmd /c call \"" + batch + "\" \"" + guid.substr(1, guid.size() - 2) + "\" \"" + name + "\""));
     }
     //Set Active Power Plan if true regardless of whether or not the power plan was created
-    if(SetActivePP)
+    else if(SetActivePP)
     {
         if (PowerSetActiveScheme(NULL, &GameModeGUID) != ERROR_SUCCESS) {
             cerr << "ERROR setting active scheme: " << GetLastError() << endl;
@@ -303,6 +317,74 @@ void UnInstall()
 	string batch = exe.substr(0, exe.rfind('\\')) + "\\GameModeUninstall.bat";
 	wstring params = toWString("/c call \"" + batch + "\"");
 	RunAdmin(L"cmd.exe", params);
+}
+
+wstring GetAbsolutePath(const wstring &path) {
+	wstring copypath = trim(path);
+	//handle empty strings or drives
+	if(copypath == L"")
+	{
+		wchar_t buffer[MAX_PATH];
+		GetCurrentDirectoryW(MAX_PATH, buffer);
+		return RemSlash(wstring(buffer));
+	}
+	else if((copypath.size() == 2) && (copypath.substr(1, 1) == L":"))
+	{
+		return copypath;
+	}
+    wchar_t absolutePath[MAX_PATH];
+
+    DWORD length = GetFullPathNameW(path.c_str(), MAX_PATH, absolutePath, nullptr);
+
+    if (length == 0) {
+        return L"";
+    }
+
+    return RemSlash(wstring(absolutePath));
+}
+
+bool isFile(wstring file)
+{
+	DWORD attr = GetFileAttributesW(file.c_str());
+	if(attr == INVALID_FILE_ATTRIBUTES || (attr & FILE_ATTRIBUTE_DIRECTORY))
+	    return false;   //  not a file
+	return true;
+}
+
+std::wstring toWString(const std::string& string)
+{
+    if (string.empty())
+    {
+        return L"";
+    }
+
+    const auto size_needed = MultiByteToWideChar(CP_UTF8, 0, &string.at(0), (int)string.size(), nullptr, 0);
+    if (size_needed <= 0)
+    {
+        throw std::runtime_error("MultiByteToWideChar() failed: " + std::to_string(size_needed));
+    }
+
+    std::wstring result(size_needed, 0);
+    MultiByteToWideChar(CP_UTF8, 0, &string.at(0), (int)string.size(), &result.at(0), size_needed);
+    return result;
+}
+
+std::string toString(const std::wstring& wide_string)
+{
+    if (wide_string.empty())
+    {
+        return "";
+    }
+
+    const auto size_needed = WideCharToMultiByte(CP_UTF8, 0, &wide_string.at(0), (int)wide_string.size(), nullptr, 0, nullptr, nullptr);
+    if (size_needed <= 0)
+    {
+        throw std::runtime_error("WideCharToMultiByte() failed: " + std::to_string(size_needed));
+    }
+
+    std::string result(size_needed, 0);
+    WideCharToMultiByte(CP_UTF8, 0, &wide_string.at(0), (int)wide_string.size(), &result.at(0), size_needed, nullptr, nullptr);
+    return result;
 }
 
 };

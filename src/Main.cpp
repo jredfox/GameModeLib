@@ -8,7 +8,8 @@ int main() {
 	wstring cmdline = GetCommandLineW();
 	int argv;
 	LPWSTR* cargs = CommandLineToArgvW(cmdline.c_str(), &argv);
-	GAMEMODELIB::init();
+	wstring WorkingDir = GAMEMODELIB::parent(GAMEMODELIB::GetAbsolutePath(wstring(cargs[0])));
+	GAMEMODELIB::init(GAMEMODELIB::toString(WorkingDir));
 	//Scan for flags that effect other arguments
 	for(int i = 1; i < argv; i++)
 	{
@@ -27,6 +28,10 @@ int main() {
 		else if (t == L"-SETPOWERPLAN")
 		{
 			GAMEMODELIB::SetActivePP = true;
+		}
+		else if(t == L"-UGPUENTRY")
+		{
+			GAMEMODELIB::UGPUEntry = true;
 		}
 	}
 	for(int i = 1; i < argv; i++)
@@ -96,7 +101,30 @@ int main() {
 				vector<wstring> exeentry = GAMEMODELIB::split(unparsedexe, '|');
 				wstring exe = exeentry[0];
 				bool force = exeentry.size() > 1 ? GAMEMODELIB::parseBool(exeentry[1]) : false;
-				GAMEMODELIB::SetGPUPreference(GAMEMODELIB::toString(exe), force);
+				if(exe.substr(0, 1) != L":")
+				{
+					wstring envpath = _wgetenv(L"PATH");
+					vector<wstring> paths = GAMEMODELIB::split(envpath, ';');
+					for(wstring p : paths)
+					{
+						p = GAMEMODELIB::RemSlash(p);
+						if(p == L"")
+							continue;
+						GAMEMODELIB::ReplaceAll(p, L"/", L"\\");
+						GAMEMODELIB::ReplaceAll(p, L"\\\\", L"\\");
+						wstring actual_exe = p + L"\\" + exe;
+						if(GAMEMODELIB::isFile(actual_exe)) {
+							GAMEMODELIB::SetGPUPreference(GAMEMODELIB::toString(actual_exe), force);
+						}
+					}
+					wstring abexe = GAMEMODELIB::GetAbsolutePath(exe);
+					if(GAMEMODELIB::isFile(abexe)) {
+						GAMEMODELIB::SetGPUPreference(GAMEMODELIB::toString(abexe), force);
+					}
+				}
+				else {
+					GAMEMODELIB::SetGPUPreference(GAMEMODELIB::toString(exe), force);
+				}
 			}
 		}
 	}
