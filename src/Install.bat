@@ -21,6 +21,8 @@ call "!gmexe!" -UGPUEntry -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPl
 
 REM ## Start OEM 3d Graphics Settings ##
 IF /I "%gmset:~1,1%" NEQ "T" (GOTO GRAPHICS)
+set umain=%~dp0Uninstall\Intel.reg
+IF NOT EXIST "!umain!" (reg export "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" "!umain!")
 echo Install GameModeLib 3D Graphic Settings
 ::Intel HD Graphics Control Pannel Performance Settings
 reg query "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" >nul 2>&1
@@ -71,7 +73,9 @@ reg import "%~dp0Elantech.reg"
 reg query "HKLM\SOFTWARE\Synaptics" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (GOTO ENDSYN)
 set ureg=%~dp0Uninstall\Synaptics.reg
+set uureg=%~dp0Uninstall\SynapticsUser.reg
 IF NOT EXIST "!ureg!" (call "!dregquery!" "%~dp0Synaptics.reg" "%~dp0Uninstall" >"!ureg!")
+IF NOT EXIST "!uureg!" (reg export "HKEY_CURRENT_USER\SOFTWARE\Synaptics\SynTP" "!uureg!")
 echo Enabling TouchPad While Key Is Down Synaptics
 set touch=T
 reg import "%~dp0Synaptics.reg"
@@ -87,7 +91,10 @@ reg add "%%A" /v "PalmRejectAlways" /t REG_DWORD /d 0 /f
 reg add "%%A" /v "PalmRT" /t REG_DWORD /d 0 /f
 )
 :ENDSYN
+REM ## handle default windows touchpad settings ##
 IF "!touch!" NEQ "T" (
+set ureg=%~dp0Uninstall\TouchPad.reg
+IF NOT EXIST "!ureg!" (call "!dregquery!" "%~dp0TouchPadDefault.reg" "%~dp0Uninstall" >"!ureg!")
 echo Enabling TouchPad While Key Is Down Unknown
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad" /v AAPThreshold /t REG_DWORD /d 0 /f
 )
