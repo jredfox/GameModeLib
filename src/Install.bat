@@ -2,16 +2,21 @@
 setlocal enableDelayedExpansion
 REM ## Enable Registry Access ##
 call "%~dp0Executables\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul
+REM ## set vars ##
+mkdir "%~dp0Uninstall" >nul 2>&1
+set dregquery=%~dp0Executables\DotRegQuery-x64.exe
 
 REM ## Start Main Installation ##
 set gmset=%~1
 IF /I "%gmset:~0,1%" NEQ "T" (GOTO MAIN)
+set umain=%~dp0Uninstall\Main.reg
+IF NOT EXIST "!umain!" (call "!dregquery!" "%~dp0Main.reg" "%~dp0Uninstall" >"!umain!")
 echo Installing GameModeLib Main Settings
 call "%~dp0Executables\PowerModeOverlay.exe" "ded574b5-45a0-4f42-8737-46345c09c238"
 reg import "%~dp0Main.reg"
 REM ## Create GameMode Power Plan and Enable Dedicated Graphics for Java and Python ##
 call :GETGMEXE
-call "!gmexe!" -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPlan -SetPowerPlan
+call "!gmexe!" -UGPUEntry -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPlan -SetPowerPlan
 :MAIN
 
 REM ## Start OEM 3d Graphics Settings ##
