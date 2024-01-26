@@ -50,6 +50,8 @@ call "%~dp0Executables\WDStaticDisable.bat"
 
 REM ## Disable Sticky Keys ##
 IF /I "%gmset:~5,1%" NEQ "T" (GOTO STKYKYS)
+set ureg=%~dp0Uninstall\StickyKeys.reg
+IF NOT EXIST "!ureg!" (call "!dregquery!" "%~dp0StickyKeys.reg" "%~dp0Uninstall" >"!ureg!")
 echo Disabling Sticky Keys
 reg import "%~dp0StickyKeys.reg"
 call "%~dp0Executables\StickyKeysSetFlag.exe" "506"
@@ -60,12 +62,16 @@ IF /I "%gmset:~6,1%" NEQ "T" (GOTO TOUCHPAD)
 set touch=F
 reg query "HKCU\SOFTWARE\Elantech" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (GOTO ENDELANTECH)
+set ureg=%~dp0Uninstall\ElanTech.reg
+IF NOT EXIST "!ureg!" (call "!dregquery!" "%~dp0ElanTech.reg" "%~dp0Uninstall" >"!ureg!")
 echo Enabling TouchPad While Key Is Down ElanTech
 set touch=T
 reg import "%~dp0Elantech.reg"
 :ENDELANTECH
 reg query "HKLM\SOFTWARE\Synaptics" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (GOTO ENDSYN)
+set ureg=%~dp0Uninstall\Synaptics.reg
+IF NOT EXIST "!ureg!" (call "!dregquery!" "%~dp0Synaptics.reg" "%~dp0Uninstall" >"!ureg!")
 echo Enabling TouchPad While Key Is Down Synaptics
 set touch=T
 reg import "%~dp0Synaptics.reg"
@@ -89,6 +95,8 @@ reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad" /v AA
 
 REM ## Disable Full Screen Optimizations That May Cause Input Lag ##
 IF /I "%gmset:~7,1%" NEQ "T" (GOTO DISFSO)
+set ureg=%~dp0Uninstall\DisableFSO.reg
+IF NOT EXIST "!ureg!" (call "!dregquery!" "%~dp0DisableFSO.reg" "%~dp0Uninstall" >"!ureg!")
 echo Disabling Full Screen Optimizations
 reg import "%~dp0DisableFSO.reg"
 :DISFSO
