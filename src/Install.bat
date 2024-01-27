@@ -37,8 +37,8 @@ manage-bde -off C^: >nul 2>&1
 :BTLCKR
 
 REM ## Disable Tamper Protection From User Input ##
-IF /I "%gmset:~2,1%" EQU "T" (call :CHKTAMPER) ELSE (
-IF /I "%gmset:~3,1%" EQU "T" (call :CHKTAMPER)
+IF /I "%gmset:~3,1%" EQU "T" (call :CHKTAMPER) ELSE (
+IF /I "%gmset:~4,1%" EQU "T" (call :CHKTAMPER)
 )
 
 REM ## Enable Windows Defender Low CPU Priority ##
