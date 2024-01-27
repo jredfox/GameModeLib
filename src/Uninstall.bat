@@ -17,8 +17,8 @@ call :CHKTAMPER
 IF /I "%gmset:~3,1%" EQU "T" (start /MIN cmd /c call powershell -ExecutionPolicy Bypass -File "%~dp0Executables\WDDisableLowCPU.ps1")
 IF /I "%gmset:~4,1%" EQU "T" (
 echo schtasks /DELETE /tn "WDStaticDisabler" /F
-call :USTALL "WDNotifications.reg"
 call "!udir!\WDStaticEnable.bat"
+call :USTALL "WDNotifications.reg"
 )
 IF /I "%gmset:~5,1%" EQU "T" (
 call :USTALL "StickyKeys.reg"

@@ -7,6 +7,7 @@ Windows Registry Editor Version 5.00
 ; ## Disable Anoying Startup Screen Tips ##
 "ShowStartupPanel"=dword:00000000
 "ShowTipsOnGameStart"=dword:00000000
+"ShowGameModeNotifications"=dword:00000000
 
 ; ## Enable GPU Schedualing ##
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers]
