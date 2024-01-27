@@ -1,0 +1,12 @@
+powerplan {
+PowModeOverlay.exe
+}
+
+windows defender {
+CPU AVG before
+Low CPU before
+}
+
+sticky keys {
+enable sticky keys from exe
+}
