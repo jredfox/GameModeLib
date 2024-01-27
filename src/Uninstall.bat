@@ -3,10 +3,10 @@ setlocal enableDelayedExpansion
 set uset=%~1
 set udir=%~dp0Uninstall
 IF /I "%gmset:~0,1%" EQU "T" (
-call :USTALL "Main.reg"
-call :USTALL "UGpuEntry.reg"
 REM ## Revert the Power Plan ##
 call "%~dp0Executables\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul
+call :USTALL "Main.reg"
+call :USTALL "UGpuEntry.reg"
 set gm=b8e6d75e-26e8-5e8f-efef-e94a209a3467
 powercfg /SETACTIVE
 powercfg /DELETE "!gm!"
@@ -37,7 +37,8 @@ exit /b
 set name=%~1
 set ufile=!udir!\!name!
 reg import "!ufile!"
-del /F /Q /A "!ufile!"
+REM TODO verify the uninstall works before allowing deletion of reg files
+REM del /F /Q /A "!ufile!" >nul 2>&1
 exit /b
 
 :CHKTAMPER
