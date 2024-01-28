@@ -3,6 +3,7 @@ setlocal enableDelayedExpansion
 echo Disabling Windows Defender
 title Disable Windows Defender
 IF /I "%~1" NEQ "F" (call :CHKTAMPER)
+IF "!dregquery!" EQU "" (call :GETGMEXE)
 set wddisabler=%~dp0Executables\WDStaticDisable.bat
 set umain=%~dp0Uninstall\WDEnable.reg
 IF NOT EXIST "!umain!" (call "!dregquery!" "%~dp0Executables\WDDisable.reg" "%~dp0Uninstall" >"!umain!")
@@ -25,4 +26,14 @@ start windowsdefender://threatsettings/
 set /p a="Press ENTER To Continue..."
 GOTO CHKTAMPER
 )
+exit /b
+
+:GETGMEXE
+IF /I "!PROCESSOR_ARCHITECTURE!" EQU "ARM64" (
+set gmexe=%~dp0GameModeLib-ARM64.exe
+exit /b
+)
+set gmexe=%~dp0GameModeLib-x64.exe
+call "!gmexe!" "/?" >nul 2>&1
+IF !ERRORLEVEL! NEQ 0 (set gmexe=%~dp0GameModeLib-x86.exe)
 exit /b
