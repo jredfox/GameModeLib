@@ -8,6 +8,6 @@ Windows Registry Editor Version 5.00
 "GameDVR_EFSEFeatureFlags"=dword:00000000
 "GameDVR_DSEBehavior"=dword:00000002
 
-; ## Disable MPO (Multi Plane Overlay) Instead of Relying on the GPU ##
+; ## Disable MPO (Multi Plane Overlay) Instead rely on GPU Shader Cycles ##
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Dwm]
 "OverlayTestMode"=dword:00000005
