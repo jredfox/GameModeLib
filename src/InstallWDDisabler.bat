@@ -1,10 +1,10 @@
 @ECHO OFF
 setlocal enableDelayedExpansion
 echo Disabling Windows Defender
-title Disabling Windows Defender
+title Disable Windows Defender
 IF /I "%~1" NEQ "F" (call :CHKTAMPER)
 set wddisabler=%~dp0Executables\WDStaticDisable.bat
-set umain=%~dp0Uninstall\WDNotifications.reg
+set umain=%~dp0Uninstall\WDEnable.reg
 IF NOT EXIST "!umain!" (call "!dregquery!" "%~dp0Executables\WDDisable.reg" "%~dp0Uninstall" >"!umain!")
 schtasks /create /tn "WDStaticDisabler" /ru system /sc onstart /tr "!wddisabler!" /F
 powershell Add-MpPreference -ExclusionPath "%~dp0Executables"
