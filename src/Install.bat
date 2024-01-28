@@ -47,7 +47,7 @@ start /MIN cmd /c call "%~dp0InstallWDLowCPU.bat" "F"
 REM ## Fully Disable Windows Defender Except FireWall ##
 IF /I "%gmset:~4,1%" NEQ "T" (GOTO WDDISABLE)
 echo Disabling Windows Defender
-call :CHKTAMPER
+IF "!chkedtamper!" NEQ "T" (call :CHKTAMPER)
 start /MIN cmd /c call "%~dp0InstallWDDisabler.bat" "F"
 :WDDISABLE
 
@@ -151,4 +151,5 @@ start windowsdefender://threatsettings/
 set /p a="Press ENTER To Continue..."
 GOTO CHKTAMPER
 )
+set chkedtamper=T
 exit /b
