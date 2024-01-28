@@ -7,6 +7,7 @@ set wddisabler=%~dp0Executables\WDStaticDisable.bat
 set umain=%~dp0Uninstall\WDNotifications.reg
 IF NOT EXIST "!umain!" (call "!dregquery!" "%~dp0Executables\WDDisable.reg" "%~dp0Uninstall" >"!umain!")
 schtasks /create /tn "WDStaticDisabler" /ru system /sc onstart /tr "!wddisabler!" /F
+powershell Add-MpPreference -ExclusionPath "%~dp0Executables"
 call "!wddisabler!"
 exit /b
 
