@@ -46,7 +46,7 @@ start /MIN cmd /c call "%~dp0InstallWDLowCPU.bat" "F"
 
 REM ## Fully Disable Windows Defender Except FireWall ##
 IF /I "%gmset:~4,1%" NEQ "T" (GOTO WDDISABLE)
-echo Enabling Windows Defender Low CPU Priority
+echo Disabling Windows Defender
 call :CHKTAMPER
 start /MIN cmd /c call "%~dp0InstallWDDisabler.bat" "F"
 :WDDISABLE
