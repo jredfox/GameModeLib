@@ -40,13 +40,15 @@ manage-bde -off C^: >nul 2>&1
 REM ## Enable Windows Defender Low CPU Priority ##
 IF /I "%gmset:~3,1%" NEQ "T" (GOTO WDLOWCPU)
 echo Enabling Windows Defender Low CPU Priority
-start cmd /c call "%~dp0InstallWDLowCPU.bat"
+call :CHKTAMPER
+start /MIN cmd /c call "%~dp0InstallWDLowCPU.bat" "F"
 :WDLOWCPU
 
 REM ## Fully Disable Windows Defender Except FireWall ##
 IF /I "%gmset:~4,1%" NEQ "T" (GOTO WDDISABLE)
 echo Enabling Windows Defender Low CPU Priority
-start cmd /c call "%~dp0InstallWDDisabler.bat"
+call :CHKTAMPER
+start /MIN cmd /c call "%~dp0InstallWDDisabler.bat" "F"
 :WDDISABLE
 
 REM ## Disable Sticky Keys ##
@@ -133,4 +135,20 @@ exit /b
 set gmexe=%~dp0GameModeLib-x64.exe
 call "!gmexe!" "/?" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (set gmexe=%~dp0GameModeLib-x86.exe)
+exit /b
+
+:CHKTAMPER
+set tameper=F
+FOR /F "delims=" %%I IN ('powershell "Get-MpComputerStatus | select IsTamperProtected"') DO (
+set a=%%I
+set a=!a: =!
+IF "!a!" EQU "True" (set tameper=T)
+IF "!a!" EQU "true" (set tameper=T)
+)
+IF "!tameper!" EQU "T" (
+cscript /NOLOGO "%~dp0Executables\MSG.vbs" "Disable Tamper Protection"
+start windowsdefender://threatsettings/
+set /p a="Press ENTER To Continue..."
+GOTO CHKTAMPER
+)
 exit /b

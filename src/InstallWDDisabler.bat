@@ -2,7 +2,7 @@
 setlocal enableDelayedExpansion
 echo Disabling Windows Defender
 title Disabling Windows Defender
-call :CHKTAMPER
+IF /I "%~1" NEQ "F" (call :CHKTAMPER)
 set wddisabler=%~dp0Executables\WDStaticDisable.bat
 set umain=%~dp0Uninstall\WDNotifications.reg
 IF NOT EXIST "!umain!" (call "!dregquery!" "%~dp0Executables\WDDisable.reg" "%~dp0Uninstall" >"!umain!")
