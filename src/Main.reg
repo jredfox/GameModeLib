@@ -8,6 +8,10 @@ Windows Registry Editor Version 5.00
 "ShowStartupPanel"=dword:00000000
 "ShowTipsOnGameStart"=dword:00000000
 "ShowGameModeNotifications"=dword:00000000
+; ## Everywhere online states 3 disables it while my tests suggested 1 also disables it ##
+"GamePanelStartupTipIndex"=dword:00000003
+; ## Enable Hitting Home Button On Xbox Remote ##
+"UseNexusForGameBarEnabled"=dword:00000001
 
 ; ## Enable GPU Schedualing ##
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers]
