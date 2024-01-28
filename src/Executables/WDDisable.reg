@@ -7,3 +7,8 @@ Windows Registry Editor Version 5.00
 [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows Defender Security Center\Notifications]
 "DisableNotifications"=dword:00000001
 "DisableEnhancedNotifications"=dword:00000001
+
+; ## Prevents Real-Time Protection From Getting Auto Enabled By some OEM or BS Security ##
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection]
+"DisableBehaviorMonitoring"=dword:00000001
+"DisableRealtimeMonitoring"=dword:00000001
