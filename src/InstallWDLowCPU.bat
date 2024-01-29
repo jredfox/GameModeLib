@@ -36,7 +36,7 @@ set l=!l: =!
 IF "!l!" NEQ "" (set lineavg=%%I)
 )
 FOR /F "tokens=1,2 delims= " %%A IN ("!lineavg!") DO (
-set scanavg=%%A
-set enablelowcpu=%%B
+IF "%%A" NEQ "" (set scanavg=%%A)
+IF "%%B" NEQ "" (set enablelowcpu=%%B)
 )
 exit /b
