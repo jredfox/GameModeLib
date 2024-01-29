@@ -1,9 +1,13 @@
 #include <Windows.h>
-#include <iostream>
+#include <string>
 #include <fstream>
 #include <iomanip>
 #include <shlobj.h>
+#include <iostream>
 using namespace std;
+
+#pragma comment(lib, "Shell32.lib")
+#pragma comment(lib, "Advapi32.lib")
 
 int IndexOf(wstring str, wstring key)
 {
