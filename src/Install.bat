@@ -15,7 +15,6 @@ set umain=%~dp0Uninstall\Main.reg
 IF NOT EXIST "!umain!" (call "!dregquery!" "%~dp0Main.reg" "%~dp0Uninstall" >"!umain!")
 echo Installing GameModeLib Main Settings
 REM ## Create GameMode Power Plan and Enable Dedicated Graphics for Java and Python ##
-call :GETGMEXE
 call "!gmexe!" -UGPUEntry -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPlan -SetPowerPlan
 call "%~dp0Executables\PowerModeOverlay.exe" "ded574b5-45a0-4f42-8737-46345c09c238"
 REM ## Main Installation Settings ##
@@ -24,12 +23,14 @@ reg import "%~dp0Main.reg"
 
 REM ## Start OEM 3d Graphics Settings ##
 IF /I "%gmset:~1,1%" NEQ "T" (GOTO GRAPHICS)
-set umain=%~dp0Uninstall\Intel.reg
-IF NOT EXIST "!umain!" (reg export "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" "!umain!")
 echo Install GameModeLib 3D Graphic Settings
 ::Intel HD Graphics Control Pannel Performance Settings
 reg query "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" >nul 2>&1
-IF !ERRORLEVEL! EQU 0 (reg add "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" /t REG_BINARY /d 0300000000000000000000000000000000000000000000000000000002000000 /f)
+IF !ERRORLEVEL! EQU 0 (
+set umain=%~dp0Uninstall\Intel.reg
+IF NOT EXIST "!umain!" (reg export "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" "!umain!")
+reg add "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" /t REG_BINARY /d 0300000000000000000000000000000000000000000000000000000002000000 /f
+)
 :GRAPHICS
 
 REM ## Disable Bitlocker on C Drive If Enabled ##
