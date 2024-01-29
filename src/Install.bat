@@ -109,6 +109,13 @@ echo Disabling Full Screen Optimizations
 reg import "%~dp0DisableFSO.reg"
 :DISFSO
 
+IF /I "%gmset:~8,1%" NEQ "T" (GOTO PPThrottling)
+set ureg=%~dp0Uninstall\PowerThrottling.reg
+IF NOT EXIST "!ureg!" (call "!dregquery!" "%~dp0PowerThrottling.reg" "%~dp0Uninstall" >"!ureg!")
+echo Disabling Power Throttling
+reg import "%~dp0PowerThrottling.reg"
+:PPThrottling
+
 :END
 exit /b
 
