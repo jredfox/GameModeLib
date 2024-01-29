@@ -3,6 +3,14 @@
 #include "GameModeLib.h"
 using namespace std;
 
+#pragma comment(lib, "Ole32.lib")
+#pragma comment(lib, "PowrProf.lib")
+#pragma comment(lib, "Shell32.lib")
+#pragma comment(lib, "Advapi32.lib")
+
+//Windows Linker Options: -O3 -static -static-libgcc -static-libstdc++ -L PowrProf -L Ole32
+//Windows DEPS: Ole32, PowrProf
+
 int main() {
 	setlocale(LC_CTYPE, "");
 	wstring cmdline = GetCommandLineW();

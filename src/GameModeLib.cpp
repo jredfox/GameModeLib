@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <string>
 #include "GameModeLib.h"
 using namespace std;
 
@@ -8,7 +9,7 @@ namespace GAMEMODELIB {
 wstring toupper(wstring s)
 {
 	for(auto& c : s)
-		c = std::toupper(c);
+		c = ::toupper(c);
 	return s;
 }
 
