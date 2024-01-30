@@ -2,15 +2,24 @@
 setlocal enableDelayedExpansion
 set uset=%~1
 set udir=%~dp0Uninstall
-IF /I "%gmset:~0,1%" EQU "T" (
+IF /I "%uset:~0,1%" EQU "T" (
 REM ## Revert the Power Plan ##
 call "%~dp0Executables\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul
 set gm=b8e6d75e-26e8-5e8f-efef-e94a209a3467
-powercfg /SETACTIVE
+FOR /F "delims=" %%I IN ('type "!udir!\PowerPlan.txt"') DO (
+set prevpp=%%I
+set prevpp=!prevpp: =!
+)
+IF "!prevpp!" EQU "!gm!" (set prevpp=381b4222-f694-41f0-9685-ff5bb260df2e)
+powercfg /SETACTIVE "!prevpp!"
 powercfg /DELETE "!gm!"
 call :USTALL "Main.reg"
 call :USTALL "UGpuEntry.reg"
+REM ## TODO SYNC Registry to current PowerOverlayMode ##
+call "%~dp0Executables\PowerModeOverlay.exe" "update"
 )
+exit /b
+
 IF /I "%gmset:~1,1%" EQU "T" (call :USTALL "Intel.reg")
 IF /I "%gmset:~2,1%" EQU "T" (echo ERR BitLocker Has To Be Manually Re-Installed Through Windows UI)
 call :CHKTAMPER
