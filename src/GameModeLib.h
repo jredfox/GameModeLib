@@ -8,7 +8,7 @@ extern const unsigned long HIGH;
 extern const unsigned long NORMAL;
 extern const unsigned long LOW;
 extern bool SetActivePP;
-extern bool UGPUEntry;
+extern bool UGenInfo;
 extern std::string WorkingDir;
 
 //DECLARE METHODS HERE

@@ -112,7 +112,7 @@ void Help()
 	cout << "-SetPriority:{High, Normal, Low}:{Optional PID}" << endl;
 	cout << "-GPUEntry {EXE|true;EXE2}" << endl;
 	cout << "-GPUEntryCurrent:{Bool Force}" << endl;
-	cout << "-UGPUEntry" << endl;
+	cout << "-UGenInfo" << endl;
 	cout << "-PowerPlan" << endl;
 	cout << "-CreatePowerPlan {GUID:NAME}" << endl;
 	cout << "-SetPowerPlan" << endl;

@@ -3,10 +3,10 @@
 #include "GameModeLib.h"
 using namespace std;
 
-#pragma comment(lib, "Ole32.lib")
-#pragma comment(lib, "PowrProf.lib")
-#pragma comment(lib, "Shell32.lib")
-#pragma comment(lib, "Advapi32.lib")
+//#pragma comment(lib, "Ole32.lib")
+//#pragma comment(lib, "PowrProf.lib")
+//#pragma comment(lib, "Shell32.lib")
+//#pragma comment(lib, "Advapi32.lib")
 
 //Windows Linker Options: -O3 -static -static-libgcc -static-libstdc++ -L PowrProf -L Ole32
 //Windows DEPS: Ole32, PowrProf
@@ -37,9 +37,9 @@ int main() {
 		{
 			GAMEMODELIB::SetActivePP = true;
 		}
-		else if(t == L"-UGPUENTRY")
+		else if(t == L"-UGENINFO")
 		{
-			GAMEMODELIB::UGPUEntry = true;
+			GAMEMODELIB::UGenInfo = true;
 		}
 	}
 	for(int i = 1; i < argv; i++)

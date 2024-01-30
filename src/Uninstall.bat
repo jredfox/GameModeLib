@@ -5,11 +5,11 @@ set udir=%~dp0Uninstall
 IF /I "%gmset:~0,1%" EQU "T" (
 REM ## Revert the Power Plan ##
 call "%~dp0Executables\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul
-call :USTALL "Main.reg"
-call :USTALL "UGpuEntry.reg"
 set gm=b8e6d75e-26e8-5e8f-efef-e94a209a3467
 powercfg /SETACTIVE
 powercfg /DELETE "!gm!"
+call :USTALL "Main.reg"
+call :USTALL "UGpuEntry.reg"
 )
 IF /I "%gmset:~1,1%" EQU "T" (call :USTALL "Intel.reg")
 IF /I "%gmset:~2,1%" EQU "T" (echo ERR BitLocker Has To Be Manually Re-Installed Through Windows UI)

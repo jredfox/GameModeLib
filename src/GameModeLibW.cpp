@@ -6,6 +6,12 @@
 #include <iostream>
 #include <tlhelp32.h>
 #include <fstream>
+
+#include <powrprof.h>
+#include <objbase.h>
+#include <sstream>
+#include <iomanip>
+#include <fstream>
 #include "GameModeLib.h"
 using namespace std;
 
@@ -21,7 +27,7 @@ const unsigned long HIGH = HIGH_PRIORITY_CLASS;
 const unsigned long NORMAL = NORMAL_PRIORITY_CLASS;
 const unsigned long LOW = BELOW_NORMAL_PRIORITY_CLASS;
 bool SetActivePP = false;
-bool UGPUEntry = false;
+bool UGenInfo = false;
 string WorkingDir;
 wstring WorkingDirW;
 std::wofstream ugpu;
@@ -188,7 +194,7 @@ void SetGPUPreference(string e, bool force)
         {
         	cout << "Failed To Add GPU Entry:" << e << endl;
         }
-        else if(UGPUEntry)
+        else if(UGenInfo)
         {
         	wstring exereg = exe;
         	ReplaceAll(exereg, L"\\", L"\\\\");
@@ -223,10 +229,26 @@ void printGUID(GUID* guid)
 	cout << endl;
 }
 
-//Power Plan Start
-#include <powrprof.h>
-#include <objbase.h>
+//for some odd reason there was no simple guid to cstring std::string or even wstring
+wstring toWString(GUID* guid)
+{
+	std::wstringstream stream;
+    stream << std::setw(8) << std::setfill(L'0') << std::hex << guid->Data1 << L"-"
+           << std::setw(4) << std::setfill(L'0') << std::hex << guid->Data2 << L"-"
+           << std::setw(4) << std::setfill(L'0') << std::hex << guid->Data3 << L"-"
+           << std::setw(2) << std::setfill(L'0') << std::hex << static_cast<unsigned short>(guid->Data4[0])
+           << std::setw(2) << std::setfill(L'0') << std::hex << static_cast<unsigned short>(guid->Data4[1]) << L"-"
+           << std::setw(2) << std::setfill(L'0') << std::hex << static_cast<unsigned short>(guid->Data4[2])
+           << std::setw(2) << std::setfill(L'0') << std::hex << static_cast<unsigned short>(guid->Data4[3])
+           << std::setw(2) << std::setfill(L'0') << std::hex << static_cast<unsigned short>(guid->Data4[4])
+           << std::setw(2) << std::setfill(L'0') << std::hex << static_cast<unsigned short>(guid->Data4[5])
+           << std::setw(2) << std::setfill(L'0') << std::hex << static_cast<unsigned short>(guid->Data4[6])
+           << std::setw(2) << std::setfill(L'0') << std::hex << static_cast<unsigned short>(guid->Data4[7]);
 
+    return stream.str();
+}
+
+//Power Plan Start
 bool PowerPlanExists(GUID id)
 {
     GUID schemeGuid;
@@ -246,6 +268,31 @@ bool PowerPlanExists(GUID id)
 
 void SetPowerPlan(string guid, string name)
 {
+	//Gen Uninstall Information
+    if(UGenInfo)
+    {
+    	wstring upp = WorkingDirW + L"\\Uninstall\\PowerPlan.txt";
+    	if(!isFile(upp))
+    	{
+    		 GUID active;
+    		 GUID* activeref = &active;
+    		 if (PowerGetActiveScheme(NULL, &activeref) == ERROR_SUCCESS)
+    		 {
+    			 std::wofstream ppfile(upp.c_str());
+    			 if (ppfile.is_open()) {
+    				 ppfile << toWString(activeref) << endl;
+    			 }
+    			 else {
+    				 wcerr << L"Unable to Write PowerPlan.txt Error Code:" << GetLastError();
+    			 }
+    			 ppfile.close();
+    		 }
+    		 else {
+    			 wcerr << L"Unable to Get Active PowerPlan" << endl;
+    		 }
+    	}
+    }
+
 	wstring str = toWString(guid);
 	const wchar_t* GameModeLibPP = str.c_str();
     const wchar_t* StrHighPerf = L"{8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c}";

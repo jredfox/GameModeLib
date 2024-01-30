@@ -15,7 +15,7 @@ set umain=%~dp0Uninstall\Main.reg
 IF NOT EXIST "!umain!" (call "!dregquery!" "%~dp0Main.reg" "%~dp0Uninstall" >"!umain!")
 echo Installing GameModeLib Main Settings
 REM ## Create GameMode Power Plan and Enable Dedicated Graphics for Java and Python ##
-call "!gmexe!" -UGPUEntry -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPlan -SetPowerPlan
+call "!gmexe!" -UGenInfo -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPlan -SetPowerPlan
 call "%~dp0Executables\PowerModeOverlay.exe" "ded574b5-45a0-4f42-8737-46345c09c238"
 REM ## Main Installation Settings ##
 reg import "%~dp0Main.reg"
