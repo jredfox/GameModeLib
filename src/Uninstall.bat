@@ -12,12 +12,12 @@ set prevpp=!prevpp: =!
 )
 IF "!prevpp!" EQU "!gm!" (set prevpp=381b4222-f694-41f0-9685-ff5bb260df2e)
 powercfg /SETACTIVE "!prevpp!"
+If !ERRORLEVEL! NEQ 0 (powercfg /SETACTIVE "381b4222-f694-41f0-9685-ff5bb260df2e")
 powercfg /DELETE "!gm!"
 call :USTALL "Main.reg"
-call :USTALL "UGpuEntry.reg"
 call "%~dp0Executables\PowerModeOverlay.exe" "sync"
+call :USTALL "UGpuEntry.reg"
 :MAIN
-exit /b
 
 IF /I "%uset:~1,1%" EQU "T" (call :USTALL "Intel.reg")
 IF /I "%uset:~2,1%" EQU "T" (echo ERR BitLocker Has To Be Manually Re-Installed Through Windows UI)
