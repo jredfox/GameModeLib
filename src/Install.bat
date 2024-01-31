@@ -23,7 +23,7 @@ reg import "%~dp0Main.reg"
 
 REM ## Start OEM 3d Graphics Settings ##
 IF /I "%gmset:~1,1%" NEQ "T" (GOTO GRAPHICS)
-echo Install GameModeLib 3D Graphic Settings
+echo Installing GameModeLib 3D Graphic Settings
 ::Intel HD Graphics Control Pannel Performance Settings
 reg query "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" >nul 2>&1
 IF !ERRORLEVEL! EQU 0 (

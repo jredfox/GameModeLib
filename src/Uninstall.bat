@@ -3,6 +3,7 @@ setlocal enableDelayedExpansion
 set uset=%~1
 set udir=%~dp0Uninstall
 IF /I "%uset:~0,1%" NEQ "T" (GOTO MAIN)
+echo Uninstalling GameModeLib Main Settings
 REM ## Revert the Power Plan ##
 call "%~dp0Executables\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul
 set gm=b8e6d75e-26e8-5e8f-efef-e94a209a3467
@@ -20,9 +21,13 @@ call "%~dp0Executables\PowerModeOverlay.exe" "sync"
 call :USTALL "UGpuEntry.reg"
 :MAIN
 
-IF /I "%uset:~1,1%" EQU "T" (call :USTALL "Intel.reg")
+IF /I "%uset:~1,1%" NEQ "T" (GOTO GRAPHICS)
+echo Uninstalling GameModeLib 3D Graphic Settings
+call :USTALL "Intel.reg"
+:GRAPHICS
+
 IF /I "%uset:~2,1%" EQU "T" (echo ERR BitLocker Has To Be Manually Re-Installed Through Windows UI)
-call :CHKTAMPER
+REM call :CHKTAMPER
 IF /I "%uset:~3,1%" EQU "T" (start /MIN cmd /c call powershell -ExecutionPolicy Bypass -File "%~dp0Executables\WDDisableLowCPU.ps1")
 IF /I "%uset:~4,1%" EQU "T" (
 echo schtasks /DELETE /tn "WDStaticDisabler" /F
