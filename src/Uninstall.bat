@@ -14,6 +14,7 @@ IF "!prevpp!" EQU "!gm!" (set prevpp=381b4222-f694-41f0-9685-ff5bb260df2e)
 powercfg /SETACTIVE "!prevpp!"
 If !ERRORLEVEL! NEQ 0 (powercfg /SETACTIVE "381b4222-f694-41f0-9685-ff5bb260df2e")
 powercfg /DELETE "!gm!"
+del /F /Q /A "!udir!\PowerPlan.txt" >nul 2>&1
 call :USTALL "Main.reg"
 call "%~dp0Executables\PowerModeOverlay.exe" "sync"
 call :USTALL "UGpuEntry.reg"
