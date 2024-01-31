@@ -27,13 +27,24 @@ call :USTALL "Intel.reg"
 :GRAPHICS
 
 IF /I "%uset:~2,1%" EQU "T" (echo ERR BitLocker Has To Be Manually Re-Installed Through Windows UI)
-REM call :CHKTAMPER
-IF /I "%uset:~3,1%" EQU "T" (start /MIN cmd /c call powershell -ExecutionPolicy Bypass -File "%~dp0Executables\WDDisableLowCPU.ps1")
-IF /I "%uset:~4,1%" EQU "T" (
-echo schtasks /DELETE /tn "WDStaticDisabler" /F
-call "!udir!\WDStaticEnable.bat"
-call :USTALL "WDNotifications.reg"
+
+IF /I "%uset:~3,1%" NEQ "T" (GOTO WDLOWCPU)
+echo Uninstalling GameModeLib Windows Defender Low CPU
+call :CHKTAMPER
+FOR /F "tokens=1-2" %%A IN ('type "!udir!\WDCPUStat.txt"') DO (
+set avg=%%A
+set lowcpu=%%B
 )
+powershell -ExecutionPolicy Bypass -File "%~dp0Executables\WDSetLowCPU.ps1" -EnableLowCPU "!lowcpu!" -ScanAvg "!avg!"
+:WDLOWCPU
+
+IF /I "%uset:~4,1%" EQU "T" (
+IF "!chkedtamper!" NEQ "T" (call :CHKTAMPER)
+schtasks /DELETE /tn "WDStaticDisabler" /F
+call "!udir!\WDStaticEnable.bat"
+call :USTALL "WDEnable.reg"
+)
+
 IF /I "%uset:~5,1%" EQU "T" (
 call :USTALL "StickyKeys.reg"
 REM call "%%~dp0Executables\StickyKeysSetFlag.exe" "!datval!"
@@ -69,6 +80,7 @@ start windowsdefender://threatsettings/
 set /p a="Press ENTER To Continue..."
 GOTO CHKTAMPER
 )
+set chkedtamper=T
 exit /b
 
 :QUERYVAL

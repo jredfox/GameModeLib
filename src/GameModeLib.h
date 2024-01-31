@@ -3,7 +3,7 @@
 #include <vector>
 namespace GAMEMODELIB {
 
-//DECLARE VARIABLES HERE 
+//DECLARE VARIABLES HERE
 extern const unsigned long HIGH;
 extern const unsigned long NORMAL;
 extern const unsigned long LOW;
