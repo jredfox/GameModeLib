@@ -11,3 +11,6 @@
 *.cpp text eol=crlf
 *.cfg text eol=crlf
 *.reg text eol=crlf
+*.cpp text eol=crlf
+*.cs text eol=crlf
+*.config text eol=crlf
