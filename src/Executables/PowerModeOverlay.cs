@@ -1,6 +1,8 @@
+using Microsoft.Win32;
 using System;
 using System.Configuration;
 using System.Runtime.InteropServices;
+using System.Security.AccessControl;
 
 namespace PowerMode
 {
@@ -22,16 +24,16 @@ namespace PowerMode
                 return -1;
 
             string strguid = args[0].ToLower();
-            if(strguid.Equals("get"))
+            if (strguid.Equals("get"))
             {
                 uint result = PowerGetEffectiveOverlayScheme(out Guid currentMode);
                 Console.WriteLine(currentMode);
                 return result == 0 ? 0 : -1;
             }
-            else if(strguid.Equals("getname"))
+            else if (strguid.Equals("getname"))
             {
                 uint result = PowerGetEffectiveOverlayScheme(out Guid currentMode);
-                if(currentMode.Equals(PowerSaver))
+                if (currentMode.Equals(PowerSaver))
                 {
                     Console.WriteLine("PowerSaver");
                 }
@@ -52,6 +54,46 @@ namespace PowerMode
                     Console.WriteLine(currentMode);
                 }
                 return result == 0 ? 0 : -1;
+            }
+            else if (strguid.Equals("update") || strguid.Equals("sync"))
+            {
+                try
+                {
+                    RegistryKey pwr = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes", RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryRights.QueryValues);
+                    Guid regPowerMode = new Guid((String)pwr.GetValue("ActiveOverlayAcPowerScheme"));
+                    closeKey(pwr);
+                    uint result = PowerSetActiveOverlayScheme(out regPowerMode);
+                    if (result != 0)
+                    {
+                        Console.Error.WriteLine("Failed to set PowerModeOverlay GUID " + regPowerMode + "\n");
+                        return 5;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    Console.Error.WriteLine("{0}: {1}\n{2}", exception.GetType(), exception.Message, exception.StackTrace);
+                    Console.WriteLine();
+                    return 1;
+                }
+                return 0;
+            }
+            else if (strguid.Equals("help") || strguid.Equals("/?") || strguid.Equals("/help"))
+            {
+                Console.WriteLine("");
+                Console.WriteLine("PowerModeOverlay.exe <Options>");
+                Console.WriteLine("Set Options {PowerSaver, Balanced, Performance, HighPerformance or <GUID>}");
+                Console.WriteLine("Get (prints current guid)");
+                Console.WriteLine("GetName (gets the readable name or guid of the current PowerModeOverlay)");
+                Console.WriteLine("Update (updates the current power mode that is fetched from the registry)");
+                Console.WriteLine("Sync (Same as Update)");
+                Console.WriteLine("Help");
+                Console.WriteLine("Examples:");
+                Console.WriteLine("PowerModeOverlay.exe HighPerformance");
+                Console.WriteLine("PowerModeOverlay.exe ded574b5-45a0-4f42-8737-46345c09c238");
+                Console.WriteLine("PowerModeOverlay.exe Get");
+                Console.WriteLine("PowerModeOverlay.exe GetName");
+                Console.WriteLine("PowerModeOverlay.exe Sync");
+                return 0;
             }
             Guid powerMode = HighPerformance;
             if (strguid.Equals("powersaver"))
@@ -98,6 +140,18 @@ namespace PowerMode
                 return 1;
             }
             return 0;
+        }
+
+        public static void closeKey(RegistryKey key)
+        {
+            try
+            {
+                key.Close();
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e.Message);
+            }
         }
     }
 }
