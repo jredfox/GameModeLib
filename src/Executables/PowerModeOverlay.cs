@@ -59,9 +59,19 @@ namespace PowerMode
             {
                 try
                 {
-                    RegistryKey pwr = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes", RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryRights.QueryValues);
-                    Guid regPowerMode = new Guid((String)pwr.GetValue("ActiveOverlayAcPowerScheme"));
-                    closeKey(pwr);
+                    Guid regPowerMode;
+                    try
+                    {
+                        RegistryKey pwr = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes", RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryRights.QueryValues);
+                        regPowerMode = new Guid((String)pwr.GetValue("ActiveOverlayAcPowerScheme"));
+                        closeKey(pwr);
+                    }
+                    catch(Exception e)
+                    {
+                        Console.WriteLine("Failed to get ActiveOverlay PowerScheme from the registry Exception:" + e.GetType().Name);
+                        return -1;
+                    }
+
                     uint result = PowerSetActiveOverlayScheme(out regPowerMode);
                     if (result != 0)
                     {
