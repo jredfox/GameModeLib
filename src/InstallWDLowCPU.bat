@@ -6,6 +6,7 @@ IF /I "%~1" NEQ "F" (call :CHKTAMPER)
 set umain=%~dp0Uninstall\WDCPUStat.txt
 IF NOT EXIST "!umain!" (
 call :WDCPUSTAT
+echo SCAN !scanavg! Enabled !enablelowcpu!
 echo !scanavg! !enablelowcpu!>"!umain!"
 )
 powershell -ExecutionPolicy Bypass -File "%~dp0Executables\WDEnableLowCPU.ps1"
