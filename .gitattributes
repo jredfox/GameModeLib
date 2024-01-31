@@ -9,6 +9,7 @@
 *.cmd text eol=crlf
 *.vbs text eol=crlf
 *.cpp text eol=crlf
+*.h text eol=crlf
 *.cfg text eol=crlf
 *.reg text eol=crlf
 *.cpp text eol=crlf
