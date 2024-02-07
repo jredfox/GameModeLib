@@ -9,6 +9,6 @@ else {
     $LowCPU = $false
 }
 
-# $ErrorActionPreference = 'SilentlyContinue'
+$ErrorActionPreference = 'SilentlyContinue'
 Set-MpPreference -Force -EnableLowCpuPriority $LowCPU
 Set-MpPreference -Force -ScanAvgCPULoadFactor $ScanAvg
