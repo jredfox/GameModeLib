@@ -51,11 +51,11 @@ call :USTALL "WDEnable.reg"
 :WDDISABLE
 
 REM ## Uninstall Stickey Keys and Sync Changes ##
-IF /I "%uset:~5,1%" EQU "T" (
+IF /I "%uset:~5,1%" NEQ "T" (GOTO STKYKYS)
 echo Uninstalling GameModeLib Sticky Keys
 call :USTALL "StickyKeys.reg"
 call "%~dp0Executables\StickyKeysSetFlag.exe" "sync"
-)
+:STKYKYS
 
 IF /I "%uset:~6,1%" EQU "T" (
 call :USTALL "TouchPad.reg"
