@@ -50,10 +50,11 @@ powershell Remove-MpPreference -ExclusionPath "%~dp0Executables"
 call :USTALL "WDEnable.reg"
 :WDDISABLE
 
+REM ## Uninstall Stickey Keys and Sync Changes ##
 IF /I "%uset:~5,1%" EQU "T" (
 echo Uninstalling GameModeLib Sticky Keys
 call :USTALL "StickyKeys.reg"
-REM call "%%~dp0Executables\StickyKeysSetFlag.exe" "!datval!"
+call "%~dp0Executables\StickyKeysSetFlag.exe" "sync"
 )
 
 IF /I "%uset:~6,1%" EQU "T" (

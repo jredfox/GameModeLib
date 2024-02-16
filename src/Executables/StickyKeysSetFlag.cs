@@ -1,3 +1,4 @@
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,6 +30,13 @@ namespace DisableStickyKeys
             if (args.Length == 0)
                 return;
             string strflag = args[0].ToLower();
+            //Fetch the Current Flag From the Registry and sync it with the current in memory sticky keys
+            if(strflag.Equals("sync") || strflag.Equals("update"))
+            {
+                string registryPath = @"HKEY_CURRENT_USER\Control Panel\Accessibility\StickyKeys";
+                string valueName = "Flags";
+                strflag = (string) Registry.GetValue(registryPath, valueName, null);
+            }
             uint flag = Convert.ToUInt32(strflag, strflag.StartsWith("0x") ? 16 : 10);
             STICKYKEYS skOff = new STICKYKEYS { cbSize = Marshal.SizeOf(typeof(STICKYKEYS)), dwFlags = 0 };
             SystemParametersInfo(SPI_GETSTICKYKEYS, (uint)Marshal.SizeOf(typeof(STICKYKEYS)), ref skOff, 0);
