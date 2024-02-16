@@ -57,13 +57,26 @@ call :USTALL "StickyKeys.reg"
 call "%~dp0Executables\StickyKeysSetFlag.exe" "sync"
 :STKYKYS
 
-IF /I "%uset:~6,1%" EQU "T" (
+REM ## Uninstall Disabling of PalmCheck ##
+IF /I "%uset:~6,1%" NEQ "T" (GOTO TOUCHPAD)
+echo Uninstalling PalmCheck Settings
 call :USTALL "TouchPad.reg"
 call :USTALL "Elantech.reg"
 call :USTALL "Synaptics.reg"
 call :USTALL "SynapticsUser.reg"
-)
-IF /I "%uset:~7,1%" EQU "T" (call :USTALL "DisableFSO.reg")
+:TOUCHPAD
+
+REM ## Uninstall Disable Full Screen Optimizations ##
+IF /I "%uset:~7,1%" NEQ "T" (GOTO DISFSO)
+echo Uninstalling Full Screen Optimizations
+call :USTALL "DisableFSO.reg"
+:DISFSO
+
+REM ## Uninstall Power Plan Throttling ##
+IF /I "%uset:~8,1%" NEQ "T" (GOTO PPThrottling)
+echo Uninstalling Power Plan Throttling
+call :USTALL "PowerThrottling.reg"
+:PPThrottling
 
 :END
 exit /b
