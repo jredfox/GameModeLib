@@ -1,7 +1,10 @@
 @ECHO OFF
 setlocal enableDelayedExpansion
+REM ## Set Global Variables ##
 set uset=%~1
 set udir=%~dp0Uninstall
+
+REM ## Start Main Uninstall ##
 IF /I "%uset:~0,1%" NEQ "T" (GOTO MAIN)
 echo Uninstalling GameModeLib Main Settings
 REM ## Revert the Power Plan ##
@@ -38,12 +41,15 @@ set lowcpu=%%B
 powershell -ExecutionPolicy Bypass -File "%~dp0Executables\WDSetLowCPU.ps1" -EnableLowCPU "!lowcpu!" -ScanAvg "!avg!"
 :WDLOWCPU
 
-IF /I "%uset:~4,1%" EQU "T" (
+IF /I "%uset:~4,1%" EQU "T" (GOTO WDDISABLE)
+echo Uninstalling GameModeLib Windows Defender Disabler
 IF "!chkedtamper!" NEQ "T" (call :CHKTAMPER)
 schtasks /DELETE /tn "WDStaticDisabler" /F
 call "!udir!\WDStaticEnable.bat"
+powershell Remove-MpPreference -ExclusionPath "%~dp0Executables"
 call :USTALL "WDEnable.reg"
-)
+:WDDISABLE
+GOTO END
 
 IF /I "%uset:~5,1%" EQU "T" (
 call :USTALL "StickyKeys.reg"
@@ -56,6 +62,8 @@ call :USTALL "Synaptics.reg"
 call :USTALL "SynapticsUser.reg"
 )
 IF /I "%uset:~7,1%" EQU "T" (call :USTALL "DisableFSO.reg")
+
+:END
 exit /b
 
 :USTALL
