@@ -105,18 +105,3 @@ GOTO CHKTAMPER
 )
 set chkedtamper=T
 exit /b
-
-:QUERYVAL
-set datval=NUL
-set key=%~1
-set val=%~2
-reg query "%key%" /v "%val%" >nul 2>&1
-IF !ERRORLEVEL! NEQ 0 (exit /b)
-FOR /F "delims=" %%A IN ('reg query "%key%" /v "%val%"') DO (
-IF "%%A" NEQ "%key%" (
-For /F "tokens=3*" %%B IN ("%%A") DO (
-    set datval=%%B
-)
-)
-)
-exit /b
