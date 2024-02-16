@@ -41,15 +41,14 @@ set lowcpu=%%B
 powershell -ExecutionPolicy Bypass -File "%~dp0Executables\WDSetLowCPU.ps1" -EnableLowCPU "!lowcpu!" -ScanAvg "!avg!"
 :WDLOWCPU
 
-IF /I "%uset:~4,1%" EQU "T" (GOTO WDDISABLE)
+IF /I "%uset:~4,1%" NEQ "T" (GOTO WDDISABLE)
 echo Uninstalling GameModeLib Windows Defender Disabler
 IF "!chkedtamper!" NEQ "T" (call :CHKTAMPER)
 schtasks /DELETE /tn "WDStaticDisabler" /F
-call "!udir!\WDStaticEnable.bat"
+call "%~dp0Executables\WDStaticEnable.bat"
 powershell Remove-MpPreference -ExclusionPath "%~dp0Executables"
 call :USTALL "WDEnable.reg"
 :WDDISABLE
-GOTO END
 
 IF /I "%uset:~5,1%" EQU "T" (
 call :USTALL "StickyKeys.reg"
