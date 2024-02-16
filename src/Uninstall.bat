@@ -51,9 +51,11 @@ call :USTALL "WDEnable.reg"
 :WDDISABLE
 
 IF /I "%uset:~5,1%" EQU "T" (
+echo Uninstalling GameModeLib Sticky Keys
 call :USTALL "StickyKeys.reg"
 REM call "%%~dp0Executables\StickyKeysSetFlag.exe" "!datval!"
 )
+
 IF /I "%uset:~6,1%" EQU "T" (
 call :USTALL "TouchPad.reg"
 call :USTALL "Elantech.reg"
