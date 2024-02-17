@@ -63,7 +63,7 @@ namespace PowerMode
                     try
                     {
                         RegistryKey pwr = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes", RegistryKeyPermissionCheck.ReadWriteSubTree, RegistryRights.QueryValues);
-                        regPowerMode = new Guid((String)pwr.GetValue("ActiveOverlayAcPowerScheme"));
+                        regPowerMode = new Guid((string)pwr.GetValue("ActiveOverlayAcPowerScheme"));
                         closeKey(pwr);
                     }
                     catch(Exception e)
