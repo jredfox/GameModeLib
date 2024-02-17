@@ -88,8 +88,7 @@ exit /b
 set name=%~1
 set ufile=!udir!\!name!
 reg import "!ufile!"
-REM TODO verify the uninstall works before allowing deletion of reg files
-REM del /F /Q /A "!ufile!" >nul 2>&1
+del /F /Q /A "!ufile!" >nul 2>&1
 exit /b
 
 :CHKTAMPER
