@@ -64,6 +64,10 @@ call :USTALL "TouchPad.reg"
 call :USTALL "Elantech.reg"
 call :USTALL "Synaptics.reg"
 call :USTALL "SynapticsUser.reg"
+REM Do Synaptics Cleanup
+FOR /F "tokens=* delims=" %%A in ('reg query "HKEY_CURRENT_USER\SOFTWARE\Synaptics\SynTP" ^| findstr /I /B /C:"HKEY_CURRENT_USER\\SOFTWARE\\Synaptics\\SynTP\\"') DO (
+reg delete "%%A" /v "PalmDetectConfig_Backup" /f
+)
 :TOUCHPAD
 
 REM ## Uninstall Disable Full Screen Optimizations ##
