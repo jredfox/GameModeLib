@@ -38,6 +38,7 @@ FOR /F "tokens=1-2" %%A IN ('type "!udir!\WDCPUStat.txt"') DO (
 set avg=%%A
 set lowcpu=%%B
 )
+del /F /Q /A "!udir!\WDCPUStat.txt" >nul 2>&1
 powershell -ExecutionPolicy Bypass -File "%~dp0Executables\WDSetLowCPU.ps1" -EnableLowCPU "!lowcpu!" -ScanAvg "!avg!"
 :WDLOWCPU
 
