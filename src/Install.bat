@@ -80,7 +80,7 @@ echo Enabling TouchPad While Key Is Down Synaptics
 set ureg=%~dp0Uninstall\Synaptics.reg
 set uureg=%~dp0Uninstall\SynapticsUser.reg
 IF NOT EXIST "!ureg!" (call "!dregquery!" "%~dp0Synaptics.reg" "%~dp0Uninstall" >"!ureg!")
-IF NOT EXIST "!uureg!" (reg export "HKEY_CURRENT_USER\SOFTWARE\Synaptics\SynTP" "!uureg!")
+IF NOT EXIST "!uureg!" (reg export "HKEY_CURRENT_USER\SOFTWARE\Synaptics" "!uureg!")
 set touch=T
 reg import "%~dp0Synaptics.reg"
 FOR /F "tokens=* delims=" %%A in ('reg query "HKEY_CURRENT_USER\SOFTWARE\Synaptics\SynTP" ^| findstr /I /B /C:"HKEY_CURRENT_USER\\SOFTWARE\\Synaptics\\SynTP\\"') DO (
