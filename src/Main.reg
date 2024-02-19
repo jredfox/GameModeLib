@@ -54,7 +54,7 @@ Windows Registry Editor Version 5.00
 "DisableOtherEnhancementsOnBattery"=dword:00000000
 "DisableHDROnBattery"=dword:00000000
 "DisableHDRSupportOnBattery"=dword:00000000
-"EnableAutoEnhanceDuringPlayback"=dword:00000001
+"EnableAutoEnhanceDuringPlayback"=-
 
 ; ## Fix PowerOverlay Causing Performance Issues ##
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes]
