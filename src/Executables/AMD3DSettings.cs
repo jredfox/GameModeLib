@@ -21,10 +21,9 @@ namespace AMD3dSettings
             string cncmd = GetCnCMD();
             if (cncmd is null)
             {
-                Console.WriteLine("AMD's CNCMD.exe Is Not Found");
+                Console.Error.WriteLine("AMD's CNCMD.exe Is Not Found");
                 return;
             }
-            Console.WriteLine(cncmd);
 
             //Export Current Settings and Extract them
             string AMD3D = (System.IO.Path.GetTempPath() + @"\AMD3DSettings.zip").Replace(@"\\", @"\");
@@ -119,18 +118,15 @@ namespace AMD3dSettings
                                     string name = ((string) ((JValue) GetJValue(index, "Name") ).Value).ToLower();
                                     if(name.Contains("anti") && name.Contains("lag"))
                                     {
-                                        Console.WriteLine("Anit Lag");
                                         SetValue((JValue) GetJValue(index, "State"), 0);
                                         SetValue((JValue) GetJValue(index, "Value"), 0);
                                     }
                                     else if(name.Contains("boost"))
                                     {
-                                        Console.WriteLine("Boost");
                                         SetValue((JValue) GetJValue(index, "State"), 0);
                                     }
                                     else if(name.Contains("chill"))
                                     {
-                                        Console.WriteLine("Chill");
                                         object subobj = GetJValue(index, "SubSettings");
                                         if(subobj is JArray)
                                         {
@@ -143,7 +139,6 @@ namespace AMD3dSettings
                                                     string subname = ((string) ((JValue) GetJValue(subindex, "Name")).Value).ToLower();
                                                     if(subname.Equals("toggle"))
                                                     {
-                                                        Console.WriteLine("Chill Toggle Found");
                                                         SetValue((JValue) GetJValue(subindex, "Value"), 0);
                                                     }
                                                 }
@@ -152,45 +147,37 @@ namespace AMD3dSettings
                                     }
                                     else if(name.Contains("image sharpening"))
                                     {
-                                        Console.WriteLine("Image Sharpening");
                                         SetValue((JValue) GetJValue(index, "State"), 1);
                                         SetValue((JValue) GetJValue(index, "Value"), 100);
                                     }
                                     else if(name.Equals("frame rate target control"))
                                     {
-                                        Console.WriteLine("Frame Rate Target Control");
                                         SetValue((JValue) GetJValue(index, "State"), 0);
                                     }
                                     else if(name.Equals("turbosync"))
                                     {
-                                        Console.WriteLine("TurboSync");
                                         SetValue((JValue) GetJValue(index, "Value"), 1);
                                     }
                                     else if (name.Equals("vsynccontrol"))
                                     {
-                                        Console.WriteLine("VSyncControl");
                                         SetValue((JValue) GetJValue(index, "Value"), 1);
                                     }
                                     //# Anti Aliasing Use Application Settings #
                                     else if (name.Equals("eqaa"))
                                     {
-                                        Console.WriteLine("EQAA");
                                         SetValue((JValue) GetJValue(index, "Value"), 0);
                                     }
                                     //# Texture Filtering Quality High #
                                     else if (name.Equals("tfq"))
                                     {
-                                        Console.WriteLine("TFQ");
                                         SetValue((JValue) GetJValue(index, "Value"), 0);
                                     }
                                     else if (name.Equals("surfaceformatreplacements"))
                                     {
-                                        Console.WriteLine("SurfaceFormatReplacements");
                                         SetValue((JValue) GetJValue(index, "Value"), 1);
                                     }
                                     else if (name.Equals("tessellation_option"))
                                     {
-                                        Console.WriteLine("Tessellation_OPTION");
                                         SetValue((JValue) GetJValue(index, "Value"), 0);
                                     }
                                 }
@@ -231,7 +218,6 @@ namespace AMD3dSettings
                                     string name = (string)((JValue) GetJValue(j, "Name")).Value;
                                     if (name.ToLower().Equals("video profile"))
                                     {
-                                        Console.WriteLine("Video Profile:" + videoid);
                                         SetValue((JValue) GetJValue(j, "Value"), videoid);
                                     }
                                 }
@@ -255,7 +241,6 @@ namespace AMD3dSettings
                                 string name = ((string)((JValue) GetJValue(j, "Name")).Value).ToLower();
                                 if (name.Contains("power saver"))
                                 {
-                                    Console.WriteLine("Disabling AMD GPU Power Saver");
                                     SetValue((JValue) GetJValue(j, "Value"), 0);
                                 }
                             }
@@ -278,7 +263,6 @@ namespace AMD3dSettings
                                 string name = ((string)((JValue) GetJValue(j, "Name")).Value).ToLower();
                                 if (name.Equals("sampling interval"))
                                 {
-                                    Console.WriteLine("Sampling Interval Set to 500");
                                     SetValue((JValue) GetJValue(j, "Value"), 500);
                                 }
                             }
