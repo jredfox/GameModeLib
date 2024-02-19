@@ -19,6 +19,11 @@ namespace AMD3dSettings
         static void Main(string[] args)
         {
             string cncmd = GetCnCMD();
+            if (cncmd is null)
+            {
+                Console.WriteLine("AMD's CNCMD.exe Is Not Found");
+                return;
+            }
             Console.WriteLine(cncmd);
 
             //Export Current Settings and Extract them
