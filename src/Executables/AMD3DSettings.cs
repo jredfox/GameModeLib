@@ -41,6 +41,29 @@ namespace AMD3dSettings
                     break;
             }
 
+            //Backup Current 3D Settings and Generate Uninstall Batch
+            if(args.Length > 0)
+            {
+                string udir = args[0].Trim();
+                if(!string.IsNullOrEmpty(udir))
+                {
+                    try
+                    {
+                        string bak = udir + "\\AMD3DSettings.zip";
+                        string cmd = udir + "\\AMD3DSettings.bat";
+                        if (!File.Exists(bak))
+                        {
+                            File.Copy(AMD3D, bak);
+                            File.WriteAllText(cmd, "@ECHO OFF\r\nsetlocal enableDelayedExpansion\r\ncall \"" + cncmd + "\" import \"%~dp0AMD3DSettings.zip\"\r\ntimeout /NOBREAK /t 3\r\ncall \"" + cncmd + "\" import \"%~dp0AMD3DSettings.zip\"");
+                        }
+                    }
+                    catch(Exception e)
+                    {
+                        Console.Error.WriteLine(e.Message);
+                    }
+                }
+            }
+
             try
             {
                 Directory.Delete(AMD3DDir, true);
@@ -49,7 +72,6 @@ namespace AMD3dSettings
 
             try
             {
-                
                 ZipFile.ExtractToDirectory(AMD3D, AMD3DDir);
             }
             catch(Exception e)

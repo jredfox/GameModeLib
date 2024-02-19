@@ -31,6 +31,7 @@ set umain=%~dp0Uninstall\Intel.reg
 IF NOT EXIST "!umain!" (reg export "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" "!umain!")
 reg add "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" /t REG_BINARY /d 0300000000000000000000000000000000000000000000000000000002000000 /f
 )
+call "%~dp0Executables\AMD3dSettings.exe" "%~dp0Uninstall"
 :GRAPHICS
 
 REM ## Disable Bitlocker on C Drive If Enabled ##
