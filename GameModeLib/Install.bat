@@ -1,11 +1,11 @@
 @ECHO OFF
 setlocal enableDelayedExpansion
 REM ## Enable Registry Access ##
-call "%~dp0Executables\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul
+call "%~dp0Resources\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul
 REM ## set vars ##
 mkdir "%~dp0Uninstall" >nul 2>&1
 call :GETISA
-set dregquery=%~dp0Executables\DotRegQuery-!ISA!^.exe
+set dregquery=%~dp0Resources\DotRegQuery-!ISA!^.exe
 set gmexe=%~dp0GameModeLib-!ISA!^.exe
 
 REM ## Start Main Installation ##
@@ -16,7 +16,7 @@ IF NOT EXIST "!umain!" (call "!dregquery!" "%~dp0Main.reg" "%~dp0Uninstall" >"!u
 echo Installing GameModeLib Main Settings
 REM ## Create GameMode Power Plan and Enable Dedicated Graphics for Java and Python ##
 call "!gmexe!" -UGenInfo -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPlan -SetPowerPlan
-call "%~dp0Executables\PowerModeOverlay.exe" "ded574b5-45a0-4f42-8737-46345c09c238"
+call "%~dp0Resources\PowerModeOverlay.exe" "ded574b5-45a0-4f42-8737-46345c09c238"
 REM ## Main Installation Settings ##
 reg import "%~dp0Main.reg"
 :MAIN
@@ -31,7 +31,7 @@ set umain=%~dp0Uninstall\Intel.reg
 IF NOT EXIST "!umain!" (reg export "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" "!umain!")
 reg add "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" /t REG_BINARY /d 0300000000000000000000000000000000000000000000000000000002000000 /f
 )
-call "%~dp0Executables\AMD3dSettings.exe" "%~dp0Uninstall"
+call "%~dp0Resources\AMD3dSettings.exe" "%~dp0Uninstall"
 :GRAPHICS
 
 REM ## Disable Bitlocker on C Drive If Enabled ##
@@ -61,7 +61,7 @@ set ureg=%~dp0Uninstall\StickyKeys.reg
 IF NOT EXIST "!ureg!" (call "!dregquery!" "%~dp0StickyKeys.reg" "%~dp0Uninstall" >"!ureg!")
 echo Disabling Sticky Keys
 reg import "%~dp0StickyKeys.reg"
-call "%~dp0Executables\StickyKeysSetFlag.exe" "506"
+call "%~dp0Resources\StickyKeysSetFlag.exe" "506"
 :STKYKYS
 
 REM ## Start Disabling PalmRejction,PalmCheck, SmartSense and Disable Touchpad While Typing ##
@@ -156,7 +156,7 @@ IF "!a!" EQU "True" (set tameper=T)
 IF "!a!" EQU "true" (set tameper=T)
 )
 IF "!tameper!" EQU "T" (
-cscript /NOLOGO "%~dp0Executables\MSG.vbs" "Disable Tamper Protection"
+cscript /NOLOGO "%~dp0Resources\MSG.vbs" "Disable Tamper Protection"
 start windowsdefender://threatsettings/
 set /p a="Press ENTER To Continue..."
 GOTO CHKTAMPER
