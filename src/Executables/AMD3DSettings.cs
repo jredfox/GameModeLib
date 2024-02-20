@@ -81,7 +81,7 @@ namespace AMD3dSettings
             
             //Edit JSON Settings
             JObject root;
-            using (StreamReader reader = File.OpenText(@"C:\Users\jredfox\Desktop\rssettings.json"))
+            using (StreamReader reader = File.OpenText(AMD3DJSON))
             {
                 root = (JObject)JToken.ReadFrom(new JsonTextReader(reader));
                 
@@ -322,9 +322,12 @@ namespace AMD3dSettings
             startInfo.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
             startInfo.FileName = @"cmd.exe";
             startInfo.Arguments = "/s /c " + command;
-
+            startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
+            startInfo.RedirectStandardInput = true;
             process.StartInfo = startInfo;
             process.Start();
+            process.StandardOutput.ReadToEnd();
             process.WaitForExit();
         }
 
