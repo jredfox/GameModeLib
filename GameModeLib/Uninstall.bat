@@ -3,12 +3,13 @@ setlocal enableDelayedExpansion
 REM ## Set Global Variables ##
 set uset=%~1
 set udir=%~dp0Uninstall
+set rc=%~dp0Resources
 
 REM ## Start Main Uninstall ##
 IF /I "%uset:~0,1%" NEQ "T" (GOTO MAIN)
 echo Uninstalling GameModeLib Main Settings
 REM ## Revert the Power Plan ##
-call "%~dp0Resources\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul
+call "!rc!\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul
 set gm=b8e6d75e-26e8-5e8f-efef-e94a209a3467
 FOR /F "delims=" %%I IN ('type "!udir!\PowerPlan.txt"') DO (
 set prevpp=%%I
@@ -20,7 +21,7 @@ If !ERRORLEVEL! NEQ 0 (powercfg /SETACTIVE "381b4222-f694-41f0-9685-ff5bb260df2e
 powercfg /DELETE "!gm!"
 del /F /Q /A "!udir!\PowerPlan.txt" >nul 2>&1
 call :USTALL "Main.reg"
-call "%~dp0Resources\PowerModeOverlay.exe" "sync"
+call "!rc!\PowerModeOverlay.exe" "sync"
 call :USTALL "UGpuEntry.reg"
 :MAIN
 
@@ -44,15 +45,15 @@ set avg=%%A
 set lowcpu=%%B
 )
 del /F /Q /A "!udir!\WDCPUStat.txt" >nul 2>&1
-powershell -ExecutionPolicy Bypass -File "%~dp0Resources\WDSetLowCPU.ps1" -EnableLowCPU "!lowcpu!" -ScanAvg "!avg!"
+powershell -ExecutionPolicy Bypass -File "!rc!\WDSetLowCPU.ps1" -EnableLowCPU "!lowcpu!" -ScanAvg "!avg!"
 :WDLOWCPU
 
 IF /I "%uset:~4,1%" NEQ "T" (GOTO WDDISABLE)
 echo Uninstalling GameModeLib Windows Defender Disabler
 IF "!chkedtamper!" NEQ "T" (call :CHKTAMPER)
 schtasks /DELETE /tn "WDStaticDisabler" /F
-call "%~dp0Resources\WDStaticEnable.bat"
-powershell Remove-MpPreference -ExclusionPath "%~dp0Resources"
+call "!rc!\WDStaticEnable.bat"
+powershell Remove-MpPreference -ExclusionPath "!rc!"
 call :USTALL "WDEnable.reg"
 :WDDISABLE
 
@@ -60,7 +61,7 @@ REM ## Uninstall Stickey Keys and Sync Changes ##
 IF /I "%uset:~5,1%" NEQ "T" (GOTO STKYKYS)
 echo Uninstalling GameModeLib Sticky Keys
 call :USTALL "StickyKeys.reg"
-call "%~dp0Resources\StickyKeysSetFlag.exe" "sync"
+call "!rc!\StickyKeysSetFlag.exe" "sync"
 :STKYKYS
 
 REM ## Uninstall Disabling of PalmCheck ##
@@ -105,7 +106,7 @@ IF "!a!" EQU "True" (set tameper=T)
 IF "!a!" EQU "true" (set tameper=T)
 )
 IF "!tameper!" EQU "T" (
-cscript /NOLOGO "%~dp0Resources\MSG.vbs" "Disable Tamper Protection"
+cscript /NOLOGO "!rc!\MSG.vbs" "Disable Tamper Protection"
 start windowsdefender://threatsettings/
 set /p a="Press ENTER To Continue..."
 GOTO CHKTAMPER

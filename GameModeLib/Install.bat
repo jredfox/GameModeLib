@@ -1,24 +1,26 @@
 @ECHO OFF
 setlocal enableDelayedExpansion
-REM ## Enable Registry Access ##
-call "%~dp0Resources\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul
 REM ## set vars ##
-mkdir "%~dp0Uninstall" >nul 2>&1
+set rc=%~dp0Resources
+set ugen=%~dp0Uninstall
+mkdir "!ugen!" >nul 2>&1
 call :GETISA
-set dregquery=%~dp0Resources\DotRegQuery-!ISA!^.exe
+set dregquery=!rc!\DotRegQuery-!ISA!^.exe
 set gmexe=%~dp0GameModeLib-!ISA!^.exe
+REM ## Enable Registry Access ##
+call "!rc!\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul
 
 REM ## Start Main Installation ##
 set gmset=%~1
 IF /I "%gmset:~0,1%" NEQ "T" (GOTO MAIN)
-set umain=%~dp0Uninstall\Main.reg
-IF NOT EXIST "!umain!" (call "!dregquery!" "%~dp0Main.reg" "%~dp0Uninstall" >"!umain!")
+set umain=!ugen!\Main.reg
+IF NOT EXIST "!umain!" (call "!dregquery!" "!rc!\Main.reg" "!ugen!" >"!umain!")
 echo Installing GameModeLib Main Settings
 REM ## Create GameMode Power Plan and Enable Dedicated Graphics for Java and Python ##
 call "!gmexe!" -UGenInfo -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPlan -SetPowerPlan
-call "%~dp0Resources\PowerModeOverlay.exe" "ded574b5-45a0-4f42-8737-46345c09c238"
+call "!rc!\PowerModeOverlay.exe" "ded574b5-45a0-4f42-8737-46345c09c238"
 REM ## Main Installation Settings ##
-reg import "%~dp0Main.reg"
+reg import "!rc!\Main.reg"
 :MAIN
 
 REM ## Start OEM 3d Graphics Settings ##
@@ -27,11 +29,11 @@ echo Installing GameModeLib 3D Graphic Settings
 ::Intel HD Graphics Control Pannel Performance Settings
 reg query "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" >nul 2>&1
 IF !ERRORLEVEL! EQU 0 (
-set umain=%~dp0Uninstall\Intel.reg
+set umain=!ugen!\Intel.reg
 IF NOT EXIST "!umain!" (reg export "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" "!umain!")
 reg add "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" /t REG_BINARY /d 0300000000000000000000000000000000000000000000000000000002000000 /f
 )
-call "%~dp0Resources\AMD3dSettings.exe" "%~dp0Uninstall"
+call "!rc!\AMD3dSettings.exe" "!ugen!"
 :GRAPHICS
 
 REM ## Disable Bitlocker on C Drive If Enabled ##
@@ -57,11 +59,11 @@ start /MIN cmd /c call "%~dp0InstallWDDisabler.bat" "F"
 
 REM ## Disable Sticky Keys ##
 IF /I "%gmset:~5,1%" NEQ "T" (GOTO STKYKYS)
-set ureg=%~dp0Uninstall\StickyKeys.reg
-IF NOT EXIST "!ureg!" (call "!dregquery!" "%~dp0StickyKeys.reg" "%~dp0Uninstall" >"!ureg!")
+set ureg=!ugen!\StickyKeys.reg
+IF NOT EXIST "!ureg!" (call "!dregquery!" "!rc!\StickyKeys.reg" "!ugen!" >"!ureg!")
 echo Disabling Sticky Keys
-reg import "%~dp0StickyKeys.reg"
-call "%~dp0Resources\StickyKeysSetFlag.exe" "506"
+reg import "!rc!\StickyKeys.reg"
+call "!rc!\StickyKeysSetFlag.exe" "506"
 :STKYKYS
 
 REM ## Start Disabling PalmRejction,PalmCheck, SmartSense and Disable Touchpad While Typing ##
@@ -69,21 +71,21 @@ IF /I "%gmset:~6,1%" NEQ "T" (GOTO TOUCHPAD)
 set touch=F
 reg query "HKCU\SOFTWARE\Elantech" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (GOTO ENDELANTECH)
-set ureg=%~dp0Uninstall\ElanTech.reg
-IF NOT EXIST "!ureg!" (call "!dregquery!" "%~dp0ElanTech.reg" "%~dp0Uninstall" >"!ureg!")
+set ureg=!ugen!\ElanTech.reg
+IF NOT EXIST "!ureg!" (call "!dregquery!" "!rc!\ElanTech.reg" "!ugen!" >"!ureg!")
 echo Enabling TouchPad While Key Is Down ElanTech
 set touch=T
-reg import "%~dp0Elantech.reg"
+reg import "!rc!\Elantech.reg"
 :ENDELANTECH
 reg query "HKLM\SOFTWARE\Synaptics" >nul 2>&1
 IF !ERRORLEVEL! NEQ 0 (GOTO ENDSYN)
 echo Enabling TouchPad While Key Is Down Synaptics
-set ureg=%~dp0Uninstall\Synaptics.reg
-set uureg=%~dp0Uninstall\SynapticsUser.reg
-IF NOT EXIST "!ureg!" (call "!dregquery!" "%~dp0Synaptics.reg" "%~dp0Uninstall" >"!ureg!")
+set ureg=!ugen!\Synaptics.reg
+set uureg=!ugen!\SynapticsUser.reg
+IF NOT EXIST "!ureg!" (call "!dregquery!" "!rc!\Synaptics.reg" "!ugen!" >"!ureg!")
 IF NOT EXIST "!uureg!" (reg export "HKEY_CURRENT_USER\SOFTWARE\Synaptics" "!uureg!")
 set touch=T
-reg import "%~dp0Synaptics.reg"
+reg import "!rc!\Synaptics.reg"
 FOR /F "tokens=* delims=" %%A in ('reg query "HKEY_CURRENT_USER\SOFTWARE\Synaptics\SynTP" ^| findstr /I /B /C:"HKEY_CURRENT_USER\\SOFTWARE\\Synaptics\\SynTP\\"') DO (
 echo Disabling PalmCheck^: %%A
 reg query "%%A" /v "PalmDetectConfig_Backup" >nul 2>&1
@@ -98,8 +100,8 @@ reg add "%%A" /v "PalmRT" /t REG_DWORD /d 0 /f
 :ENDSYN
 REM ## handle default windows touchpad settings ##
 IF "!touch!" NEQ "T" (
-set ureg=%~dp0Uninstall\TouchPad.reg
-IF NOT EXIST "!ureg!" (call "!dregquery!" "%~dp0TouchPadDefault.reg" "%~dp0Uninstall" >"!ureg!")
+set ureg=!ugen!\TouchPad.reg
+IF NOT EXIST "!ureg!" (call "!dregquery!" "!rc!\TouchPadDefault.reg" "!ugen!" >"!ureg!")
 echo Enabling TouchPad While Key Is Down Unknown
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad" /v AAPThreshold /t REG_DWORD /d 0 /f
 )
@@ -107,17 +109,17 @@ reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad" /v AA
 
 REM ## Disable Full Screen Optimizations That May Cause Input Lag ##
 IF /I "%gmset:~7,1%" NEQ "T" (GOTO DISFSO)
-set ureg=%~dp0Uninstall\DisableFSO.reg
-IF NOT EXIST "!ureg!" (call "!dregquery!" "%~dp0DisableFSO.reg" "%~dp0Uninstall" >"!ureg!")
+set ureg=!ugen!\DisableFSO.reg
+IF NOT EXIST "!ureg!" (call "!dregquery!" "!rc!\DisableFSO.reg" "!ugen!" >"!ureg!")
 echo Disabling Full Screen Optimizations
-reg import "%~dp0DisableFSO.reg"
+reg import "!rc!\DisableFSO.reg"
 :DISFSO
 
 IF /I "%gmset:~8,1%" NEQ "T" (GOTO PPThrottling)
-set ureg=%~dp0Uninstall\PowerThrottling.reg
-IF NOT EXIST "!ureg!" (call "!dregquery!" "%~dp0PowerThrottling.reg" "%~dp0Uninstall" >"!ureg!")
+set ureg=!ugen!\PowerThrottling.reg
+IF NOT EXIST "!ureg!" (call "!dregquery!" "!rc!\PowerThrottling.reg" "!ugen!" >"!ureg!")
 echo Disabling Power Throttling
-reg import "%~dp0PowerThrottling.reg"
+reg import "!rc!\PowerThrottling.reg"
 :PPThrottling
 
 :END
@@ -156,7 +158,7 @@ IF "!a!" EQU "True" (set tameper=T)
 IF "!a!" EQU "true" (set tameper=T)
 )
 IF "!tameper!" EQU "T" (
-cscript /NOLOGO "%~dp0Resources\MSG.vbs" "Disable Tamper Protection"
+cscript /NOLOGO "!rc!\MSG.vbs" "Disable Tamper Protection"
 start windowsdefender://threatsettings/
 set /p a="Press ENTER To Continue..."
 GOTO CHKTAMPER
