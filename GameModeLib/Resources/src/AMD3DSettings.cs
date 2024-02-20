@@ -52,7 +52,7 @@ namespace AMD3dSettings
             if (args.Length > 0)
             {
                 string udir = args[0].Trim();
-                if(!string.IsNullOrEmpty(udir))
+                if (!string.IsNullOrEmpty(udir))
                 {
                     try
                     {
@@ -61,10 +61,10 @@ namespace AMD3dSettings
                         if (!File.Exists(bak))
                         {
                             File.Copy(AMD3D, bak);
-                            File.WriteAllText(cmd, "@ECHO OFF\r\nsetlocal enableDelayedExpansion\r\ncall \"" + cncmd + "\" import \"%~dp0AMD3DSettings.zip\"\r\ntimeout /NOBREAK /t 3\r\ncall \"" + cncmd + "\" import \"%~dp0AMD3DSettings.zip\"");
+                            File.WriteAllText(cmd, "@ECHO OFF\r\nsetlocal enableDelayedExpansion\r\ncall \"" + cncmd + "\" import \"%~dp0AMD3DSettings.zip\"\r\ntimeout /NOBREAK /t 3 >nul 2>&1\r\ncall \"" + cncmd + "\" import \"%~dp0AMD3DSettings.zip\"");
                         }
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         Console.Error.WriteLine(e.Message);
                     }
@@ -81,47 +81,47 @@ namespace AMD3dSettings
             {
                 ZipFile.ExtractToDirectory(AMD3D, AMD3DDir);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.Error.WriteLine(e.Message);
             }
-            
+
             //Edit JSON Settings
             JObject root;
             using (StreamReader reader = File.OpenText(AMD3DJSON))
             {
                 root = (JObject)JToken.ReadFrom(new JsonTextReader(reader));
-                
+
                 //Handle Display Settings for AMD
-                JArray display = (JArray) GetJValue(root, "Display");
-                foreach(var token in display)
+                JArray display = (JArray)GetJValue(root, "Display");
+                foreach (var token in display)
                 {
-                    JArray settings = (JArray) GetJValue((JObject)token, "Settings");
+                    JArray settings = (JArray)GetJValue((JObject)token, "Settings");
                     foreach (var settoken in settings)
                     {
-                        if(settoken is JObject)
+                        if (settoken is JObject)
                         {
                             JObject setjson = (JObject)settoken;
                             JToken name = GetJValue(setjson, "Name");
-                            if(name is JValue)
+                            if (name is JValue)
                             {
                                 string strvalname = ((string)((JValue)name).Value).ToUpper();
                                 if (strvalname.Equals("GPU SCALING"))
                                 {
-                                    SetValue((JValue) GetJValue(setjson, "Value"), 1);
+                                    SetValue((JValue)GetJValue(setjson, "Value"), 1);
                                 }
                                 else if (strvalname.Equals("SCALING MODE"))
                                 {
-                                    SetValue((JValue) GetJValue(setjson, "Value"), 0);
+                                    SetValue((JValue)GetJValue(setjson, "Value"), 0);
                                 }
                                 else if (strvalname.Contains("VARI") && strvalname.Contains("BRIGHT"))
                                 {
-                                    SetValue((JValue) GetJValue(setjson, "Value"), 0);
-                                    SetValue((JValue) GetJValue(setjson, "State"), 0);
+                                    SetValue((JValue)GetJValue(setjson, "Value"), 0);
+                                    SetValue((JValue)GetJValue(setjson, "State"), 0);
                                 }
                                 else if (strvalname.Contains("FREESYNC"))
                                 {
-                                    SetValue((JValue) GetJValue(setjson, "Value"), 1);
+                                    SetValue((JValue)GetJValue(setjson, "Value"), 1);
                                 }
                             }
                         }
@@ -129,85 +129,85 @@ namespace AMD3dSettings
                 }
 
                 //Handle 3d Settings
-                JArray global = (JArray) GetJValue(root, "Global Settings");
+                JArray global = (JArray)GetJValue(root, "Global Settings");
                 foreach (var obj in global)
                 {
-                    if(obj is JObject)
+                    if (obj is JObject)
                     {
                         JObject json = (JObject)obj;
                         object objset = GetJValue(json, "Settings");
-                        if(objset is JArray)
+                        if (objset is JArray)
                         {
                             JArray set = (JArray)objset;
                             foreach (var setting in set)
                             {
-                                if(setting is JObject)
+                                if (setting is JObject)
                                 {
                                     JObject index = (JObject)setting;
-                                    string name = ((string) ((JValue) GetJValue(index, "Name") ).Value).ToLower();
-                                    if(name.Contains("anti") && name.Contains("lag"))
+                                    string name = ((string)((JValue)GetJValue(index, "Name")).Value).ToLower();
+                                    if (name.Contains("anti") && name.Contains("lag"))
                                     {
-                                        SetValue((JValue) GetJValue(index, "State"), 0);
-                                        SetValue((JValue) GetJValue(index, "Value"), 0);
+                                        SetValue((JValue)GetJValue(index, "State"), 0);
+                                        SetValue((JValue)GetJValue(index, "Value"), 0);
                                     }
-                                    else if(name.Contains("boost"))
+                                    else if (name.Contains("boost"))
                                     {
-                                        SetValue((JValue) GetJValue(index, "State"), 0);
+                                        SetValue((JValue)GetJValue(index, "State"), 0);
                                     }
-                                    else if(name.Contains("chill"))
+                                    else if (name.Contains("chill"))
                                     {
                                         object subobj = GetJValue(index, "SubSettings");
-                                        if(subobj is JArray)
+                                        if (subobj is JArray)
                                         {
                                             JArray subsettings = (JArray)subobj;
                                             foreach (var subset in subsettings)
                                             {
-                                                if(subset is JObject)
+                                                if (subset is JObject)
                                                 {
                                                     JObject subindex = (JObject)subset;
-                                                    string subname = ((string) ((JValue) GetJValue(subindex, "Name")).Value).ToLower();
-                                                    if(subname.Equals("toggle"))
+                                                    string subname = ((string)((JValue)GetJValue(subindex, "Name")).Value).ToLower();
+                                                    if (subname.Equals("toggle"))
                                                     {
-                                                        SetValue((JValue) GetJValue(subindex, "Value"), 0);
+                                                        SetValue((JValue)GetJValue(subindex, "Value"), 0);
                                                     }
                                                 }
                                             }
                                         }
                                     }
-                                    else if(name.Contains("image sharpening"))
+                                    else if (name.Contains("image sharpening"))
                                     {
-                                        SetValue((JValue) GetJValue(index, "State"), 1);
-                                        SetValue((JValue) GetJValue(index, "Value"), 100);
+                                        SetValue((JValue)GetJValue(index, "State"), 1);
+                                        SetValue((JValue)GetJValue(index, "Value"), 100);
                                     }
-                                    else if(name.Equals("frame rate target control"))
+                                    else if (name.Equals("frame rate target control"))
                                     {
-                                        SetValue((JValue) GetJValue(index, "State"), 0);
+                                        SetValue((JValue)GetJValue(index, "State"), 0);
                                     }
-                                    else if(name.Equals("turbosync"))
+                                    else if (name.Equals("turbosync"))
                                     {
-                                        SetValue((JValue) GetJValue(index, "Value"), 1);
+                                        SetValue((JValue)GetJValue(index, "Value"), 1);
                                     }
                                     else if (name.Equals("vsynccontrol"))
                                     {
-                                        SetValue((JValue) GetJValue(index, "Value"), 1);
+                                        SetValue((JValue)GetJValue(index, "Value"), 1);
                                     }
                                     //# Anti Aliasing Use Application Settings #
                                     else if (name.Equals("eqaa"))
                                     {
-                                        SetValue((JValue) GetJValue(index, "Value"), 0);
+                                        SetValue((JValue)GetJValue(index, "Value"), 0);
                                     }
                                     //# Texture Filtering Quality High #
                                     else if (name.Equals("tfq"))
                                     {
-                                        SetValue((JValue) GetJValue(index, "Value"), 0);
+                                        SetValue((JValue)GetJValue(index, "Value"), 0);
                                     }
                                     else if (name.Equals("surfaceformatreplacements"))
                                     {
-                                        SetValue((JValue) GetJValue(index, "Value"), 1);
+                                        SetValue((JValue)GetJValue(index, "Value"), 1);
                                     }
                                     else if (name.Equals("tessellation_option"))
                                     {
-                                        SetValue((JValue) GetJValue(index, "Value"), 0);
+                                        SetValue((JValue)GetJValue(index, "Value"), 0);
                                     }
                                 }
                             }
@@ -216,23 +216,23 @@ namespace AMD3dSettings
                 }
 
                 //Handle Video Profile
-                JArray videoarr = (JArray) GetJValue(root, "Video Settings");
+                JArray videoarr = (JArray)GetJValue(root, "Video Settings");
                 foreach (var vi in videoarr)
                 {
-                    if(vi is JObject)
+                    if (vi is JObject)
                     {
                         JObject ji = (JObject)vi;
-                        JArray videoset = (JArray) GetJValue(ji, "Settings");
+                        JArray videoset = (JArray)GetJValue(ji, "Settings");
                         int videoid = -1;
                         foreach (var v in videoset)
                         {
                             if (v is JObject)
                             {
                                 JObject j = (JObject)v;
-                                string name = ((string)((JValue) GetJValue(j, "Name")).Value).ToLower();
+                                string name = ((string)((JValue)GetJValue(j, "Name")).Value).ToLower();
                                 if (name.Equals("AMD Fluid Motion Video".ToLower()))
                                 {
-                                    videoid = int.Parse("" + ((JValue) GetJValue(j, "ID")).Value);
+                                    videoid = int.Parse("" + ((JValue)GetJValue(j, "ID")).Value);
                                     break;
                                 }
                             }
@@ -244,10 +244,10 @@ namespace AMD3dSettings
                                 if (v is JObject)
                                 {
                                     JObject j = (JObject)v;
-                                    string name = (string)((JValue) GetJValue(j, "Name")).Value;
+                                    string name = (string)((JValue)GetJValue(j, "Name")).Value;
                                     if (name.ToLower().Equals("video profile"))
                                     {
-                                        SetValue((JValue) GetJValue(j, "Value"), videoid);
+                                        SetValue((JValue)GetJValue(j, "Value"), videoid);
                                     }
                                 }
                             }
@@ -256,21 +256,21 @@ namespace AMD3dSettings
                 }
 
                 //Handle Power Saver Setting
-                JArray wizz = (JArray) GetJValue(root, "Wizard Profile Settings");
+                JArray wizz = (JArray)GetJValue(root, "Wizard Profile Settings");
                 foreach (var w in wizz)
                 {
-                    if(w is JObject)
+                    if (w is JObject)
                     {
-                        JArray wizzset = (JArray) GetJValue((JObject)w, "Settings");
+                        JArray wizzset = (JArray)GetJValue((JObject)w, "Settings");
                         foreach (var v in wizzset)
                         {
                             if (v is JObject)
                             {
                                 JObject j = (JObject)v;
-                                string name = ((string)((JValue) GetJValue(j, "Name")).Value).ToLower();
+                                string name = ((string)((JValue)GetJValue(j, "Name")).Value).ToLower();
                                 if (name.Contains("power saver"))
                                 {
-                                    SetValue((JValue) GetJValue(j, "Value"), 0);
+                                    SetValue((JValue)GetJValue(j, "Value"), 0);
                                 }
                             }
                         }
@@ -278,21 +278,21 @@ namespace AMD3dSettings
                 }
 
                 //Handle Sampling Intervals to Prevent Performance Issues
-                JArray perfroot = (JArray) GetJValue(root, "Performance Settings");
+                JArray perfroot = (JArray)GetJValue(root, "Performance Settings");
                 foreach (var v in perfroot)
                 {
-                    if(v is JObject)
+                    if (v is JObject)
                     {
-                        JArray perfset = (JArray) GetJValue((JObject)v, "Settings");
+                        JArray perfset = (JArray)GetJValue((JObject)v, "Settings");
                         foreach (var s in perfset)
                         {
                             if (s is JObject)
                             {
                                 JObject j = (JObject)s;
-                                string name = ((string)((JValue) GetJValue(j, "Name")).Value).ToLower();
+                                string name = ((string)((JValue)GetJValue(j, "Name")).Value).ToLower();
                                 if (name.Equals("sampling interval"))
                                 {
-                                    SetValue((JValue) GetJValue(j, "Value"), 500);
+                                    SetValue((JValue)GetJValue(j, "Value"), 500);
                                 }
                             }
                         }
@@ -365,21 +365,21 @@ namespace AMD3dSettings
             {
                 RegistryKey HKLM = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
                 RegistryKey cnkey = HKLM.OpenSubKey(@"SOFTWARE\AMD\CN");
-                string dir = (string) cnkey.GetValue("InstallDir");
+                string dir = (string)cnkey.GetValue("InstallDir");
                 if (dir.EndsWith(@"\") || dir.EndsWith(@"/"))
                 {
                     dir = dir.Substring(0, dir.Length - 1);
                 }
                 return dir + @"\cncmd.exe";
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.Error.WriteLine(e.Message + " " + e.GetType());
                 string HOMEDRIVE = Environment.GetFolderPath(Environment.SpecialFolder.System).Substring(0, 1);
                 string cncmd = HOMEDRIVE + @":\Program Files\AMD\CNext\CNext\cncmd.exe";
                 if (File.Exists(cncmd))
                     return cncmd;
-               cncmd = HOMEDRIVE + @":\Program Files (x86)\AMD\CNext\CNext\cncmd.exe";
+                cncmd = HOMEDRIVE + @":\Program Files (x86)\AMD\CNext\CNext\cncmd.exe";
                 if (File.Exists(cncmd))
                     return cncmd;
 

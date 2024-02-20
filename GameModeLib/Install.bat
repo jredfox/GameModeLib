@@ -33,7 +33,8 @@ set umain=!ugen!\Intel.reg
 IF NOT EXIST "!umain!" (reg export "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" "!umain!")
 reg add "HKCU\SOFTWARE\Intel\Display\igfxcui\3D" /v "Default" /t REG_BINARY /d 0300000000000000000000000000000000000000000000000000000002000000 /f
 )
-call "!rc!\AMD3dSettings.exe" "!ugen!"
+::AMD 3D Graphics Settings
+start /MIN cmd /c call "!rc!\AMD3dSettings.exe" "!ugen!"
 :GRAPHICS
 
 REM ## Disable Bitlocker on C Drive If Enabled ##

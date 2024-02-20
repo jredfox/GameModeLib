@@ -27,7 +27,7 @@ call :USTALL "UGpuEntry.reg"
 
 IF /I "%uset:~1,1%" NEQ "T" (GOTO GRAPHICS)
 echo Uninstalling GameModeLib 3D Graphic Settings
-call :USTALL "Intel.reg"
+IF EXIST "!udir!\Intel.reg" (call :USTALL "Intel.reg")
 IF EXIST "!udir!\AMD3DSettings.bat" (
 call "!udir!\AMD3DSettings.bat"
 del /F /Q /A "!udir!\AMD3DSettings.bat"
