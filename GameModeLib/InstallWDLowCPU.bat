@@ -4,11 +4,12 @@ echo Enabling Windows Defender Low CPU Priority
 title Enable Windows Defender Low CPU Priority
 IF /I "%~1" NEQ "F" (call :CHKTAMPER)
 set umain=%~dp0Uninstall\WDCPUStat.txt
+set rc=%~dp0Resources
 IF NOT EXIST "!umain!" (
 call :WDCPUSTAT
 echo !scanavg! !enablelowcpu!>"!umain!"
 )
-powershell -ExecutionPolicy Bypass -File "%~dp0Executables\WDEnableLowCPU.ps1"
+powershell -ExecutionPolicy Bypass -File "!rc!\WDEnableLowCPU.ps1"
 exit /b
 
 :CHKTAMPER
@@ -20,7 +21,7 @@ IF "!a!" EQU "True" (set tameper=T)
 IF "!a!" EQU "true" (set tameper=T)
 )
 IF "!tameper!" EQU "T" (
-cscript /NOLOGO "%~dp0Executables\MSG.vbs" "Disable Tamper Protection"
+cscript /NOLOGO "!rc!\MSG.vbs" "Disable Tamper Protection"
 start windowsdefender://threatsettings/
 set /p a="Press ENTER To Continue..."
 GOTO CHKTAMPER

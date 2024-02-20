@@ -2,14 +2,15 @@
 setlocal enableDelayedExpansion
 echo Disabling Windows Defender
 title Disable Windows Defender
-call :GETISA
-set dregquery=%~dp0Executables\DotRegQuery-!ISA!^.exe
-IF /I "%~1" NEQ "F" (call :CHKTAMPER)
-set wddisabler=%~dp0Executables\WDStaticDisable.bat
 set umain=%~dp0Uninstall\WDEnable.reg
-IF NOT EXIST "!umain!" (call "!dregquery!" "%~dp0Executables\WDDisable.reg" "%~dp0Uninstall" >"!umain!")
+set rc=%~dp0Resources
+call :GETISA
+set dregquery=!rc!\DotRegQuery-!ISA!^.exe
+IF /I "%~1" NEQ "F" (call :CHKTAMPER)
+set wddisabler=!rc!\WDStaticDisable.bat
+IF NOT EXIST "!umain!" (call "!dregquery!" "!rc!\WDDisable.reg" "%~dp0Uninstall" >"!umain!")
 schtasks /create /tn "WDStaticDisabler" /ru system /sc onstart /tr "!wddisabler!" /F
-powershell Add-MpPreference -ExclusionPath "%~dp0Executables"
+powershell Add-MpPreference -ExclusionPath "!rc!"
 call "!wddisabler!"
 exit /b
 
@@ -22,7 +23,7 @@ IF "!a!" EQU "True" (set tameper=T)
 IF "!a!" EQU "true" (set tameper=T)
 )
 IF "!tameper!" EQU "T" (
-cscript /NOLOGO "%~dp0Executables\MSG.vbs" "Disable Tamper Protection"
+cscript /NOLOGO "!rc!\MSG.vbs" "Disable Tamper Protection"
 start windowsdefender://threatsettings/
 set /p a="Press ENTER To Continue..."
 GOTO CHKTAMPER
