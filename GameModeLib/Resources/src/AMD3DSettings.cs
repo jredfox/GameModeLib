@@ -30,19 +30,26 @@ namespace AMD3dSettings
             string AMD3DDir = (System.IO.Path.GetTempPath() + @"\AMD3DSettings").Replace(@"\\", @"\");
             string AMD3DJSON = (System.IO.Path.GetTempPath() + @"\AMD3DSettings\rssettings.json").Replace(@"\\", @"\");
             Run("\"" + cncmd + "\" export \"" + AMD3D + "\"");
-            
+
             //Wait Until File is Created for some odd reason it doesn't create it from the first command
-            long ms = 0;
-            while(!File.Exists(AMD3D))
+            long start = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            while (!File.Exists(AMD3D))
             {
                 Thread.Sleep(1);
-                ms++;
-                if (ms >= 5000)
+                long time = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                if (time < start || (time - start) >= 5500L)
+                {
                     break;
+                }
+            }
+            if (!File.Exists(AMD3D))
+            {
+                Console.WriteLine("AMD3DSettings Export JSON Failed:" + AMD3D);
+                return;
             }
 
             //Backup Current 3D Settings and Generate Uninstall Batch
-            if(args.Length > 0)
+            if (args.Length > 0)
             {
                 string udir = args[0].Trim();
                 if(!string.IsNullOrEmpty(udir))
