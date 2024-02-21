@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace AMD3dSettings
 {
-    class Program
+    class AMD3dSettings
     {
 
         static void Main(string[] args)
@@ -44,7 +44,7 @@ namespace AMD3dSettings
             }
             if (!File.Exists(AMD3D))
             {
-                Console.WriteLine("AMD3DSettings Export JSON Failed:" + AMD3D);
+                Console.Error.WriteLine("AMD3DSettings Export JSON Failed:" + AMD3D);
                 return;
             }
 
@@ -91,45 +91,107 @@ namespace AMD3dSettings
             using (StreamReader reader = File.OpenText(AMD3DJSON))
             {
                 root = (JObject)JToken.ReadFrom(new JsonTextReader(reader));
+                display(root);
+                global(root);
+                video(root);
+                powersaver(root);
+                sampling(root);
+            }
+            //Save the JSON
+            File.WriteAllText(AMD3DJSON, root.ToString());
+            //Re-Import the JSON
+            File.Delete(AMD3D);
+            ZipFile.CreateFromDirectory(AMD3DDir, AMD3D);
+            Run("\"" + cncmd + "\" import \"" + AMD3D + "\"");
+            //Run it a second time as Vari-Bright won't change the first time
+            Thread.Sleep(2500);
+            Run("\"" + cncmd + "\" import \"" + AMD3D + "\"");
 
+            //ZIP the Archive Back up
+            try
+            {
+                Directory.Delete(AMD3DDir, true);
+            }
+            catch (Exception) { }
+            File.Delete(AMD3D);
+        }
+
+        public static void display(JObject root)
+        {
+            try
+            {
                 //Handle Display Settings for AMD
                 JArray display = (JArray)GetJValue(root, "Display");
+                if(display == null)
+                {
+                    Console.Error.WriteLine("Missing: Display Settings");
+                    return;
+                }
                 foreach (var token in display)
                 {
-                    JArray settings = (JArray)GetJValue((JObject)token, "Settings");
-                    foreach (var settoken in settings)
+                    if (token is JObject)
                     {
-                        if (settoken is JObject)
+                        JToken tokenset = GetJValue((JObject)token, "Settings");
+                        if (tokenset is JArray)
                         {
-                            JObject setjson = (JObject)settoken;
-                            JToken name = GetJValue(setjson, "Name");
-                            if (name is JValue)
+                            JArray settings = (JArray)tokenset;
+                            foreach (var settoken in settings)
                             {
-                                string strvalname = ((string)((JValue)name).Value).ToUpper();
-                                if (strvalname.Equals("GPU SCALING"))
+                                if (settoken is JObject)
                                 {
-                                    SetValue((JValue)GetJValue(setjson, "Value"), 1);
-                                }
-                                else if (strvalname.Equals("SCALING MODE"))
-                                {
-                                    SetValue((JValue)GetJValue(setjson, "Value"), 0);
-                                }
-                                else if (strvalname.Contains("VARI") && strvalname.Contains("BRIGHT"))
-                                {
-                                    SetValue((JValue)GetJValue(setjson, "Value"), 0);
-                                    SetValue((JValue)GetJValue(setjson, "State"), 0);
-                                }
-                                else if (strvalname.Contains("FREESYNC"))
-                                {
-                                    SetValue((JValue)GetJValue(setjson, "Value"), 1);
+                                    JObject setjson = (JObject)settoken;
+                                    string name = GetName(setjson);
+                                    if (name == null)
+                                    {
+                                        Console.Error.WriteLine("Maulformed: Display Name");
+                                        continue;
+                                    }
+                                    string strvalname = ((string)((JValue)name).Value).ToUpper();
+                                    if (strvalname.Equals("GPU SCALING"))
+                                    {
+                                        SetValue((JValue)GetJValue(setjson, "Value"), 1);
+                                    }
+                                    else if (strvalname.Equals("SCALING MODE"))
+                                    {
+                                        SetValue((JValue)GetJValue(setjson, "Value"), 0);
+                                    }
+                                    else if (strvalname.Contains("VARI") && strvalname.Contains("BRIGHT"))
+                                    {
+                                        SetValue((JValue)GetJValue(setjson, "Value"), 0);
+                                        SetValue((JValue)GetJValue(setjson, "State"), 0);
+                                    }
+                                    else if (strvalname.Contains("FREESYNC"))
+                                    {
+                                        SetValue((JValue)GetJValue(setjson, "Value"), 1);
+                                    }
                                 }
                             }
                         }
+                        else
+                        {
+                            Console.Error.WriteLine("Maulformed: Display Settings");
+                        }
                     }
                 }
+            }
+            catch(Exception e)
+            {
+                Console.Error.WriteLine("Error: Display");
+                Console.Error.WriteLine(e);
+            }
+        }
 
+        public static void global(JObject root)
+        {
+            try
+            {
                 //Handle 3d Settings
                 JArray global = (JArray)GetJValue(root, "Global Settings");
+                if(global == null)
+                {
+                    Console.Error.WriteLine("Missing: Global 3D Settings");
+                    return;
+                }
                 foreach (var obj in global)
                 {
                     if (obj is JObject)
@@ -138,13 +200,18 @@ namespace AMD3dSettings
                         object objset = GetJValue(json, "Settings");
                         if (objset is JArray)
                         {
-                            JArray set = (JArray)objset;
+                            JArray set = (JArray) objset;
                             foreach (var setting in set)
                             {
                                 if (setting is JObject)
                                 {
                                     JObject index = (JObject)setting;
-                                    string name = ((string)((JValue)GetJValue(index, "Name")).Value).ToLower();
+                                    string name = GetName(index);
+                                    if(name == null)
+                                    {
+                                        Console.Error.WriteLine("Maulformed: Global 3D Settings Name");
+                                        continue;
+                                    }
                                     if (name.Contains("anti") && name.Contains("lag"))
                                     {
                                         SetValue((JValue)GetJValue(index, "State"), 0);
@@ -212,110 +279,194 @@ namespace AMD3dSettings
                                 }
                             }
                         }
+                        else
+                        {
+                            Console.Error.WriteLine("MaulFormed: Global 3D Settings");
+                            return;
+                        }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine("Error: Global 3D");
+                Console.Error.WriteLine(e);
+            }
+        }
 
+        public static void video(JObject root)
+        {
+            try
+            {
                 //Handle Video Profile
                 JArray videoarr = (JArray)GetJValue(root, "Video Settings");
+                if (videoarr == null)
+                {
+                    Console.Error.WriteLine("Missing: Video Settings");
+                    return;
+                }
                 foreach (var vi in videoarr)
                 {
                     if (vi is JObject)
                     {
                         JObject ji = (JObject)vi;
-                        JArray videoset = (JArray)GetJValue(ji, "Settings");
-                        int videoid = -1;
-                        foreach (var v in videoset)
+                        JToken vset = GetJValue(ji, "Settings");
+                        if (vset is JArray)
                         {
-                            if (v is JObject)
-                            {
-                                JObject j = (JObject)v;
-                                string name = ((string)((JValue)GetJValue(j, "Name")).Value).ToLower();
-                                if (name.Equals("AMD Fluid Motion Video".ToLower()))
-                                {
-                                    videoid = int.Parse("" + ((JValue)GetJValue(j, "ID")).Value);
-                                    break;
-                                }
-                            }
-                        }
-                        if (videoid != -1)
-                        {
+                            JArray videoset = (JArray) vset;
+                            int videoid = -1;
                             foreach (var v in videoset)
                             {
                                 if (v is JObject)
                                 {
                                     JObject j = (JObject)v;
-                                    string name = (string)((JValue)GetJValue(j, "Name")).Value;
-                                    if (name.ToLower().Equals("video profile"))
+                                    string name = GetName(j);
+                                    if (name == null)
                                     {
-                                        SetValue((JValue)GetJValue(j, "Value"), videoid);
+                                        Console.Error.WriteLine("Maulformed: Video Settings Name");
+                                        continue;
+                                    }
+                                    if (name.Equals("AMD Fluid Motion Video".ToLower()))
+                                    {
+                                        videoid = int.Parse("" + ((JValue)GetJValue(j, "ID")).Value);
+                                        break;
+                                    }
+                                }
+                            }
+                            if (videoid != -1)
+                            {
+                                foreach (var v in videoset)
+                                {
+                                    if (v is JObject)
+                                    {
+                                        JObject j = (JObject)v;
+                                        string name = GetName(j);
+                                        if (name == null)
+                                        {
+                                            continue;
+                                        }
+                                        if (name.ToLower().Equals("video profile"))
+                                        {
+                                            SetValue((JValue)GetJValue(j, "Value"), videoid);
+                                        }
                                     }
                                 }
                             }
                         }
+                        else
+                        {
+                            Console.Error.WriteLine("MaulFormed: Video Settings");
+                        }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine("Error: Video");
+                Console.Error.WriteLine(e);
+            }
+        }
 
+        public static void powersaver(JObject root)
+        {
+            try
+            {
                 //Handle Power Saver Setting
                 JArray wizz = (JArray)GetJValue(root, "Wizard Profile Settings");
+                if (wizz == null)
+                {
+                    Console.Error.WriteLine("Missing: Wizard Profile Settings(Power Saver Settings)");
+                    return;
+                }
                 foreach (var w in wizz)
                 {
                     if (w is JObject)
                     {
-                        JArray wizzset = (JArray)GetJValue((JObject)w, "Settings");
-                        foreach (var v in wizzset)
+                        JToken wizztoken = GetJValue((JObject)w, "Settings");
+                        if (wizztoken is JArray)
                         {
-                            if (v is JObject)
+                            JArray wizzset = (JArray) wizztoken;
+                            foreach (var v in wizzset)
                             {
-                                JObject j = (JObject)v;
-                                string name = ((string)((JValue)GetJValue(j, "Name")).Value).ToLower();
-                                if (name.Contains("power saver"))
+                                if (v is JObject)
                                 {
-                                    SetValue((JValue)GetJValue(j, "Value"), 0);
+                                    JObject j = (JObject)v;
+                                    string name = GetName(j);
+                                    if (name == null)
+                                    {
+                                        Console.Error.WriteLine("Maulformed: Wizard Profile Settings(Power Saver Settings) Name");
+                                        continue;
+                                    }
+                                    if (name.Contains("power saver"))
+                                    {
+                                        SetValue((JValue)GetJValue(j, "Value"), 0);
+                                    }
                                 }
                             }
                         }
+                        else
+                        {
+                            Console.Error.WriteLine("Maulformed: Wizard Profile Settings(Power Saver Settings)");
+                        }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine("Error: Wizard Profile Settings(Power Saver Settings)");
+                Console.Error.WriteLine(e);
+            }
+        }
 
+        public static void sampling(JObject root)
+        {
+            try
+            {
                 //Handle Sampling Intervals to Prevent Performance Issues
                 JArray perfroot = (JArray)GetJValue(root, "Performance Settings");
+                if (perfroot == null)
+                {
+                    Console.Error.WriteLine("Missing: Sampling Settings");
+                    return;
+                }
                 foreach (var v in perfroot)
                 {
                     if (v is JObject)
                     {
-                        JArray perfset = (JArray)GetJValue((JObject)v, "Settings");
-                        foreach (var s in perfset)
+                        JToken p = GetJValue((JObject)v, "Settings");
+                        if (p is JArray)
                         {
-                            if (s is JObject)
+                            JArray perfset = (JArray)p;
+                            foreach (var s in perfset)
                             {
-                                JObject j = (JObject)s;
-                                string name = ((string)((JValue)GetJValue(j, "Name")).Value).ToLower();
-                                if (name.Equals("sampling interval"))
+                                if (s is JObject)
                                 {
-                                    SetValue((JValue)GetJValue(j, "Value"), 500);
+                                    JObject j = (JObject)s;
+                                    string name = GetName(j);
+                                    if (name == null)
+                                    {
+                                        Console.Error.WriteLine("Maulformed: Sampling Settings Name");
+                                        continue;
+                                    }
+                                    if (name.Equals("sampling interval"))
+                                    {
+                                        SetValue((JValue)GetJValue(j, "Value"), 500);
+                                    }
                                 }
                             }
+                        }
+                        else
+                        {
+                            Console.Error.WriteLine("Maulformed: Sampling Settings");
                         }
                     }
                 }
             }
-            //Save the JSON
-            File.WriteAllText(AMD3DJSON, root.ToString());
-            //Re-Import the JSON
-            File.Delete(AMD3D);
-            ZipFile.CreateFromDirectory(AMD3DDir, AMD3D);
-            Run("\"" + cncmd + "\" import \"" + AMD3D + "\"");
-            //Run it a second time as Vari-Bright won't change the first time
-            Thread.Sleep(2500);
-            Run("\"" + cncmd + "\" import \"" + AMD3D + "\"");
-
-            //ZIP the Archive Back up
-            try
+            catch (Exception e)
             {
-                Directory.Delete(AMD3DDir, true);
+                Console.Error.WriteLine("Error: Sampling");
+                Console.Error.WriteLine(e);
             }
-            catch (Exception) { }
-            File.Delete(AMD3D);
         }
 
         public static void Run(string command)
@@ -336,6 +487,18 @@ namespace AMD3dSettings
             process.Start();
             process.StandardOutput.ReadToEnd();
             process.WaitForExit();
+        }
+
+        //Gets JSON Value Name From Setting Index Safely. Returns NUll if Name key isn't a NON-NULL string
+        static string GetName(JObject index)
+        {
+            try
+            {
+                string name = ((string)((JValue)GetJValue(index, "Name")).Value).ToLower();
+                return name;
+            }
+            catch (Exception) { }
+            return null;
         }
 
         //Gets JSON Value ignoring Casing
