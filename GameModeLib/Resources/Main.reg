@@ -13,10 +13,6 @@ Windows Registry Editor Version 5.00
 ; ## Enable Hitting Home Button On Xbox Remote ##
 "UseNexusForGameBarEnabled"=dword:00000001
 
-; ## Enable GPU Schedualing ##
-[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers]
-"HwSchMode"=dword:00000002
-
 ; ## Enable Graphic Settings Variable Refresh Rate Auto HDR and Optimize Windows Games##
 [HKEY_CURRENT_USER\SOFTWARE\Microsoft\DirectX\UserGpuPreferences]
 "DirectXUserGlobalSettings"="SwapEffectUpgradeEnable=1;AutoHDREnable=1;VRROptimizeEnable=1;"
@@ -30,13 +26,6 @@ Windows Registry Editor Version 5.00
 [HKEY_CURRENT_USER\System\GameConfigStore]
 "GameDVR_StreamingEnabled"=dword:00000001
 "GameDVR_Enabled"=dword:00000001
-
-; ## Enable Xbox Bar ##
-[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR]
-"value"=dword:00000001
-
-[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\GameDVR]
-"AllowGameDVR"=-
 
 ; ## Enable HDR Settings ##
 [HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\HDR]
@@ -55,6 +44,17 @@ Windows Registry Editor Version 5.00
 "DisableHDROnBattery"=dword:00000000
 "DisableHDRSupportOnBattery"=dword:00000000
 "EnableAutoEnhanceDuringPlayback"=-
+
+; ## Enable GPU Schedualing ##
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\GraphicsDrivers]
+"HwSchMode"=dword:00000002
+
+; ## Enable Xbox Bar ##
+[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\PolicyManager\default\ApplicationManagement\AllowGameDVR]
+"value"=dword:00000001
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\GameDVR]
+"AllowGameDVR"=-
 
 ; ## Fix PowerOverlay Causing Performance Issues ##
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes]
