@@ -1,6 +1,53 @@
 @ECHO OFF
 setlocal enableDelayedExpansion
+REM ## Get Users SIDs and then Install ##
+set SID=%~1
+IF "!SID!" EQU "*" (GOTO ALL) ELSE (GOTO USR)
+
+:ALL
+FOR /F "tokens=1,2" %%A IN ('wmic useraccount get name^,sid') DO (
+set usrname=%%A
+IF "%%B" NEQ "" IF /I "!usrname:~0,11!" NEQ "defaultuser" IF /I "%%B" NEQ "SID" (
+set "exc="
+FOR %%T IN (Administrator Guest DefaultAccount WDAGUtilityAccount) DO (IF /I "%%A" EQU "%%T" (set "exc=true"))
+IF "!exc!" EQU "" (
+set SID=%%B
+call :INSTALL "%~2"
+)
+)
+)
+exit /b
+
+::Get SID from Current User
+:USR
+IF "!SID!" EQU "" (
+FOR /F "tokens=1,2" %%A IN ('wmic useraccount get name^,sid') DO (
+IF "%%B" NEQ "" IF /I "%%B" NEQ "SID" IF /I "%%A" EQU "%USERNAME%" (
+set usrname=%%A
+set SID=%%B
+)
+)
+) ELSE (
+IF EXIST "%HOMEDRIVE%\Users\!SID!" (set NeedSID=T) ELSE (set NeedSID=F)
+FOR /F "tokens=1,2" %%A IN ('wmic useraccount get name^,sid') DO (
+IF "!NeedSID!" EQU "F" (
+IF /I "%%B" EQU "!SID!" (set usrname=%%A)
+) ELSE (
+IF /I "%%A" EQU "!SID!" (
+set usrname=%%A
+set SID=%%B
+)
+)
+)
+)
+call :INSTALL "%~2"
+exit /b
+
+:INSTALL
 REM ## set vars ##
+IF /I "!usrname!" EQU "%USERNAME%" (set cusr=T) ELSE (set cusr=F)
+echo "!SID!"-"!usrname!"-"!cusr!"
+exit /b
 set rc=%~dp0Resources
 set ugen=%~dp0Uninstall
 mkdir "!ugen!" >nul 2>&1
