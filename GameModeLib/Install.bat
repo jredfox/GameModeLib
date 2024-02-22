@@ -80,8 +80,8 @@ call "!rc!\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\Power
 REM ## Start Main Installation ##
 set gmset=%~1
 IF /I "%gmset:~0,1%" NEQ "T" (GOTO MAIN)
-set umain=!ugen!\Main.reg
-IF NOT EXIST "!umain!" (call "!dregquery!" "!rc!\Main.reg" "!ugen!" >"!umain!")
+set umain=!udir!\Main.reg
+IF NOT EXIST "!umain!" (call "!dregquery!" "!rc!\Main.reg" "!udir!" >"!umain!")
 echo Installing GameModeLib Main Settings
 REM ## Create GameMode Power Plan and Enable Dedicated Graphics for Java and Python ##
 call "!gmexe!" -UGenInfo -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPlan -SetPowerPlan
