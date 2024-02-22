@@ -20,30 +20,39 @@ exit /b
 
 ::Get SID from Current User
 :USR
-IF "!SID!" EQU "" (
+IF "!SID!" NEQ "" (GOTO USR2)
 FOR /F "tokens=1,2" %%A IN ('wmic useraccount get name^,sid') DO (
 IF "%%B" NEQ "" IF /I "%%B" NEQ "SID" IF /I "%%A" EQU "%USERNAME%" (
 set usrname=%%A
 set SID=%%B
 )
 )
-) ELSE (
-IF EXIST "%HOMEDRIVE%\Users\!SID!" (set NeedSID=T) ELSE (set NeedSID=F)
+call :INSTALL "%~2"
+exit /b
+
+:USR2
+IF EXIST "%HOMEDRIVE%\Users\!SID!" (
+	set usrname=!SID!
+	set "SID="
+)
 FOR /F "tokens=1,2" %%A IN ('wmic useraccount get name^,sid') DO (
-IF "!NeedSID!" EQU "F" (
-IF /I "%%B" EQU "!SID!" (set usrname=%%A)
-) ELSE (
-IF /I "%%A" EQU "!SID!" (
-set usrname=%%A
-set SID=%%B
-)
-)
-)
+    IF "!SID!" EQU "" (
+        IF /I "!usrname!" EQU "%%A" (
+            set "SID=%%B"
+        )
+    ) ELSE (
+        IF /I "!SID!" EQU "%%B" (
+			set usrname=%%A
+		)
+    )
 )
 call :INSTALL "%~2"
 exit /b
 
 :INSTALL
+REM ## Sanity Check ##
+IF "!SID!" EQU "" (echo ERROR Username or SID is NULL & exit /b)
+IF "!usrname!" EQU "" (echo ERROR Username or SID is NULL & exit /b)
 REM ## set vars ##
 IF /I "!usrname!" EQU "%USERNAME%" (set cusr=T) ELSE (set cusr=F)
 echo "!SID!"-"!usrname!"-"!cusr!"
