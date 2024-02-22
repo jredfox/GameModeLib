@@ -41,7 +41,7 @@ FOR /F "tokens=1,2" %%A IN ('wmic useraccount get name^,sid') DO (
             set "SID=%%B"
         )
     ) ELSE (
-        IF /I "!SID!" EQU "%%B" (
+		IF /I "!SID!" EQU "%%B" (
 			set usrname=%%A
 		)
     )
