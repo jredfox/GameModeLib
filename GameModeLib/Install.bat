@@ -2,6 +2,7 @@
 setlocal enableDelayedExpansion
 REM ## Get Users SIDs and then Install ##
 set SID=%~1
+call :CLEANUP
 IF "!SID!" EQU "*" (GOTO ALL) ELSE (GOTO USR)
 
 :ALL
@@ -16,6 +17,7 @@ call :INSTALL "%~2"
 )
 )
 )
+call :CLEANUP
 exit /b
 
 ::Get SID from Current User
@@ -28,6 +30,7 @@ set SID=%%B
 )
 )
 call :INSTALL "%~2"
+call :CLEANUP
 exit /b
 
 :USR2
@@ -47,6 +50,7 @@ FOR /F "tokens=1,2" %%A IN ('wmic useraccount get name^,sid') DO (
     )
 )
 call :INSTALL "%~2"
+call :CLEANUP
 exit /b
 
 :INSTALL
@@ -55,10 +59,12 @@ IF "!SID!" EQU "" (echo ERROR Username or SID is NULL & exit /b)
 IF "!usrname!" EQU "" (echo ERROR Username or SID is NULL & exit /b)
 REM ## set vars ##
 IF /I "!usrname!" EQU "%USERNAME%" (set cusr=T) ELSE (set cusr=F)
-echo "!SID!"-"!usrname!"-"!cusr!"
-exit /b
+REM echo "!SID!"-"!usrname!"-"!cusr!"
 set rc=%~dp0Resources
-set ugen=%~dp0Uninstall
+set udir=%~dp0Uninstall\Global
+set uudir=%~dp0Uninstall\!SID!
+set idir=%~dp0TMP\!SID!
+echo Installing GameModeLib to User !usrname!
 mkdir "!ugen!" >nul 2>&1
 call :GETISA
 set dregquery=!rc!\DotRegQuery-!ISA!^.exe
@@ -221,4 +227,9 @@ set /p a="Press ENTER To Continue..."
 GOTO CHKTAMPER
 )
 set chkedtamper=T
+exit /b
+
+:CLEANUP
+del /F /S /Q /A "%~dp0TMP" >nul 2>&1
+mkdir "%~dp0TMP" >nul 2>&1
 exit /b
