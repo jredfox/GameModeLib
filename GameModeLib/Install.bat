@@ -59,16 +59,21 @@ IF "!SID!" EQU "" (echo ERROR Username or SID is NULL & exit /b)
 IF "!usrname!" EQU "" (echo ERROR Username or SID is NULL & exit /b)
 REM ## set vars ##
 IF /I "!usrname!" EQU "%USERNAME%" (set cusr=T) ELSE (set cusr=F)
-REM echo "!SID!"-"!usrname!"-"!cusr!"
 set rc=%~dp0Resources
 set udir=%~dp0Uninstall\Global
 set uudir=%~dp0Uninstall\!SID!
 set idir=%~dp0TMP\!SID!
-echo Installing GameModeLib to User !usrname!
-mkdir "!ugen!" >nul 2>&1
+mkdir "!udir!" >nul 2>&1
+mkdir "!uudir!" >nul 2>&1
+mkdir "!idir!" >nul 2>&1
 call :GETISA
 set dregquery=!rc!\DotRegQuery-!ISA!^.exe
 set gmexe=%~dp0GameModeLib-!ISA!^.exe
+echo[
+echo ########################################
+echo Installing GameModeLib to User !usrname!
+echo ########################################
+echo[
 REM ## Enable Registry Access ##
 call "!rc!\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul
 
@@ -231,5 +236,5 @@ exit /b
 
 :CLEANUP
 del /F /S /Q /A "%~dp0TMP" >nul 2>&1
-mkdir "%~dp0TMP" >nul 2>&1
+rd /S /Q "%~dp0TMP" >nul 2>&1
 exit /b
