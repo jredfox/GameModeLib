@@ -57,21 +57,21 @@ exit /b
 REM ## Sanity Check ##
 IF "!SID!" EQU "" (echo ERROR Username or SID is NULL & exit /b)
 IF "!usrname!" EQU "" (echo ERROR Username or SID is NULL & exit /b)
+REM ## Load User As SID ##
+reg load "HKEY_USERS\!SID!" "%HOMEDRIVE%\Users\!usrname!\NTUSER.DAT"
 REM ## set vars ##
-IF /I "!usrname!" EQU "%USERNAME%" (set cusr=T) ELSE (set cusr=F)
 set rc=%~dp0Resources
 set udir=%~dp0Uninstall\Global
 set uudir=%~dp0Uninstall\!SID!
-set idir=%~dp0TMP\!SID!
-mkdir "!udir!" >nul 2>&1
-mkdir "!uudir!" >nul 2>&1
-mkdir "!idir!" >nul 2>&1
+set idir=%~dp0TMP\Install
+set igdir=!idir!\Global
+set iudir=!idir!\!SID!
 call :GETISA
 set dregquery=!rc!\DotRegQuery-!ISA!^.exe
 set gmexe=%~dp0GameModeLib-!ISA!^.exe
 echo[
 echo ########################################
-echo Installing GameModeLib to User !usrname!
+echo Installing GameModeLib for User !usrname!
 echo ########################################
 echo[
 REM ## Enable Registry Access ##
@@ -80,8 +80,11 @@ call "!rc!\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\Power
 REM ## Start Main Installation ##
 set gmset=%~1
 IF /I "%gmset:~0,1%" NEQ "T" (GOTO MAIN)
+call "!rc!\GenReg.exe" "!idir!" "HKLM=Global;HKCU=!SID!" "!rc!\Main.reg"
+REM ##TODOO###
+exit /b
 set umain=!udir!\Main.reg
-IF NOT EXIST "!umain!" (call "!dregquery!" "!rc!\Main.reg" "!udir!" >"!umain!")
+IF NOT EXIST "!umain!" (call "!dregquery!" "!igdir!\Main.reg;!iudir!\Main.reg" "!udir!;!uudir!")
 echo Installing GameModeLib Main Settings
 REM ## Create GameMode Power Plan and Enable Dedicated Graphics for Java and Python ##
 call "!gmexe!" -UGenInfo -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPlan -SetPowerPlan
@@ -191,6 +194,7 @@ reg import "!rc!\PowerThrottling.reg"
 :PPThrottling
 
 :END
+reg unload "HKEY_USERS\!SID!"
 exit /b
 
 :QUERYVAL
