@@ -91,7 +91,7 @@ namespace RegImport
                         string str_sub = null;
                         StreamWriter writer_current = null;
                         //TODO: Ensure it doesn't Gen Uninstall Info if the file already exists
-                        //TODO: DE-ESC Value Names and properly parse them
+                        //TODO: handle when entire keys are removed
                         if (UNINSTALL_GLOBAL)
                         {
                             writer_global = new StreamWriter(p.First);
@@ -168,7 +168,6 @@ namespace RegImport
                             int index_end = -1;
                             //Parse The REG value
                             bool start = false;
-                            bool end = false;
                             char prev = ' ';
                             if (tl.StartsWith("\""))
                             {
@@ -194,25 +193,15 @@ namespace RegImport
                                         start = true;//TOGGLE start
                                 }
                             }
-                            else
-                            {
-                                int index_space = tl.IndexOf(" ");
-                                if(index_space >= 0)
-                                    index_end = Math.Min(index, index_space);
-                            }
                             if(index_end < 0)
                             {
                                 Console.Error.WriteLine("Maulformed Reg Value:" + line);
                                 continue;
                             }
-                            string strval = DeESC(SubStringIndex(tl, index_begin, index_end));
-
-                            Console.WriteLine(strval);
-                           // string strval = tl.Substring(0, index);
-                            if (strval.StartsWith("\""))
-                                strval = strval.Substring(1, strval.Length - 2);
+                            string strval = "";
                             try
                             {
+                                strval = DeESC(SubStringIndex(tl, index_begin, index_end));
                                 var val = key_sub.GetValue(strval);
                                 if(val == null)
                                 {
