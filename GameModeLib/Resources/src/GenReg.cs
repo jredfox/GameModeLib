@@ -201,15 +201,15 @@ namespace RegImport
                             string strval = "";
                             try
                             {
-                                strval = DeESC(SubStringIndex(tl, index_begin, index_end));
-                                var val = key_sub.GetValue(strval);
+                                strval = SubStringIndex(tl, index_begin, index_end);
+                                var val = key_sub.GetValue(DeESC(strval));
                                 if(val == null)
                                 {
                                     writer_current.WriteLine("\"" + strval + "\"=-");
                                 }
                                 else
                                 {
-                                    RegistryValueKind type = key_sub.GetValueKind(strval);
+                                    RegistryValueKind type = key_sub.GetValueKind(DeESC(strval));
                                     if(type == RegistryValueKind.DWord)
                                     {
                                         uint v = (uint) (int) val;
