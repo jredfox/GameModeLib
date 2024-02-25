@@ -91,6 +91,7 @@ namespace RegImport
                         string str_sub = null;
                         StreamWriter writer_current = null;
                         //TODO: Ensure it doesn't Gen Uninstall Info if the file already exists
+                        //TODO: DE-ESC Value Names and properly parse them
                         if (UNINSTALL_GLOBAL)
                         {
                             writer_global = new StreamWriter(p.First);
@@ -190,16 +191,46 @@ namespace RegImport
                                     {
                                         ulong qval = (ulong)(long)val;
                                         byte[] bytes = BitConverter.GetBytes(qval);
-                                        string hexString = BitConverter.ToString(bytes).Replace("-", ",");
-                                        writer_current.WriteLine("\"" + strval + "\"=hex(b):" + hexString.ToLower());
+                                        string hexString = BitConverter.ToString(bytes).Replace("-", ",").ToLower();
+                                        writer_current.WriteLine("\"" + strval + "\"=hex(b):" + hexString);
                                     }
                                     else if(type == RegistryValueKind.ExpandString)
                                     {
-                                        Console.WriteLine(val + " " + val.GetType() + " " + "".GetType());
+                                        byte[] bytes = Encoding.Unicode.GetBytes(val.ToString());
+                                        string hexString = BitConverter.ToString(bytes).Replace("-", ",").ToLower();
+                                        hexString += ",00,00";//Null Terminator UTF-16 two bytes to represent '\0'
+                                        write_binary(writer_current, ("\"" + strval + "\"=hex(2):"), hexString);
+                                    }
+                                    else if(type == RegistryValueKind.None)
+                                    {
+                                        if (val is System.Byte[])
+                                        {
+                                            byte[] bytes = (byte[]) val;
+                                            string hexString = BitConverter.ToString(bytes).Replace("-", ",").ToLower();
+                                            write_binary(writer_current, ("\"" + strval + "\"=hex(0):"), hexString);
+                                        }
+                                        else
+                                        {
+                                            Console.Error.WriteLine("Unsupported Reg Type NONE CLASS:" + val.GetType());
+                                        }
+                                    }
+                                    else if(type == RegistryValueKind.Binary)
+                                    {
+                                        byte[] bytes = (byte[])val;
+                                        string hexString = BitConverter.ToString(bytes).Replace("-", ",").ToLower();
+                                        write_binary(writer_current, ("\"" + strval + "\"=hex:"), hexString);
+                                    }
+                                    else if(type == RegistryValueKind.MultiString)
+                                    {
+                                        string[] arr = (string[]) val;
+                                        write_binary(writer_current, ("\"" + strval + "\"=hex(7):"), MultiSzToHexString(arr));
+                                    }
+                                    else
+                                    {
+                                        Console.Error.WriteLine("Unsupported Type:" + type);
                                     }
                                 }
                                
-                                //Console.WriteLine(str_tree + @"\" + str_sub + @"\" + strval);
                             }
                             catch(Exception e)
                             {
@@ -224,6 +255,49 @@ namespace RegImport
             }
         }
 
+        private static void write_binary(StreamWriter w, string v, string hexString)
+        {
+            string[] hex = hexString.Split(',');
+            w.Write(v);
+            int count = v.Length;
+            int index = 0;
+            bool flag = true;
+            foreach(string s in hex)
+            {
+                bool more = (index + 1) >= hex.Length;
+                w.Write(s + (more ? "" : ","));
+                count += 3;
+                if (count >= (flag ? 77 : 74))
+                {
+                    w.WriteLine(@"\");
+                    w.Write("  ");
+                    count = 0;
+                    flag = false;
+                }
+                index++;
+            }
+            w.WriteLine();
+        }
+
+        static string MultiSzToHexString(string[] values)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (BinaryWriter bw = new BinaryWriter(ms))
+                {
+                    foreach (string value in values)
+                    {
+                        bw.Write(System.Text.Encoding.Unicode.GetBytes(value));
+                        bw.Write((byte)0);
+                        bw.Write((byte)0);
+                    }
+                    // NULL Terminator
+                    bw.Write((byte)0);
+                    bw.Write((byte)0);
+                }
+                return BitConverter.ToString(ms.ToArray()).Replace("-", ",").ToLower();
+            }
+        }
         public static string ESC(string val)
         {
             return val.Replace(@"\", @"\\").Replace(@"""", @"\""");
