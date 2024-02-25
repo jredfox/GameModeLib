@@ -161,11 +161,54 @@ namespace RegImport
                             }
                             if (tl.StartsWith(";") || tl.Equals("") || key_sub == null || writer_current == null)
                                 continue;
-                            //Console.WriteLine(line);
                             int index = tl.IndexOf('=');
                             if (index < 0)
                                 continue;
-                            string strval = tl.Substring(0, index);
+                            int index_begin = 0;
+                            int index_end = -1;
+                            //Parse The REG value
+                            bool start = false;
+                            bool end = false;
+                            char prev = ' ';
+                            if (tl.StartsWith("\""))
+                            {
+                                index_begin = 1;
+                                for (int i = 0; i < tl.Length; i++)
+                                {
+                                    //ESCAPE Slash
+                                    if (prev.Equals('\\') && tl[i].Equals('\\'))
+                                    {
+                                        prev = ' ';
+                                    }
+
+                                    if (tl[i].Equals('"') && !prev.Equals('\\'))
+                                    {
+                                        if (start)
+                                        {
+                                            index_end = i - 1;
+                                            break;
+                                        }
+                                    }
+                                    prev = tl[i];//Set Previous char
+                                    if (!start && tl[i].Equals('"'))
+                                        start = true;//TOGGLE start
+                                }
+                            }
+                            else
+                            {
+                                int index_space = tl.IndexOf(" ");
+                                if(index_space >= 0)
+                                    index_end = Math.Min(index, index_space);
+                            }
+                            if(index_end < 0)
+                            {
+                                Console.Error.WriteLine("Maulformed Reg Value:" + line);
+                                continue;
+                            }
+                            string strval = DeESC(SubStringIndex(tl, index_begin, index_end));
+
+                            Console.WriteLine(strval);
+                           // string strval = tl.Substring(0, index);
                             if (strval.StartsWith("\""))
                                 strval = strval.Substring(1, strval.Length - 2);
                             try
@@ -253,6 +296,17 @@ namespace RegImport
                     writer_user = null;
                 }
             }
+        }
+
+        private static string DeESC(string v)
+        {
+            return v.Replace(@"\\", @"\").Replace(@"\""","\"");
+        }
+
+        public static string SubStringIndex(string input , int startIndex, int endIndex)
+        {
+            int length = endIndex - startIndex + 1;
+            return input.Substring(startIndex, length);
         }
 
         private static void write_binary(StreamWriter w, string v, string hexString)
