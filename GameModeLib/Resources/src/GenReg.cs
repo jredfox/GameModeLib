@@ -90,7 +90,7 @@ namespace RegImport
                         string str_tree = null;
                         string str_sub = null;
                         StreamWriter writer_current = null;
-                        //TODO: Ensure it doesn't Gen Uninstall Info if the file already exists
+                        //TODO: Ensure it doesn't Gen Uninstall Info if the file already exists Unless override is true
                         //TODO: handle when entire keys are removed
                         if (UNINSTALL_GLOBAL)
                         {
