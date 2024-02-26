@@ -107,22 +107,35 @@ namespace RegImport
                             string tl = line.Trim();
                             if (tl.StartsWith("["))
                             {
+                                bool delkey = tl.StartsWith("[-");
                                 Close(key_sub);
-                                str_tree = tl.StartsWith("[-") ? tl.Substring(2, tl.IndexOf(@"\") - 2).ToUpper() : tl.Substring(1, tl.IndexOf(@"\") - 1).ToUpper();
+                                str_tree = delkey ? tl.Substring(2, tl.IndexOf(@"\") - 2).ToUpper() : tl.Substring(1, tl.IndexOf(@"\") - 1).ToUpper();
                                 str_sub = tl.Substring(tl.IndexOf(@"\") + 1, tl.Length - tl.IndexOf(@"\") - 2);
                                 bool IsUSR = str_tree.Equals("HKEY_CURRENT_USER");
                                 if (IsUSR)
                                 {
                                     str_tree = str_tree.Replace(@"HKEY_CURRENT_USER", @"HKEY_USERS");
                                     str_sub = SID + @"\" + str_sub;
+                                    writer_current = writer_user;
+                                }
+                                else
+                                {
+                                    writer_current = writer_global;
                                 }
                                 try
                                 {
                                     key_tree = GetRegTree(str_tree);
                                     key_sub = key_tree.OpenSubKey(str_sub, false);
+                                    //Handle when a REG file wants to delete the entire key
+                                    if(delkey && key_sub != null)
+                                    {
+                                        ExportKey(key_sub, writer_current);
+                                        Close(key_sub);
+                                        key_sub = null;//Enforce it doesn't loop through the values
+                                        continue;
+                                    }
                                     if(UNINSTALL_USER && IsUSR)
                                     {
-                                        writer_current = writer_user;
                                         //Handle Missing Keys
                                         if (key_sub == null)
                                             writer_user.WriteLine("\r\n[-" + str_tree + @"\" + str_sub + "]");
@@ -133,7 +146,6 @@ namespace RegImport
                                     }
                                     else if (UNINSTALL_GLOBAL && !IsUSR)
                                     {
-                                        writer_current = writer_global;
                                         //Handle Missing Keys
                                         if (key_sub == null)
                                             writer_global.WriteLine("\r\n[-" + str_tree + @"\" + str_sub + "]");
@@ -284,6 +296,103 @@ namespace RegImport
                     writer_global = null;
                     writer_user = null;
                 }
+            }
+        }
+
+        public static void ExportKey(RegistryKey key_sub, StreamWriter writer_current)
+        {
+            try
+            {
+                writer_current.WriteLine("\r\n[" + key_sub.Name + "]");
+
+                //Write the values
+                foreach (string v in key_sub.GetValueNames())
+                {
+                    WriteValue(writer_current, key_sub, v);
+                }
+
+                foreach (string v in key_sub.GetSubKeyNames())
+                {
+                    RegistryKey sub = key_sub.OpenSubKey(v, false);
+                    ExportKey(sub, writer_current);
+                    Close(sub);
+                }
+            }
+            catch(Exception e)
+            {
+                Console.Error.Write(key_sub.Name + " ");
+                Console.Error.Write(e + "\r\n");
+            }
+        }
+        /// <summary>
+        /// Writes a Registry Value from memory to the disk
+        /// </summary>
+        /// <param name="w">The writer</param>
+        /// <param name="v">A De-Escaped registry value</param>
+        public static void WriteValue(StreamWriter writer_current, RegistryKey k, string vname)
+        {
+            try
+            {
+                var val = k.GetValue(vname);
+                string valESC = ESC(vname);
+                RegistryValueKind type = k.GetValueKind(vname);
+                //Console.WriteLine("HERE2:" + valESC + " " + type);
+                if (type == RegistryValueKind.DWord)
+                {
+                    uint v = (uint)(int)val;
+                    writer_current.WriteLine("\"" + valESC + "\"=dword:" + v.ToString("x8"));
+                }
+                else if (type == RegistryValueKind.String)
+                {
+                    writer_current.WriteLine("\"" + valESC + "\"=\"" + ESC((string)val) + "\"");
+                }
+                else if (type == RegistryValueKind.QWord)
+                {
+                    ulong qval = (ulong)(long)val;
+                    byte[] bytes = BitConverter.GetBytes(qval);
+                    string hexString = BitConverter.ToString(bytes).Replace("-", ",").ToLower();
+                    writer_current.WriteLine("\"" + valESC + "\"=hex(b):" + hexString);
+                }
+                else if (type == RegistryValueKind.ExpandString)
+                {
+                    byte[] bytes = Encoding.Unicode.GetBytes(val.ToString());
+                    string hexString = BitConverter.ToString(bytes).Replace("-", ",").ToLower();
+                    hexString += ",00,00";//Null Terminator UTF-16 two bytes to represent '\0'
+                    write_binary(writer_current, ("\"" + valESC + "\"=hex(2):"), hexString);
+                }
+                else if (type == RegistryValueKind.None)
+                {
+                    if (val is System.Byte[])
+                    {
+                        byte[] bytes = (byte[])val;
+                        string hexString = BitConverter.ToString(bytes).Replace("-", ",").ToLower();
+                        write_binary(writer_current, ("\"" + valESC + "\"=hex(0):"), hexString);
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Unsupported Reg Type NONE CLASS:" + val.GetType());
+                    }
+                }
+                else if (type == RegistryValueKind.Binary)
+                {
+                    byte[] bytes = (byte[])val;
+                    string hexString = BitConverter.ToString(bytes).Replace("-", ",").ToLower();
+                    write_binary(writer_current, ("\"" + valESC + "\"=hex:"), hexString);
+                }
+                else if (type == RegistryValueKind.MultiString)
+                {
+                    string[] arr = (string[])val;
+                    write_binary(writer_current, ("\"" + valESC + "\"=hex(7):"), MultiSzToHexString(arr));
+                }
+                else
+                {
+                    Console.Error.WriteLine("Unsupported Type:" + type);
+                }
+            }
+            catch(Exception e)
+            {
+                Console.Error.WriteLine("Error Reading Reg Value:" + k.Name + @"\" + vname);
+                Console.Error.WriteLine(e);
             }
         }
 
