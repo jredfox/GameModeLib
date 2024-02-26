@@ -332,12 +332,27 @@ namespace RegImport
                         key_sub = key_tree.OpenSubKey(str_sub, true);
                         if (delkey)
                         {
-                            key_tree.DeleteSubKeyTree(str_sub);
+                            if (key_sub != null)
+                            {
+                                try
+                                {
+                                    key_tree.DeleteSubKeyTree(str_sub);
+                                }
+                                catch(Exception e)
+                                {
+                                    Console.Error.Write("Error While Deleting Reg Key:" + str_tree + @"\" + str_sub + " ");
+                                    Console.Error.WriteLine(e);
+                                }
+                            }
                             key_sub = null; //REG File format ignores values below a deletion of a key and your required to start a new key
                         }
                         else if (key_sub == null)
                         {
                             key_sub = key_tree.CreateSubKey(str_sub);
+                            if(key_sub == null)
+                            {
+                                Console.Error.WriteLine("Error Failed To Create Registry Key:" + str_tree + @"\" + str_sub);
+                            }
                         }
                     }
                     catch (SecurityException)
