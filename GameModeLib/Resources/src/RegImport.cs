@@ -91,7 +91,6 @@ namespace RegImport
                         string str_sub = null;
                         StreamWriter writer_current = null;
                         //TODO: Ensure it doesn't Gen Uninstall Info if the file already exists Unless override is true
-                        //TODO: handle when entire keys are removed
                         if (UNINSTALL_GLOBAL)
                         {
                             writer_global = new StreamWriter(p.First);
@@ -283,6 +282,7 @@ namespace RegImport
                             }
                         }
                     }
+                    RegImport(filelines);
                 }
                 catch(Exception e)
                 {
@@ -295,6 +295,66 @@ namespace RegImport
                     Close(writer_user);
                     writer_global = null;
                     writer_user = null;
+                }
+            }
+        }
+
+        private static void RegImport(List<string> filelines)
+        {
+            RegistryKey key_tree = null;
+            RegistryKey key_sub = null;
+            string str_tree = null;
+            string str_sub = null;
+
+            foreach (string line in filelines)
+            {
+                string tl = line.Trim();
+                if (tl.Equals("") || tl.StartsWith(";"))
+                {
+                    continue;
+                }
+                //Create or Delete Keys
+                else if (tl.StartsWith("["))
+                {
+                    bool delkey = tl.StartsWith("[-");
+                    Close(key_sub);
+                    str_tree = delkey ? tl.Substring(2, tl.IndexOf(@"\") - 2).ToUpper() : tl.Substring(1, tl.IndexOf(@"\") - 1).ToUpper();
+                    str_sub = tl.Substring(tl.IndexOf(@"\") + 1, tl.Length - tl.IndexOf(@"\") - 2);
+                    bool IsUSR = str_tree.Equals("HKEY_CURRENT_USER");
+                    if (IsUSR)
+                    {
+                        str_tree = str_tree.Replace(@"HKEY_CURRENT_USER", @"HKEY_USERS");
+                        str_sub = SID + @"\" + str_sub;
+                    }
+                    try
+                    {
+                        key_tree = GetRegTree(str_tree);
+                        key_sub = key_tree.OpenSubKey(str_sub, true);
+                        if (delkey)
+                        {
+                            key_tree.DeleteSubKeyTree(str_sub);
+                            key_sub = null; //REG File format ignores values below a deletion of a key and your required to start a new key
+                        }
+                        else if (key_sub == null)
+                        {
+                            key_sub = key_tree.CreateSubKey(str_sub);
+                        }
+                    }
+                    catch (SecurityException)
+                    {
+                        key_sub = null;
+                        Console.Error.WriteLine("Access Denied Reg Import:" + str_tree + @"\" + str_sub);
+                    }
+                    catch (Exception e)
+                    {
+                        key_sub = null;
+                        Console.Error.Write("Error While Importing Key:" + str_tree + @"\" + str_sub + " ");
+                        Console.Error.WriteLine(e);
+                    }
+                }
+                else if (key_sub != null)
+                {
+                    
                 }
             }
         }
@@ -535,7 +595,7 @@ namespace RegImport
             }
             else if (u.StartsWith("HKCC") || u.StartsWith("HKEY_CURRENT_CONFIG"))
             {
-                return RegistryKey.OpenBaseKey(RegistryHive.CurrentConfig, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default); ;
+                return RegistryKey.OpenBaseKey(RegistryHive.CurrentConfig, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
             }
             return null;
         }
