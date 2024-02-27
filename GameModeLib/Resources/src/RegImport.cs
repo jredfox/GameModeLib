@@ -406,22 +406,23 @@ namespace RegImport
                             key_sub.DeleteValue(strval, false);
                         }
                         //DWORD
-                        else if(start.StartsWith("dword:"))
+                        else if (start.StartsWith("dword:"))
                         {
                             string str_data = start.Substring(6);
                             uint data = Convert.ToUInt32(str_data, 16);
                             key_sub.SetValue(strval, (int)data, RegistryValueKind.DWord);
                         }
                         //STRING
-                        else if(start.StartsWith("\""))
+                        else if (start.StartsWith("\""))
                         {
                             string str_data = DeESC(SubStringIndex(start, 1, start.Length - 2));
                             key_sub.SetValue(strval, str_data, RegistryValueKind.String);
                         }
                         //QWORD
-                        else if(start.StartsWith("hex(b):"))
+                        else if (start.StartsWith("hex(b):"))
                         {
-                            string hexString = start.Substring(7).Replace(",", "");
+                            //convert the multi line hex string to a single parsible bytes
+                            string hexString = GetBinaryHex(start.Substring(7).Replace(",", ""), index_line, filelines);
                             // Convert hexadecimal string to byte array
                             byte[] byteArray = new byte[hexString.Length / 2];
                             for (int i = 0; i < byteArray.Length; i++)
@@ -431,17 +432,17 @@ namespace RegImport
                             ulong qword = BitConverter.ToUInt64(byteArray, 0);//TODO: Make sure DWORD and QWORD Works with ARM64
                             key_sub.SetValue(strval, (long)qword, RegistryValueKind.QWord);
                         }
-                        //BINARY
-                        else if(start.StartsWith("hex:"))
+                        //BINARY & TYPE NONE
+                        else if(start.StartsWith("hex:") || start.StartsWith("hex(0):"))
                         {
-                            string str_data = start.Substring(4);
+                            bool isnone = start.StartsWith("hex(0):");
+                            string str_data = GetBinaryHex(start.Substring((isnone ? 7 : 4)).Replace(",", ""), index_line, filelines);
                             byte[] byteArray = new byte[str_data.Length / 2];
                             for (int i = 0; i < byteArray.Length; i++)
                             {
-                               // byteArray[i] = Convert.ToByte(str_data.Substring(i * 2, 2), 16);
+                               byteArray[i] = Convert.ToByte(str_data.Substring(i * 2, 2), 16);
                             }
-                            //Console.WriteLine(str_data);
-                            //key_sub.SetValue(strval, byteArray, RegistryValueKind.Binary);
+                            key_sub.SetValue(strval, byteArray, (isnone ? RegistryValueKind.None : RegistryValueKind.Binary));
                         }
                     }
                     catch(UnauthorizedAccessException)
@@ -459,6 +460,36 @@ namespace RegImport
                     }
                 }
             }
+        }
+
+        public static string GetBinaryHex(string hexString, int index_line, List<string> filelines)
+        {
+            string v = "NULL";
+            int index_get = index_line;
+            while (hexString.EndsWith("\\"))
+            {
+                hexString = hexString.Replace("\\", "");
+                do
+                {
+                    index_get++;
+                    if (index_get < filelines.Count)
+                    {
+                        v = filelines[index_get].Replace(",", "").Replace(" ", "");
+                        if (v.StartsWith("\"") || v.StartsWith("["))
+                        {
+                            v = "";
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        v = "";
+                        break;
+                    }
+                } while (v.StartsWith(";") || v.Equals(""));
+                hexString += v;
+            }
+            return hexString;
         }
 
         public static void ExportKey(RegistryKey key_sub, StreamWriter writer_current)
