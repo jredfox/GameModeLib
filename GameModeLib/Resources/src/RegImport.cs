@@ -453,13 +453,38 @@ namespace RegImport
                             {
                                 byteArray[i] = Convert.ToByte(str_data.Substring(i * 2, 2), 16);
                             }
-                            string expand_sz = System.Text.Encoding.Unicode.GetString(byteArray);
+                            string expand_sz = System.Text.Encoding.Unicode.GetString(byteArray, 0, byteArray.Length - 2);//Remove Null Terminator as C# adds it
                             key_sub.SetValue(strval, expand_sz, RegistryValueKind.ExpandString);
                         }
                         //REG_MULTI_SZ String Array
                         else if(start.StartsWith("hex(7):"))
                         {
                             string str_data = GetBinaryHex(start.Substring(7).Replace(",", ""), index_line, filelines);
+                            List<int> indexes = new List<int>();
+                            for(int i=0; (i + 3) < str_data.Length;i += 4)
+                            {
+                                string h = str_data.Substring(i, 4);
+                                if(h.Equals("0000") && (i + 4) < str_data.Length)
+                                {
+                                    indexes.Add(i);//NULL terminator seperates the strings
+                                }
+                            }
+                            string[] multi_sz = new string[indexes.Count];
+                            int counter = 0;
+                            int counter_multi = 0;
+                            foreach (int k in indexes)
+                            {
+                                var vv = SubStringIndex(str_data, counter, k - 1);
+                                counter = k + 4;
+                                byte[] byteArray = new byte[vv.Length / 2];
+                                for (int j = 0; j < byteArray.Length; j++)
+                                {
+                                    byteArray[j] = Convert.ToByte(vv.Substring(j * 2, 2), 16);
+                                }
+                                string sz = System.Text.Encoding.Unicode.GetString(byteArray);
+                                multi_sz[counter_multi++] = sz;
+                            }
+                            key_sub.SetValue(strval, multi_sz, RegistryValueKind.MultiString);
                         }
                     }
                     catch(UnauthorizedAccessException)
@@ -652,7 +677,7 @@ namespace RegImport
                         bw.Write((byte)0);
                         bw.Write((byte)0);
                     }
-                    // NULL Terminator
+                    // NULL Terminator of the REG_MULTI_SZ Array
                     bw.Write((byte)0);
                     bw.Write((byte)0);
                 }
