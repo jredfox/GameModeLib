@@ -309,197 +309,205 @@ namespace RegImport
             foreach (string line in filelines)
             {
                 index_line++;
-                string tl = line.Trim();
-                if (tl.Equals("") || tl.StartsWith(";"))
+                try
                 {
-                    continue;
-                }
-                //Create or Delete Keys
-                else if (tl.StartsWith("["))
-                {
-                    bool delkey = tl.StartsWith("[-");
-                    Close(key_sub);
-                    str_tree = delkey ? tl.Substring(2, tl.IndexOf(@"\") - 2).ToUpper() : tl.Substring(1, tl.IndexOf(@"\") - 1).ToUpper();
-                    str_sub = tl.Substring(tl.IndexOf(@"\") + 1, tl.Length - tl.IndexOf(@"\") - 2);
-                    bool IsUSR = str_tree.Equals("HKEY_CURRENT_USER");
-                    if (IsUSR)
-                    {
-                        str_tree = str_tree.Replace(@"HKEY_CURRENT_USER", @"HKEY_USERS");
-                        str_sub = SID + @"\" + str_sub;
-                    }
-                    try
-                    {
-                        key_tree = GetRegTree(str_tree);
-                        key_sub = key_tree.OpenSubKey(str_sub, true);
-                        if (delkey)
-                        {
-                            if (key_sub != null)
-                            {
-                                try
-                                {
-                                    key_tree.DeleteSubKeyTree(str_sub);
-                                }
-                                catch(Exception e)
-                                {
-                                    Console.Error.Write("Error While Deleting Reg Key:" + str_tree + @"\" + str_sub + " ");
-                                    Console.Error.WriteLine(e);
-                                }
-                            }
-                            key_sub = null; //REG File format ignores values below a deletion of a key and your required to start a new key
-                        }
-                        else if (key_sub == null)
-                        {
-                            key_sub = key_tree.CreateSubKey(str_sub);
-                            if(key_sub == null)
-                            {
-                                Console.Error.WriteLine("Error Failed To Create Registry Key:" + str_tree + @"\" + str_sub);
-                            }
-                        }
-                    }
-                    catch (SecurityException)
-                    {
-                        key_sub = null;
-                        Console.Error.WriteLine("Access Denied Reg Import:" + str_tree + @"\" + str_sub);
-                    }
-                    catch (Exception e)
-                    {
-                        key_sub = null;
-                        Console.Error.Write("Error While Importing Key:" + str_tree + @"\" + str_sub + " ");
-                        Console.Error.WriteLine(e);
-                    }
-                }
-                else if (key_sub != null)
-                {
-                    if(tl.IndexOf("\"") < 0)
+                    string tl = line.Trim();
+                    if (tl.Equals("") || tl.StartsWith(";"))
                     {
                         continue;
                     }
-                    string start = tl.Substring(tl.IndexOf("\""));
-                    bool s = false;
-                    char prev = ' ';
-                    int index_end = -1;
-                    for(int i = 0; i < start.Length; i++)
+                    //Create or Delete Keys
+                    else if (tl.StartsWith("["))
                     {
-                        var c = start[i];
-                        //Escape double backslash
-                        if (prev.Equals('\\') && c.Equals('\\'))
-                            prev = ' ';
-                        if (c.Equals('"') && !prev.Equals('\\'))
+                        bool delkey = tl.StartsWith("[-");
+                        Close(key_sub);
+                        str_tree = delkey ? tl.Substring(2, tl.IndexOf(@"\") - 2).ToUpper() : tl.Substring(1, tl.IndexOf(@"\") - 1).ToUpper();
+                        str_sub = tl.Substring(tl.IndexOf(@"\") + 1, tl.Length - tl.IndexOf(@"\") - 2);
+                        bool IsUSR = str_tree.Equals("HKEY_CURRENT_USER");
+                        if (IsUSR)
                         {
-                            if(s)
+                            str_tree = str_tree.Replace(@"HKEY_CURRENT_USER", @"HKEY_USERS");
+                            str_sub = SID + @"\" + str_sub;
+                        }
+                        try
+                        {
+                            key_tree = GetRegTree(str_tree);
+                            key_sub = key_tree.OpenSubKey(str_sub, true);
+                            if (delkey)
                             {
-                                index_end = i - 1;
-                                break;
-                            }
-                            s = true;
-                        }
-                        prev = c;
-                    }
-                    string strval = DeESC(SubStringIndex(start, 1, index_end));
-                    start = start.Substring(index_end + 2);
-                    start = start.Substring(start.IndexOf("=") + 1).Trim();
-                    try
-                    {
-                        //Delete the value
-                        if (start.Equals("-"))
-                        {
-                            key_sub.DeleteValue(strval, false);
-                        }
-                        //DWORD
-                        else if (start.StartsWith("dword:"))
-                        {
-                            string str_data = start.Substring(6);
-                            uint data = Convert.ToUInt32(str_data, 16);
-                            key_sub.SetValue(strval, (int)data, RegistryValueKind.DWord);
-                        }
-                        //STRING
-                        else if (start.StartsWith("\""))
-                        {
-                            string str_data = DeESC(SubStringIndex(start, 1, start.Length - 2));
-                            key_sub.SetValue(strval, str_data, RegistryValueKind.String);
-                        }
-                        //QWORD
-                        else if (start.StartsWith("hex(b):"))
-                        {
-                            //convert the multi line hex string to a single parsible bytes
-                            string hexString = GetBinaryHex(start.Substring(7).Replace(",", ""), index_line, filelines);
-                            // Convert hexadecimal string to byte array
-                            byte[] byteArray = new byte[hexString.Length / 2];
-                            for (int i = 0; i < byteArray.Length; i++)
-                            {
-                                byteArray[i] = Convert.ToByte(hexString.Substring(i * 2, 2), 16);
-                            }
-                            ulong qword = BitConverter.ToUInt64(byteArray, 0);//TODO: Make sure DWORD and QWORD Works with ARM64
-                            key_sub.SetValue(strval, (long)qword, RegistryValueKind.QWord);
-                        }
-                        //BINARY & TYPE NONE
-                        else if(start.StartsWith("hex:") || start.StartsWith("hex(0):"))
-                        {
-                            bool isnone = start.StartsWith("hex(0):");
-                            string str_data = GetBinaryHex(start.Substring((isnone ? 7 : 4)).Replace(",", ""), index_line, filelines);
-                            byte[] byteArray = new byte[str_data.Length / 2];
-                            for (int i = 0; i < byteArray.Length; i++)
-                            {
-                               byteArray[i] = Convert.ToByte(str_data.Substring(i * 2, 2), 16);
-                            }
-                            key_sub.SetValue(strval, byteArray, (isnone ? RegistryValueKind.None : RegistryValueKind.Binary));
-                        }
-                        //REG_EXPAND_SZ Expandable String
-                        else if(start.StartsWith("hex(2):"))
-                        {
-                            string str_data = GetBinaryHex(start.Substring(7).Replace(",", ""), index_line, filelines);
-                            byte[] byteArray = new byte[str_data.Length / 2];
-                            for (int i = 0; i < byteArray.Length; i++)
-                            {
-                                byteArray[i] = Convert.ToByte(str_data.Substring(i * 2, 2), 16);
-                            }
-                            string expand_sz = System.Text.Encoding.Unicode.GetString(byteArray, 0, byteArray.Length - 2);//Remove Null Terminator as C# adds it
-                            key_sub.SetValue(strval, expand_sz, RegistryValueKind.ExpandString);
-                        }
-                        //REG_MULTI_SZ String Array
-                        else if(start.StartsWith("hex(7):"))
-                        {
-                            string str_data = GetBinaryHex(start.Substring(7).Replace(",", ""), index_line, filelines);
-                            List<int> indexes = new List<int>();
-                            for(int i=0; (i + 3) < str_data.Length;i += 4)
-                            {
-                                string h = str_data.Substring(i, 4);
-                                if(h.Equals("0000") && (i + 4) < str_data.Length)
+                                if (key_sub != null)
                                 {
-                                    indexes.Add(i);//NULL terminator seperates the strings
+                                    try
+                                    {
+                                        key_tree.DeleteSubKeyTree(str_sub);
+                                    }
+                                    catch (Exception e)
+                                    {
+                                        Console.Error.Write("Error While Deleting Reg Key:" + str_tree + @"\" + str_sub + " ");
+                                        Console.Error.WriteLine(e);
+                                    }
+                                }
+                                key_sub = null; //REG File format ignores values below a deletion of a key and your required to start a new key
+                            }
+                            else if (key_sub == null)
+                            {
+                                key_sub = key_tree.CreateSubKey(str_sub);
+                                if (key_sub == null)
+                                {
+                                    Console.Error.WriteLine("Error Failed To Create Registry Key:" + str_tree + @"\" + str_sub);
                                 }
                             }
-                            string[] multi_sz = new string[indexes.Count];
-                            int counter = 0;
-                            int counter_multi = 0;
-                            foreach (int k in indexes)
-                            {
-                                var vv = SubStringIndex(str_data, counter, k - 1);
-                                counter = k + 4;
-                                byte[] byteArray = new byte[vv.Length / 2];
-                                for (int j = 0; j < byteArray.Length; j++)
-                                {
-                                    byteArray[j] = Convert.ToByte(vv.Substring(j * 2, 2), 16);
-                                }
-                                string sz = System.Text.Encoding.Unicode.GetString(byteArray);
-                                multi_sz[counter_multi++] = sz;
-                            }
-                            key_sub.SetValue(strval, multi_sz, RegistryValueKind.MultiString);
+                        }
+                        catch (SecurityException)
+                        {
+                            key_sub = null;
+                            Console.Error.WriteLine("Access Denied Reg Import:" + str_tree + @"\" + str_sub);
+                        }
+                        catch (Exception e)
+                        {
+                            key_sub = null;
+                            Console.Error.Write("Error While Importing Key:" + str_tree + @"\" + str_sub + " ");
+                            Console.Error.WriteLine(e);
                         }
                     }
-                    catch(UnauthorizedAccessException)
+                    else if (key_sub != null)
                     {
-                        Console.Error.WriteLine("Access Denied Reg Import Value:" + str_tree + @"\" + str_sub + @"\" + strval);
+                        if (tl.IndexOf("\"") < 0)
+                        {
+                            continue;
+                        }
+                        string start = tl.Substring(tl.IndexOf("\""));
+                        bool s = false;
+                        char prev = ' ';
+                        int index_end = -1;
+                        for (int i = 0; i < start.Length; i++)
+                        {
+                            var c = start[i];
+                            //Escape double backslash
+                            if (prev.Equals('\\') && c.Equals('\\'))
+                                prev = ' ';
+                            if (c.Equals('"') && !prev.Equals('\\'))
+                            {
+                                if (s)
+                                {
+                                    index_end = i - 1;
+                                    break;
+                                }
+                                s = true;
+                            }
+                            prev = c;
+                        }
+                        string strval = DeESC(SubStringIndex(start, 1, index_end));
+                        start = start.Substring(index_end + 2);
+                        start = start.Substring(start.IndexOf("=") + 1).Trim();
+                        try
+                        {
+                            //Delete the value
+                            if (start.Equals("-"))
+                            {
+                                key_sub.DeleteValue(strval, false);
+                            }
+                            //DWORD
+                            else if (start.StartsWith("dword:"))
+                            {
+                                string str_data = start.Substring(6);
+                                uint data = Convert.ToUInt32(str_data, 16);
+                                key_sub.SetValue(strval, (int)data, RegistryValueKind.DWord);
+                            }
+                            //STRING
+                            else if (start.StartsWith("\""))
+                            {
+                                string str_data = DeESC(SubStringIndex(start, 1, start.Length - 2));
+                                key_sub.SetValue(strval, str_data, RegistryValueKind.String);
+                            }
+                            //QWORD
+                            else if (start.StartsWith("hex(b):"))
+                            {
+                                //convert the multi line hex string to a single parsible bytes
+                                string hexString = GetBinaryHex(start.Substring(7).Replace(",", ""), index_line, filelines);
+                                // Convert hexadecimal string to byte array
+                                byte[] byteArray = new byte[hexString.Length / 2];
+                                for (int i = 0; i < byteArray.Length; i++)
+                                {
+                                    byteArray[i] = Convert.ToByte(hexString.Substring(i * 2, 2), 16);
+                                }
+                                ulong qword = BitConverter.ToUInt64(byteArray, 0);//TODO: Make sure DWORD and QWORD Works with ARM64
+                                key_sub.SetValue(strval, (long)qword, RegistryValueKind.QWord);
+                            }
+                            //BINARY & TYPE NONE
+                            else if (start.StartsWith("hex:") || start.StartsWith("hex(0):"))
+                            {
+                                bool isnone = start.StartsWith("hex(0):");
+                                string str_data = GetBinaryHex(start.Substring((isnone ? 7 : 4)).Replace(",", ""), index_line, filelines);
+                                byte[] byteArray = new byte[str_data.Length / 2];
+                                for (int i = 0; i < byteArray.Length; i++)
+                                {
+                                    byteArray[i] = Convert.ToByte(str_data.Substring(i * 2, 2), 16);
+                                }
+                                key_sub.SetValue(strval, byteArray, (isnone ? RegistryValueKind.None : RegistryValueKind.Binary));
+                            }
+                            //REG_EXPAND_SZ Expandable String
+                            else if (start.StartsWith("hex(2):"))
+                            {
+                                string str_data = GetBinaryHex(start.Substring(7).Replace(",", ""), index_line, filelines);
+                                byte[] byteArray = new byte[str_data.Length / 2];
+                                for (int i = 0; i < byteArray.Length; i++)
+                                {
+                                    byteArray[i] = Convert.ToByte(str_data.Substring(i * 2, 2), 16);
+                                }
+                                string expand_sz = System.Text.Encoding.Unicode.GetString(byteArray, 0, byteArray.Length - 2);//Remove Null Terminator as C# adds it
+                                key_sub.SetValue(strval, expand_sz, RegistryValueKind.ExpandString);
+                            }
+                            //REG_MULTI_SZ String Array
+                            else if (start.StartsWith("hex(7):"))
+                            {
+                                string str_data = GetBinaryHex(start.Substring(7).Replace(",", ""), index_line, filelines);
+                                List<int> indexes = new List<int>();
+                                for (int i = 0; (i + 3) < str_data.Length; i += 4)
+                                {
+                                    string h = str_data.Substring(i, 4);
+                                    if (h.Equals("0000") && (i + 4) < str_data.Length)
+                                    {
+                                        indexes.Add(i);//NULL terminator seperates the strings
+                                    }
+                                }
+                                string[] multi_sz = new string[indexes.Count];
+                                int counter = 0;
+                                int counter_multi = 0;
+                                foreach (int k in indexes)
+                                {
+                                    var vv = SubStringIndex(str_data, counter, k - 1);
+                                    counter = k + 4;
+                                    byte[] byteArray = new byte[vv.Length / 2];
+                                    for (int j = 0; j < byteArray.Length; j++)
+                                    {
+                                        byteArray[j] = Convert.ToByte(vv.Substring(j * 2, 2), 16);
+                                    }
+                                    string sz = System.Text.Encoding.Unicode.GetString(byteArray);
+                                    multi_sz[counter_multi++] = sz;
+                                }
+                                key_sub.SetValue(strval, multi_sz, RegistryValueKind.MultiString);
+                            }
+                        }
+                        catch (UnauthorizedAccessException)
+                        {
+                            Console.Error.WriteLine("Access Denied Reg Import Value:" + str_tree + @"\" + str_sub + @"\" + strval);
+                        }
+                        catch (SecurityException)
+                        {
+                            Console.Error.WriteLine("Access Denied Reg Import Value:" + str_tree + @"\" + str_sub + @"\" + strval);
+                        }
+                        catch (Exception e)
+                        {
+                            Console.Error.Write("Error Reg Import:" + str_tree + @"\" + str_sub + @"\" + strval + " ");
+                            Console.Error.WriteLine(e);
+                        }
                     }
-                    catch(SecurityException)
-                    {
-                        Console.Error.WriteLine("Access Denied Reg Import Value:" + str_tree + @"\" + str_sub + @"\" + strval);
-                    }
-                    catch(Exception e)
-                    {
-                        Console.Error.Write("Error Reg Import:" + str_tree + @"\" + str_sub + @"\" + strval + " ");
-                        Console.Error.WriteLine(e);
-                    }
+                }
+                catch(Exception e)
+                {
+                    Console.Error.Write("Maulformed Reg Import Line:" + line);
+                    Console.Error.WriteLine(e);
                 }
             }
         }
