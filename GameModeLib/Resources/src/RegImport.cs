@@ -24,12 +24,13 @@ namespace RegImport
 
     class Program
     {
-        public static bool IMPORT_GLOBAL, IMPORT_USER, UNINSTALL_GLOBAL, UNINSTALL_USER;
+        public static bool IMPORT_GLOBAL, IMPORT_USER, UNINSTALL_GLOBAL, UNINSTALL_USER, UNINSTALL_OVERWRITE;
         public static string SID;
         static void Main(string[] args)
         {
+            long milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             //HELP
-            if(args.Length < 3 || args[0].Equals("/?") || args[0].ToLower().Equals("/help"))
+            if (args.Length < 3 || args[0].Equals("/?") || args[0].ToLower().Equals("/help"))
             {
                 Help();
             }
@@ -39,7 +40,7 @@ namespace RegImport
 
             //Parse Flags
             string set = args[0].ToUpper();
-            for (int i = set.Length; i < 4; i++)
+            for (int i = set.Length; i < 5; i++)
             {
                 set += "F";
             }
@@ -47,7 +48,8 @@ namespace RegImport
             IMPORT_USER = set[1] == 'T';
             UNINSTALL_GLOBAL = set[2] == 'T';
             UNINSTALL_USER = set[3] == 'T';
-            
+            UNINSTALL_OVERWRITE = set[4] == 'T';
+
             //Parse SID
             SID = args[1].Trim();
             if(SID.Equals("") || SID.ToUpper().Equals("NULL"))
@@ -90,13 +92,13 @@ namespace RegImport
                         string str_tree = null;
                         string str_sub = null;
                         StreamWriter writer_current = null;
-                        //TODO: Ensure it doesn't Gen Uninstall Info if the file already exists Unless override is true
-                        if (UNINSTALL_GLOBAL)
+                        
+                        if (UNINSTALL_GLOBAL && (UNINSTALL_OVERWRITE || !File.Exists(p.First)))
                         {
                             writer_global = new StreamWriter(p.First);
                             writer_global.WriteLine("Windows Registry Editor Version 5.00");
                         }
-                        if (UNINSTALL_USER)
+                        if (UNINSTALL_USER && (UNINSTALL_OVERWRITE || !File.Exists(p.Second)) )
                         {
                             writer_user = new StreamWriter(p.Second);
                             writer_user.WriteLine("Windows Registry Editor Version 5.00");
@@ -133,7 +135,7 @@ namespace RegImport
                                         key_sub = null;//Enforce it doesn't loop through the values
                                         continue;
                                     }
-                                    if(UNINSTALL_USER && IsUSR)
+                                    if(UNINSTALL_USER && IsUSR && writer_user != null)
                                     {
                                         //Handle Missing Keys
                                         if (key_sub == null)
@@ -143,7 +145,7 @@ namespace RegImport
                                             writer_user.WriteLine("\r\n[" +  str_tree + @"\" + str_sub + "]");
                                         }
                                     }
-                                    else if (UNINSTALL_GLOBAL && !IsUSR)
+                                    else if (UNINSTALL_GLOBAL && !IsUSR && writer_global != null)
                                     {
                                         //Handle Missing Keys
                                         if (key_sub == null)
@@ -296,6 +298,8 @@ namespace RegImport
                     writer_user = null;
                 }
             }
+            long done = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            Console.WriteLine("Done:" + (done - milliseconds));
         }
 
         private static void RegImport(List<string> filelines)
@@ -748,11 +752,17 @@ namespace RegImport
 
         static void Help()
         {
-            Console.WriteLine(@"RegImport.exe <Options> <SID or NULL> <BaseDir>");
-            Console.WriteLine("Options T/F {Import Global, Import User, Gen Uninstall Global, Gen Uninstall User}");
-            Console.WriteLine(@"Example Current User: RegImport.exe ""TTTT"" """" ""C:\GameModeLib\Dir;FileName.reg;SubDir/FileName2.reg""");
-            Console.WriteLine(@"Example Other User: RegImport.exe ""TTFF"" ""S-1-5-21-368394509-689051271-14200874-1011"" ""C:\GameModeLib\Dir;FileName.reg;SubDir/FileName2.reg""");
+            Console.WriteLine("_________________________________________________________________________________");
+            Console.WriteLine(@"RegImport.exe <Options> <SID;SID2, *, or NULL """"> <BaseDir;UninstallDir;File.REG>");
+            Console.WriteLine("Options T/F {Import Global, Import User, Gen Uninstall Global, Gen Uninstall User, OverWrite Previous Install Data}");
+            Console.WriteLine("_________________________________________________________________________________");
+            Console.WriteLine("Examples:");
+            Console.WriteLine("_________________________________________________________________________________");
+            Console.WriteLine(@"Current User: RegImport.exe ""TTTT"" """" ""C:\GameModeLib\Dir;FileName.reg;SubDir/FileName2.reg""");
+            Console.WriteLine(@"Example Other User: RegImport.exe ""TTFF"" ""S-1-5-21-368394509-689051271-14200874-1011;S-1-5-21-368394509-689051271-14200874-1099"" ""C:\GameModeLib\Resources;C:\GameModeLib\Uninstall;FileName.reg;SubDir/FileName2.reg""");
+            Console.WriteLine(@"Example OverWrite Previous Uninstall Gen For All Users: RegImport.exe ""TTTTT"" ""*"" ""C:\GameModeLib\Dir;FileName.reg;SubDir/FileName2.reg""");
             Console.WriteLine(@"NOTE: NTUSER.DAT has to be loaded to HKU\<SID> Before Calling RegImport.exe");
+            Console.WriteLine("_________________________________________________________________________________");
             Environment.Exit(0);
         }
 
