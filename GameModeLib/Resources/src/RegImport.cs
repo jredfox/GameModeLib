@@ -444,6 +444,23 @@ namespace RegImport
                             }
                             key_sub.SetValue(strval, byteArray, (isnone ? RegistryValueKind.None : RegistryValueKind.Binary));
                         }
+                        //REG_EXPAND_SZ Expandable String
+                        else if(start.StartsWith("hex(2):"))
+                        {
+                            string str_data = GetBinaryHex(start.Substring(7).Replace(",", ""), index_line, filelines);
+                            byte[] byteArray = new byte[str_data.Length / 2];
+                            for (int i = 0; i < byteArray.Length; i++)
+                            {
+                                byteArray[i] = Convert.ToByte(str_data.Substring(i * 2, 2), 16);
+                            }
+                            string expand_sz = System.Text.Encoding.Unicode.GetString(byteArray);
+                            key_sub.SetValue(strval, expand_sz, RegistryValueKind.ExpandString);
+                        }
+                        //REG_MULTI_SZ String Array
+                        else if(start.StartsWith("hex(7):"))
+                        {
+                            string str_data = GetBinaryHex(start.Substring(7).Replace(",", ""), index_line, filelines);
+                        }
                     }
                     catch(UnauthorizedAccessException)
                     {
