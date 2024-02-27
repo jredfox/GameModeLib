@@ -235,7 +235,7 @@ namespace RegImport
                                         ulong qval = (ulong)(long)val;
                                         byte[] bytes = BitConverter.GetBytes(qval);
                                         string hexString = BitConverter.ToString(bytes).Replace("-", ",").ToLower();
-                                        writer_current.WriteLine("\"" + strval + "\"=hex(b):" + hexString);
+                                        write_binary(writer_current, ("\"" + strval + "\"=hex(b):"),  hexString);
                                     }
                                     else if(type == RegistryValueKind.ExpandString)
                                     {
@@ -273,7 +273,6 @@ namespace RegImport
                                         Console.Error.WriteLine("Unsupported Type:" + type);
                                     }
                                 }
-                               
                             }
                             catch(Exception e)
                             {
@@ -305,9 +304,11 @@ namespace RegImport
             RegistryKey key_sub = null;
             string str_tree = null;
             string str_sub = null;
+            int index_line = -1;
 
             foreach (string line in filelines)
             {
+                index_line++;
                 string tl = line.Trim();
                 if (tl.Equals("") || tl.StartsWith(";"))
                 {
@@ -369,7 +370,93 @@ namespace RegImport
                 }
                 else if (key_sub != null)
                 {
-                    
+                    if(tl.IndexOf("\"") < 0)
+                    {
+                        continue;
+                    }
+                    string start = tl.Substring(tl.IndexOf("\""));
+                    bool s = false;
+                    char prev = ' ';
+                    int index_end = -1;
+                    for(int i = 0; i < start.Length; i++)
+                    {
+                        var c = start[i];
+                        //Escape double backslash
+                        if (prev.Equals('\\') && c.Equals('\\'))
+                            prev = ' ';
+                        if (c.Equals('"') && !prev.Equals('\\'))
+                        {
+                            if(s)
+                            {
+                                index_end = i - 1;
+                                break;
+                            }
+                            s = true;
+                        }
+                        prev = c;
+                    }
+                    string strval = DeESC(SubStringIndex(start, 1, index_end));
+                    start = start.Substring(index_end + 2);
+                    start = start.Substring(start.IndexOf("=") + 1).Trim();
+                    try
+                    {
+                        //Delete the value
+                        if (start.Equals("-"))
+                        {
+                            key_sub.DeleteValue(strval, false);
+                        }
+                        //DWORD
+                        else if(start.StartsWith("dword:"))
+                        {
+                            string str_data = start.Substring(6);
+                            uint data = Convert.ToUInt32(str_data, 16);
+                            key_sub.SetValue(strval, (int)data, RegistryValueKind.DWord);
+                        }
+                        //STRING
+                        else if(start.StartsWith("\""))
+                        {
+                            string str_data = DeESC(SubStringIndex(start, 1, start.Length - 2));
+                            key_sub.SetValue(strval, str_data, RegistryValueKind.String);
+                        }
+                        //QWORD
+                        else if(start.StartsWith("hex(b):"))
+                        {
+                            string hexString = start.Substring(7).Replace(",", "");
+                            // Convert hexadecimal string to byte array
+                            byte[] byteArray = new byte[hexString.Length / 2];
+                            for (int i = 0; i < byteArray.Length; i++)
+                            {
+                                byteArray[i] = Convert.ToByte(hexString.Substring(i * 2, 2), 16);
+                            }
+                            ulong qword = BitConverter.ToUInt64(byteArray, 0);//TODO: Make sure DWORD and QWORD Works with ARM64
+                            key_sub.SetValue(strval, (long)qword, RegistryValueKind.QWord);
+                        }
+                        //BINARY
+                        else if(start.StartsWith("hex:"))
+                        {
+                            string str_data = start.Substring(4);
+                            byte[] byteArray = new byte[str_data.Length / 2];
+                            for (int i = 0; i < byteArray.Length; i++)
+                            {
+                               // byteArray[i] = Convert.ToByte(str_data.Substring(i * 2, 2), 16);
+                            }
+                            //Console.WriteLine(str_data);
+                            //key_sub.SetValue(strval, byteArray, RegistryValueKind.Binary);
+                        }
+                    }
+                    catch(UnauthorizedAccessException)
+                    {
+                        Console.Error.WriteLine("Access Denied Reg Import Value:" + str_tree + @"\" + str_sub + @"\" + strval);
+                    }
+                    catch(SecurityException)
+                    {
+                        Console.Error.WriteLine("Access Denied Reg Import Value:" + str_tree + @"\" + str_sub + @"\" + strval);
+                    }
+                    catch(Exception e)
+                    {
+                        Console.Error.Write("Error Reg Import:" + str_tree + @"\" + str_sub + @"\" + strval + " ");
+                        Console.Error.WriteLine(e);
+                    }
                 }
             }
         }
@@ -411,7 +498,6 @@ namespace RegImport
                 var val = k.GetValue(vname);
                 string valESC = ESC(vname);
                 RegistryValueKind type = k.GetValueKind(vname);
-                //Console.WriteLine("HERE2:" + valESC + " " + type);
                 if (type == RegistryValueKind.DWord)
                 {
                     uint v = (uint)(int)val;
@@ -426,7 +512,7 @@ namespace RegImport
                     ulong qval = (ulong)(long)val;
                     byte[] bytes = BitConverter.GetBytes(qval);
                     string hexString = BitConverter.ToString(bytes).Replace("-", ",").ToLower();
-                    writer_current.WriteLine("\"" + valESC + "\"=hex(b):" + hexString);
+                    write_binary(writer_current, ("\"" + valESC + "\"=hex(b):"), hexString);
                 }
                 else if (type == RegistryValueKind.ExpandString)
                 {
