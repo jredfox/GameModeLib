@@ -104,14 +104,14 @@ namespace SIDPRINTER
             {
                 throw new FileNotFoundException("Missing Hive:" + this.file_hive);
             }
-            RegistryKey key_tree = RegistryKey.OpenBaseKey(root, RegistryView.Registry64);
+            RegistryKey key_tree = RegistryKey.OpenBaseKey(root, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
             IntPtr TreeHandle = key_tree.Handle.DangerousGetHandle();
             RegLoadKey(TreeHandle, this.subkey, this.file_hive);
             key_tree.Close();
         }
         public void UnLoad()
         {
-            RegistryKey key_tree = RegistryKey.OpenBaseKey(root, RegistryView.Registry64);
+            RegistryKey key_tree = RegistryKey.OpenBaseKey(root, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
             IntPtr TreeHandle = key_tree.Handle.DangerousGetHandle();
             RegUnLoadKey(TreeHandle, this.subkey);
             key_tree.Close();
