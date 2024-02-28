@@ -304,6 +304,9 @@ namespace RegImport
 
         private static void RegImport(List<string> filelines)
         {
+            //If Importing is Disabled Return
+            if (!IMPORT_GLOBAL && !IMPORT_USER)
+                return;
             RegistryKey key_tree = null;
             RegistryKey key_sub = null;
             string str_tree = null;
@@ -328,6 +331,12 @@ namespace RegImport
                         str_tree = delkey ? tl.Substring(2, tl.IndexOf(@"\") - 2).ToUpper() : tl.Substring(1, tl.IndexOf(@"\") - 1).ToUpper();
                         str_sub = tl.Substring(tl.IndexOf(@"\") + 1, tl.Length - tl.IndexOf(@"\") - 2);
                         bool IsUSR = str_tree.Equals("HKEY_CURRENT_USER");
+                        //If Global is Disabled and is Global Return or If User is Disabled and is User Return
+                        if(!IMPORT_GLOBAL && !IsUSR || !IMPORT_USER && IsUSR)
+                        {
+                            key_sub = null;
+                            continue;
+                        }
                         if (IsUSR)
                         {
                             str_tree = str_tree.Replace(@"HKEY_CURRENT_USER", @"HKEY_USERS");
