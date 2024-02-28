@@ -62,8 +62,7 @@ namespace SIDPRINTER
 
         public static string GetCurrentSID()
         {
-            WindowsIdentity windowsIdentity = WindowsIdentity.GetCurrent();
-            return windowsIdentity.User.ToString();
+            return WindowsIdentity.GetCurrent().User.Value;
         }
     }
 
@@ -71,9 +70,6 @@ namespace SIDPRINTER
     {
         [DllImport("advapi32.dll", SetLastError = true)]
         static extern int RegLoadKey(IntPtr hKey, string lpSubKey, string lpFile);
-
-        [DllImport("advapi32.dll", SetLastError = true)]
-        static extern int RegSaveKey(IntPtr hKey, string lpFile, uint securityAttrPtr = 0);
 
         [DllImport("advapi32.dll", SetLastError = true)]
         static extern int RegUnLoadKey(IntPtr hKey, string lpSubKey);
