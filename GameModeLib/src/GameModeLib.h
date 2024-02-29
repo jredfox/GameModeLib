@@ -9,6 +9,7 @@ extern const unsigned long NORMAL;
 extern const unsigned long LOW;
 extern bool SetActivePP;
 extern bool UGenInfo;
+extern std::wstring UGenDir;
 extern std::string WorkingDir;
 
 //DECLARE METHODS HERE
@@ -25,14 +26,7 @@ unsigned long GetParentPID();
 void init(std::string dir);
 void uninit();
 void Help();//the help command
-/**
- * Install GameModeLib Requires ADMIN or SUDO Rights
- */
-void Install(bool DisableDriveEncryption);
-/**
- * UnInstall Revert any changes made by the Install Script
- */
-void UnInstall();
+
 //START UTILITY METHODS
 std::wstring toupper(std::wstring s);
 std::wstring trim(std::wstring str);

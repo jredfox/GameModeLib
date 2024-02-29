@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <iostream>
 #include "GameModeLib.h"
+
 using namespace std;
 
 //#pragma comment(lib, "Ole32.lib")
@@ -17,31 +18,25 @@ int main() {
 	int argv;
 	LPWSTR* cargs = CommandLineToArgvW(cmdline.c_str(), &argv);
 	wstring WorkingDir = GAMEMODELIB::parent(GAMEMODELIB::GetAbsolutePath(wstring(cargs[0])));
-	GAMEMODELIB::init(GAMEMODELIB::toString(WorkingDir));
+
 	//Scan for flags that effect other arguments
 	for(int i = 1; i < argv; i++)
 	{
 		wstring s = cargs[i];
 		wstring t = GAMEMODELIB::toupper(GAMEMODELIB::trim(s));
-		if(GAMEMODELIB::startsWith(t, L"-INSTALL"))
-		{
-			vector<wstring> arr = GAMEMODELIB::split(t, L':');
-			bool DisableOsEncryption = arr.size() > 1 ? GAMEMODELIB::parseBool(arr[1]) : false;
-			GAMEMODELIB::Install(DisableOsEncryption);
-		}
-		if(t == L"-UNINSTALL")
-		{
-			GAMEMODELIB::UnInstall();
-		}
-		else if (t == L"-SETPOWERPLAN")
+		if (t == L"-SETPOWERPLAN")
 		{
 			GAMEMODELIB::SetActivePP = true;
 		}
 		else if(t == L"-UGENINFO")
 		{
 			GAMEMODELIB::UGenInfo = true;
+			GAMEMODELIB::UGenDir = cargs[i + 1];
 		}
 	}
+	//INIT
+	GAMEMODELIB::init(GAMEMODELIB::toString(WorkingDir));
+
 	for(int i = 1; i < argv; i++)
 	{
 		wstring s = cargs[i];

@@ -29,7 +29,7 @@ const unsigned long LOW = BELOW_NORMAL_PRIORITY_CLASS;
 bool SetActivePP = false;
 bool UGenInfo = false;
 string WorkingDir;
-wstring WorkingDirW;
+wstring UGenDir = L"";
 std::wofstream ugpu;
 vector<wstring> ugpulines;
 
@@ -37,30 +37,35 @@ void init(string dir)
 {
 	CoInitialize(NULL);
 	WorkingDir = dir;
-	WorkingDirW = GAMEMODELIB::toWString(WorkingDir);
-	wstring udir = WorkingDirW + L"\\Uninstall";
-	wstring ustall = udir + L"\\UGpuEntry.reg";
-	CreateDirectoryW(udir.c_str(), NULL);
-	bool printHeader = !GAMEMODELIB::isFile(ustall);
-	//cache previous installation
-	if(!printHeader)
+	if(UGenInfo && UGenDir.empty())
+		UGenDir = toWString(WorkingDir) + L"\\Uninstall";
+
+	if(UGenInfo)
 	{
-		std::wifstream ureg(ustall.c_str());
-        std::wstring line;
-        while (std::getline(ureg, line))
-        {
-        	line = trim(line);
-        	if(line != L"")
-        	{
-        		ugpulines.push_back(line);
-        	}
-        }
-	}
-	ugpu = std::wofstream(ustall.c_str(), std::ios::app);
-	if (ugpu.is_open())
-	{
-		if(printHeader)
-			ugpu << L"Windows Registry Editor Version 5.00" << endl << endl << L"[HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\DirectX\\UserGpuPreferences]" << endl;
+		wstring ustall = UGenDir + L"\\UGpuEntry.reg";
+		wcout << L"HERE " << ustall << endl;
+		CreateDirectoryW(UGenDir.c_str(), NULL);
+		bool printHeader = !GAMEMODELIB::isFile(ustall);
+		//cache previous installation
+		if(!printHeader)
+		{
+			std::wifstream ureg(ustall.c_str());
+	        std::wstring line;
+	        while (std::getline(ureg, line))
+	        {
+	        	line = trim(line);
+	        	if(line != L"")
+	        	{
+	        		ugpulines.push_back(line);
+	        	}
+	        }
+		}
+		ugpu = std::wofstream(ustall.c_str(), std::ios::app);
+		if (ugpu.is_open())
+		{
+			if(printHeader)
+				ugpu << L"Windows Registry Editor Version 5.00" << endl << endl << L"[HKEY_CURRENT_USER\\SOFTWARE\\Microsoft\\DirectX\\UserGpuPreferences]" << endl;
+		}
 	}
 }
 
@@ -68,7 +73,8 @@ void uninit()
 {
 	CoUninitialize();
 	ugpulines.clear();
-	ugpu.close();
+	if(ugpu.is_open())
+		ugpu.close();
 }
 
 /**
@@ -168,6 +174,27 @@ bool RegExists(HKEY hKey, wstring &val)
 	return RegQueryValueExW(hKey, val.c_str(), NULL, NULL, NULL, NULL) == ERROR_SUCCESS;
 }
 
+wstring GetRegString(HKEY hKey, const wstring& value)
+{
+    LONG lResult;
+    DWORD dwType = REG_SZ;
+    wchar_t szValue[257]; // Buffer to hold the value data
+    DWORD dwSize = sizeof(szValue);
+
+    lResult = RegQueryValueExW(hKey, value.c_str(), NULL, &dwType, reinterpret_cast<LPBYTE>(szValue), &dwSize);
+    if (lResult == ERROR_SUCCESS)
+    {
+    	SetLastError(0);
+        // Ensure null-termination of the string
+        szValue[dwSize / sizeof(wchar_t)] = L'\0';
+        return wstring(szValue);
+    }
+
+    // Return an empty string to indicate failure
+    SetLastError(1);
+    return L"";
+}
+
 
 void SetGPUPreference(string e, bool force)
 {
@@ -180,7 +207,7 @@ void SetGPUPreference(string e, bool force)
         0,                  // Reserved, must be zero
         NULL,                // Class (not used)
         REG_OPTION_NON_VOLATILE,  // Options
-        KEY_WRITE | KEY_WOW64_64KEY | KEY_QUERY_VALUE,           // Desired access
+        KEY_WRITE | KEY_QUERY_VALUE,           // Desired access
         NULL,                // Security attributes
         &hKey,               // Resulting key handle
         NULL              // Disposition (not used)
@@ -188,22 +215,39 @@ void SetGPUPreference(string e, bool force)
     if (result != ERROR_SUCCESS) {
     	wcout << L"Failed To Create Registry Directory of HKCU\\SOFTWARE\\Microsoft\\DirectX\\UserGpuPreferences" << endl;
     }
-    if((force || !RegExists(hKey, exe)))
+    bool exists = RegExists(hKey, exe);
+    if(force || !exists)
     {
+        if(UGenInfo)
+        {
+        	wstring exereg = exe;
+        	//ESC Path
+        	ReplaceAll(exereg, L"\\", L"\\\\");
+        	ReplaceAll(exereg, L"\"", L"\\\"");
+        	if(!exists)
+        	{
+				wstring uentry = L"\"" + exereg + L"\"=-";
+				ugpulines.push_back(uentry);
+				ugpu << uentry << std::endl;
+        	}
+        	else
+        	{
+        		wstring sz = GetRegString(hKey, exe);
+        		if(GetLastError() == 0)
+        		{
+        			//ESC Data
+            		ReplaceAll(sz, L"\\", L"\\\\");
+            		ReplaceAll(sz, L"\"", L"\\\"");
+    				wstring uentry = L"\"" + exereg + L"\"=\"" + sz + L"\"";
+    				ugpulines.push_back(uentry);
+    				ugpu << uentry << std::endl;
+        		}
+        	}
+        }
+
         if(RegSetValueExW(hKey, exe.c_str(), 0, REG_SZ, reinterpret_cast<const BYTE*>(data.c_str()), (data.length() + 1) * sizeof(wchar_t)) != ERROR_SUCCESS)
         {
         	cout << "Failed To Add GPU Entry:" << e << endl;
-        }
-        else if(UGenInfo)
-        {
-        	wstring exereg = exe;
-        	ReplaceAll(exereg, L"\\", L"\\\\");
-        	wstring uentry = L"\"" + exereg + L"\"=-";
-        	if (std::find(ugpulines.begin(), ugpulines.end(), uentry) == ugpulines.end())
-        	{
-        		ugpulines.push_back(uentry);
-        		ugpu << uentry << std::endl;
-        	}
         }
     }
     RegCloseKey(hKey);
@@ -271,7 +315,7 @@ void SetPowerPlan(string guid, string name)
 	//Gen Uninstall Information
     if(UGenInfo)
     {
-    	wstring upp = WorkingDirW + L"\\Uninstall\\PowerPlan.txt";
+    	wstring upp = UGenDir + L"\\PowerPlan.txt";
     	if(!isFile(upp))
     	{
     		 GUID active;
@@ -341,29 +385,6 @@ void RunAdmin(wstring exe, wstring params)
 	    WaitForSingleObject(shExInfo.hProcess, INFINITE);
 	    CloseHandle(shExInfo.hProcess);
 	}
-}
-
-/**
- * Install GameModeLib Requires ADMIN or SUDO Rights
- */
-void Install(bool DisableBitLocker)
-{
-	string exe = GetProcessName(GetCurrentProcessId());
-	string batch = exe.substr(0, exe.rfind('\\')) + "\\GameMode.bat";
-	string bitlocker = DisableBitLocker ? " \"TRUE\"" : "";
-	wstring params = toWString("/c call \"" + batch + "\"" + bitlocker);
-	RunAdmin(L"cmd.exe", params);
-}
-
-/**
- * UnInstall Revert any changes made by the Install Script
- */
-void UnInstall()
-{
-	string exe = GetProcessName(GetCurrentProcessId());
-	string batch = exe.substr(0, exe.rfind('\\')) + "\\GameModeUninstall.bat";
-	wstring params = toWString("/c call \"" + batch + "\"");
-	RunAdmin(L"cmd.exe", params);
 }
 
 wstring GetAbsolutePath(const wstring &path) {
