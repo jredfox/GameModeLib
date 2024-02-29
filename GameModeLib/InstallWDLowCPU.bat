@@ -1,9 +1,9 @@
 @ECHO OFF
 setlocal enableDelayedExpansion
-echo Enabling Windows Defender Low CPU Priority
 title Enable Windows Defender Low CPU Priority
+echo Enabling Windows Defender Low CPU Priority
 IF /I "%~1" NEQ "F" (call :CHKTAMPER)
-set umain=%~dp0Uninstall\WDCPUStat.txt
+set umain=%~dp0Uninstall\Global\WDCPUStat.txt
 set rc=%~dp0Resources
 IF NOT EXIST "!umain!" (
 call :WDCPUSTAT
