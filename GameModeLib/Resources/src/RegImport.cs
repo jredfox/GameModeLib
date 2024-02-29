@@ -84,12 +84,14 @@ namespace RegImport
     public class RegFile
     {
         public string File { get; set; }
+        public string RelPath { get; set; }
         public List<RegObj> Global { get; set; }
         public List<RegObj> User { get; set; }
 
-        public RegFile(string file)
+        public RegFile(string file, string relpath)
         {
             this.File = file;
+            this.RelPath = relpath;
         }
 
         public void Parse()
@@ -346,7 +348,7 @@ namespace RegImport
             UNINSTALL_USER = set[3] == 'T';
             UNINSTALL_OVERWRITE = set[4] == 'T';
 
-            //Parse BaseDir and RegFiles to go through
+            //Parse the Reg File Into Objects
             dirs = args[2].Split(';');
             BaseDir = Path.GetFullPath(dirs[0]);
             UninstallDir =   Path.GetFullPath(dirs[1]);
@@ -354,13 +356,8 @@ namespace RegImport
             List<RegFile> regs = new List<RegFile>();
             for (int i = 2; i < dirs.Length; i++)
             {
-                reg_files.Add(BaseDir + @"\" + dirs[i]);
-            }
-
-            //Parse the Reg File Into Objects
-            foreach (string r in reg_files)
-            {
-                RegFile reg = new RegFile(r);
+                string r = BaseDir + @"\" + dirs[i];
+                RegFile reg = new RegFile(r, dirs[i]);
                 reg.Parse();
                 regs.Add(reg);
 
@@ -369,7 +366,7 @@ namespace RegImport
                 RegImport(reg, null);
             }
 
-            //Install Per User
+            //Get ARG_SID
             string ARG_SID = args[1].Trim().ToUpper();
 
             //Install Current User
@@ -404,21 +401,42 @@ namespace RegImport
                                 string file_hive = Users + user.SamAccountName + @"\NTUSER.DAT";
                                 if (File.Exists(file_hive) && (allsids || sids.Contains(sid.ToUpper()) || sids.Contains(user.SamAccountName.ToUpper()) ) )
                                 {
-                                    Console.WriteLine($"Reg Import User: {user.SamAccountName}, SID: {sid}");
+                                    Hive h = new Hive(file_hive, sid, RegistryHive.Users);
                                     try
                                     {
-                                        Hive h = new Hive(file_hive, sid, RegistryHive.Users);
                                         h.Load();
-                                        foreach (RegFile r in regs)
-                                        {
-                                            RegGenUninstall(r, sid);
-                                            RegImport(r, sid);
-                                        }
-                                        h.UnLoad();
+                                        Console.WriteLine($"Reg Import User: {user.SamAccountName}, SID: {sid}");
                                     }
-                                    catch (Exception e)
+                                    catch (Exception)
                                     {
-                                        Console.Error.WriteLine("Failed to Load NTUSER.DAT:" + user.SamAccountName + " " + e.Message);
+                                        Console.Error.WriteLine("Failed to Load NTUSER.DAT:" + user.SamAccountName);
+                                        h = null;
+                                    }
+                                    finally
+                                    {
+                                        try
+                                        {
+                                            foreach (RegFile r in regs)
+                                            {
+                                                RegGenUninstall(r, sid);
+                                                RegImport(r, sid);
+                                            }
+                                        }
+                                        catch (Exception f)
+                                        {
+                                            Console.Error.WriteLine(f);
+                                        }
+                                        if(h != null)
+                                        {
+                                            try
+                                            {
+                                                h.UnLoad();
+                                            }
+                                            catch(Exception)
+                                            {
+                                                Console.Error.WriteLine("Failed to Unload NTUSER.DAT:" + user.SamAccountName);
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -438,8 +456,85 @@ namespace RegImport
 
         public static void RegGenUninstall(RegFile reg, string SID)
         {
-            if (!UNINSTALL_GLOBAL && SID == null || !UNINSTALL_USER && SID != null)
+            bool USR = (SID != null);
+            if (!UNINSTALL_GLOBAL && !USR || !UNINSTALL_USER && USR)
                 return;
+
+            //Fetch the StreamWriter to write the REG file
+            string UserReg = UninstallDir + @"\Users\" + SID + @"\" + reg.RelPath;
+            StreamWriter writer_current = null;
+            if (UNINSTALL_GLOBAL && !USR)
+            {
+                string GlobalReg = UninstallDir + @"\Global\" + reg.RelPath;
+                if (!UNINSTALL_OVERWRITE && File.Exists(GlobalReg))
+                    return;
+                mkdir(Path.GetDirectoryName(GlobalReg));
+                writer_current = new StreamWriter(GlobalReg);
+            }
+            else if(UNINSTALL_USER && USR && (UNINSTALL_OVERWRITE || !File.Exists(UserReg)))
+            {
+                mkdir(Path.GetDirectoryName(UserReg));
+                writer_current = new StreamWriter(UserReg);
+            }
+            else
+            {
+                return;
+            }
+            writer_current.WriteLine("Windows Registry Editor Version 5.00");
+            RegistryKey LastKey = null;
+
+            //Gen Uninstall Data
+            foreach (RegObj o in (USR ? reg.User : reg.Global))
+            {
+                if(o is RegKey k)
+                {
+                    try
+                    {
+                        Close(LastKey);
+                        try
+                        {
+                            writer_current.Flush();
+                        }
+                        catch(Exception e)
+                        {
+                            Console.Error.WriteLine(e);
+                        }
+                        k = USR ? k.GetRegKey(SID) : k; //Redirect Current User Keys to SID User Keys
+                        LastKey = k.Hive.OpenSubKey(k.SubKey, false);
+                        if (k.Delete && LastKey != null) {
+                            LastKey = null;
+                            ExportKey(LastKey, writer_current);
+                        }
+                        else if (LastKey == null)
+                        {
+                            writer_current.WriteLine("\r\n[-" + k.Name + "]");
+                        }
+                        else
+                        {
+                            writer_current.WriteLine("\r\n[" + k.Name + "]");
+                        }
+                    }
+                    catch (SecurityException)
+                    {
+                        LastKey = null;
+                        Console.Error.WriteLine("Access Denied Reg Gen Uninstall Key:" + k.Name);
+                    }
+                    catch (Exception e)
+                    {
+                        LastKey = null;
+                        Console.Error.Write("Error Reg Gen Uninstall Key:" + k.Name + " ");
+                        Console.Error.WriteLine(e);
+                    }
+                }
+                else if(o is RegValue v)
+                {
+                    if(LastKey != null)
+                    {
+                        WriteValue(writer_current, LastKey, v.Name);
+                    }
+                }
+            }
+            Close(writer_current);
         }
 
         public static void RegImport(RegFile reg, string SID)
@@ -518,10 +613,6 @@ namespace RegImport
                             Console.Error.Write("Error Reg Import Value:" + LastKey.Name + @"\" + v.Name + " ");
                             Console.Error.WriteLine(e);
                         }
-                    }
-                    else
-                    {
-                        Console.Error.WriteLine("Null Last Key:" + o.Name);
                     }
                 }
             }
