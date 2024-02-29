@@ -356,8 +356,18 @@ namespace RegImport
             List<RegFile> regs = new List<RegFile>();
             for (int i = 2; i < dirs.Length; i++)
             {
-                string r = BaseDir + @"\" + dirs[i];
-                RegFile reg = new RegFile(r, dirs[i]);
+                string d = dirs[i];
+                string rel = null;
+                int index_rel = d.IndexOf(@"|");
+                if (index_rel >= 0)
+                {
+                    
+                    rel = SubStringIndex(d, index_rel + 1, d.Length - 1);
+                    d = SubStringIndex(d, 0, index_rel - 1);
+                }
+                bool full = d.Substring(1, 1).Equals(":");
+                string r = full ? d : (BaseDir + @"\" + d);
+                RegFile reg = new RegFile(r, rel != null ? rel : (full ? Path.GetFileName(d) : d));
                 reg.Parse();
                 regs.Add(reg);
 
