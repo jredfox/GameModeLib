@@ -693,7 +693,7 @@ namespace RegImport
                 RegistryValueKind type = k.GetValueKind(vname);
                 if (type == RegistryValueKind.DWord)
                 {
-                    uint v = (uint)(int)val;
+                    uint v = (uint) (int) val;
                     writer_current.WriteLine("\"" + valESC + "\"=dword:" + v.ToString("x8"));
                 }
                 else if (type == RegistryValueKind.String)
