@@ -110,7 +110,7 @@ namespace RegImport
                     string tl = line.Trim();
                     if (tl.Equals("") || tl.StartsWith(";"))
                         continue;
-                    
+
                     //Parse Keys
                     if (tl.StartsWith("["))
                     {
@@ -118,7 +118,7 @@ namespace RegImport
                         string str_key = Program.SubStringIndex(tl, (delkey ? 2 : 1), tl.Length - 2);
                         LastKey = new RegKey(str_key, delkey);
                         bool IsUSR = LastKey.IsUser;
-                        if(IsUSR)
+                        if (IsUSR)
                         {
                             User.Add(LastKey);
                         }
@@ -128,7 +128,7 @@ namespace RegImport
                         }
                     }
                     //Parse Values
-                    else if(LastKey != null && !LastKey.Delete)
+                    else if (LastKey != null && !LastKey.Delete)
                     {
                         if (tl.IndexOf("\"") < 0)
                         {
@@ -163,7 +163,7 @@ namespace RegImport
                         //REG_DELETE
                         if (delval)
                         {
-                           v = new RegValue(str_name, "-", true, RegistryValueKind.Unknown);
+                            v = new RegValue(str_name, "-", true, RegistryValueKind.Unknown);
                         }
                         //REG_DWORD
                         else if (str_dat.StartsWith("dword:"))
@@ -351,7 +351,7 @@ namespace RegImport
             //Parse the Reg File Into Objects
             dirs = args[2].Split(';');
             BaseDir = Path.GetFullPath(dirs[0]);
-            UninstallDir =   Path.GetFullPath(dirs[1]);
+            UninstallDir = Path.GetFullPath(dirs[1]);
             List<string> reg_files = new List<string>();
             List<RegFile> regs = new List<RegFile>();
             for (int i = 2; i < dirs.Length; i++)
@@ -399,7 +399,7 @@ namespace RegImport
                             {
                                 string sid = user.Sid.ToString();
                                 string file_hive = Users + user.SamAccountName + @"\NTUSER.DAT";
-                                if (File.Exists(file_hive) && (allsids || sids.Contains(sid.ToUpper()) || sids.Contains(user.SamAccountName.ToUpper()) ) )
+                                if (File.Exists(file_hive) && (allsids || sids.Contains(sid.ToUpper()) || sids.Contains(user.SamAccountName.ToUpper())))
                                 {
                                     Hive h = new Hive(file_hive, sid, RegistryHive.Users);
                                     try
@@ -426,13 +426,13 @@ namespace RegImport
                                         {
                                             Console.Error.WriteLine(f);
                                         }
-                                        if(h != null)
+                                        if (h != null)
                                         {
                                             try
                                             {
                                                 h.UnLoad();
                                             }
-                                            catch(Exception)
+                                            catch (Exception)
                                             {
                                                 Console.Error.WriteLine("Failed to Unload NTUSER.DAT:" + user.SamAccountName);
                                             }
@@ -471,7 +471,7 @@ namespace RegImport
                 mkdir(Path.GetDirectoryName(GlobalReg));
                 writer_current = new StreamWriter(GlobalReg);
             }
-            else if(UNINSTALL_USER && USR && (UNINSTALL_OVERWRITE || !File.Exists(UserReg)))
+            else if (UNINSTALL_USER && USR && (UNINSTALL_OVERWRITE || !File.Exists(UserReg)))
             {
                 mkdir(Path.GetDirectoryName(UserReg));
                 writer_current = new StreamWriter(UserReg);
@@ -486,7 +486,7 @@ namespace RegImport
             //Gen Uninstall Data
             foreach (RegObj o in (USR ? reg.User : reg.Global))
             {
-                if(o is RegKey k)
+                if (o is RegKey k)
                 {
                     try
                     {
@@ -495,13 +495,14 @@ namespace RegImport
                         {
                             writer_current.Flush();
                         }
-                        catch(Exception e)
+                        catch (Exception e)
                         {
                             Console.Error.WriteLine(e);
                         }
                         k = USR ? k.GetRegKey(SID) : k; //Redirect Current User Keys to SID User Keys
                         LastKey = k.Hive.OpenSubKey(k.SubKey, false);
-                        if (k.Delete && LastKey != null) {
+                        if (k.Delete && LastKey != null)
+                        {
                             ExportKey(LastKey, writer_current);
                             LastKey = null;
                         }
@@ -526,15 +527,16 @@ namespace RegImport
                         Console.Error.WriteLine(e);
                     }
                 }
-                else if(o is RegValue v)
+                else if (o is RegValue v)
                 {
-                    if(LastKey != null)
+                    if (LastKey != null)
                     {
                         WriteValue(writer_current, LastKey, v.Name);
                     }
                 }
             }
             Close(writer_current);
+            Close(LastKey);
         }
 
         public static void RegImport(RegFile reg, string SID)
@@ -668,7 +670,7 @@ namespace RegImport
                     Close(sub);
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.Error.Write(key_sub.Name + " ");
                 Console.Error.Write(e + "\r\n");
@@ -685,7 +687,7 @@ namespace RegImport
             {
                 var val = k.GetValue(vname);
                 string valESC = ESC(vname);
-                if(val == null)
+                if (val == null)
                 {
                     writer_current.WriteLine("\"" + valESC + "\"=-");
                     return;
@@ -693,7 +695,7 @@ namespace RegImport
                 RegistryValueKind type = k.GetValueKind(vname);
                 if (type == RegistryValueKind.DWord)
                 {
-                    uint v = (uint) (int) val;
+                    uint v = (uint)(int)val;
                     writer_current.WriteLine("\"" + valESC + "\"=dword:" + v.ToString("x8"));
                 }
                 else if (type == RegistryValueKind.String)
@@ -743,7 +745,7 @@ namespace RegImport
                     Console.Error.WriteLine("Unsupported Type:" + type);
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.Error.WriteLine("Error Reading Reg Value:" + k.Name + @"\" + vname);
                 Console.Error.WriteLine(e);
@@ -752,10 +754,10 @@ namespace RegImport
 
         public static string DeESC(string v)
         {
-            return v.Replace(@"\\", @"\").Replace(@"\""","\"");
+            return v.Replace(@"\\", @"\").Replace(@"\""", "\"");
         }
 
-        public static string SubStringIndex(string input , int startIndex, int endIndex)
+        public static string SubStringIndex(string input, int startIndex, int endIndex)
         {
             int length = endIndex - startIndex + 1;
             return input.Substring(startIndex, length);
@@ -768,7 +770,7 @@ namespace RegImport
             int count = v.Length;
             int index = 0;
             bool flag = true;
-            foreach(string s in hex)
+            foreach (string s in hex)
             {
                 bool more = (index + 1) >= hex.Length;
                 w.Write(s + (more ? "" : ","));
@@ -827,7 +829,7 @@ namespace RegImport
         {
             try
             {
-                if(key != null)
+                if (key != null)
                     key.Close();
             }
             catch (Exception e)
@@ -840,7 +842,7 @@ namespace RegImport
         {
             try
             {
-                if(writer != null)
+                if (writer != null)
                     writer.Close();
             }
             catch (Exception e)
@@ -853,7 +855,7 @@ namespace RegImport
         {
             foreach (string dir in dirs)
             {
-                if(!Directory.Exists(dir))
+                if (!Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
             }
         }
@@ -881,31 +883,31 @@ namespace RegImport
             string u = k.ToUpper();
             if (u.StartsWith("HKLM") || u.StartsWith("HKEY_LOCAL_MACHINE"))
             {
-                if(HKEY_LOCAL_MACHINE == null)
+                if (HKEY_LOCAL_MACHINE == null)
                     HKEY_LOCAL_MACHINE = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
                 return HKEY_LOCAL_MACHINE;
             }
             else if (u.StartsWith("HKCU") || u.StartsWith("HKEY_CURRENT_USER"))
             {
-                if(HKEY_CURRENT_USER == null)
+                if (HKEY_CURRENT_USER == null)
                     HKEY_CURRENT_USER = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
                 return HKEY_CURRENT_USER;
             }
             else if (u.StartsWith("HKCR") || u.StartsWith("HKEY_CLASSES_ROOT"))
             {
-                if(HKEY_CLASSES_ROOT == null)
+                if (HKEY_CLASSES_ROOT == null)
                     HKEY_CLASSES_ROOT = RegistryKey.OpenBaseKey(RegistryHive.ClassesRoot, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
                 return HKEY_CLASSES_ROOT;
             }
             else if (u.StartsWith("HKU") || u.StartsWith("HKEY_USERS"))
             {
-                if(HKEY_USERS == null)
+                if (HKEY_USERS == null)
                     HKEY_USERS = RegistryKey.OpenBaseKey(RegistryHive.Users, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
                 return HKEY_USERS;
             }
             else if (u.StartsWith("HKCC") || u.StartsWith("HKEY_CURRENT_CONFIG"))
             {
-                if(HKEY_CURRENT_CONFIG == null)
+                if (HKEY_CURRENT_CONFIG == null)
                     HKEY_CURRENT_CONFIG = RegistryKey.OpenBaseKey(RegistryHive.CurrentConfig, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
                 return HKEY_CURRENT_CONFIG;
             }
