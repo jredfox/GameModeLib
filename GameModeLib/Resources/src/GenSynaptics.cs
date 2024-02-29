@@ -35,6 +35,7 @@ namespace GenSynaptics
                 if (key_syntp == null)
                 {
                     Console.WriteLine(@"Synaptics\SynTP Not Found");
+                    System.Environment.Exit(404);
                     return;
                 }
                 writer.WriteLine("Windows Registry Editor Version 5.00");
@@ -42,7 +43,7 @@ namespace GenSynaptics
                 {
                     try
                     {
-                        RegistryKey key_device = key_syntp.OpenSubKey(device);
+                        RegistryKey key_device = key_syntp.OpenSubKey(device, false);
                         writer.WriteLine("\r\n[" + key_device.Name + "]");
                         writer.WriteLine("\"PalmDetectConfig\"=dword:00000000");
                         writer.WriteLine("\"PalmRejectAlways\"=dword:00000000");

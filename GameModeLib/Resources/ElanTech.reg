@@ -1,8 +1,5 @@
 Windows Registry Editor Version 5.00
 
-[HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\PrecisionTouchPad]
-"AAPThreshold"=dword:00000000
-
 [HKEY_CURRENT_USER\SOFTWARE\Elantech\Other settings]
 "DisableWhenType_Enable"=dword:00000000
 "DisableWhenType_Enabled"=dword:00000000
