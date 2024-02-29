@@ -57,8 +57,6 @@ IF /I "%Settings:~5,1%" NEQ "T" (GOTO RPPThrottling)
 set regs=!regs!^;PowerThrottling.reg
 :RPPThrottling
 
-REM TODO GameModeLib.exe
-
 REM ## Install Registry Settings of all Enabled Modules ##
 IF "!regs!" NEQ "" (
 echo Installing GameModeLib Full Edition
@@ -66,6 +64,7 @@ call "!rc!\RegImport.exe" "TTTTF" "!SIDS!" "!rc!;!ustall!;!regs:~1!"
 )
 
 IF /I "%Settings:~0,1%" NEQ "T" (GOTO MAIN)
+REM TODO GAMEMODELIB.exe
 call "!rc!\PowerModeOverlay.exe" "ded574b5-45a0-4f42-8737-46345c09c238"
 :MAIN
 
