@@ -684,9 +684,12 @@ namespace RegImport
             try
             {
                 var val = k.GetValue(vname);
-                if (val == null)
-                    return;
                 string valESC = ESC(vname);
+                if(val == null)
+                {
+                    writer_current.WriteLine("\"" + valESC + "\"=-");
+                    return;
+                }
                 RegistryValueKind type = k.GetValueKind(vname);
                 if (type == RegistryValueKind.DWord)
                 {
