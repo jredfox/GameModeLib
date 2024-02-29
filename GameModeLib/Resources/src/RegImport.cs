@@ -502,8 +502,8 @@ namespace RegImport
                         k = USR ? k.GetRegKey(SID) : k; //Redirect Current User Keys to SID User Keys
                         LastKey = k.Hive.OpenSubKey(k.SubKey, false);
                         if (k.Delete && LastKey != null) {
-                            LastKey = null;
                             ExportKey(LastKey, writer_current);
+                            LastKey = null;
                         }
                         else if (LastKey == null)
                         {
