@@ -105,6 +105,17 @@ echo !TIME!
 :END
 exit /b
 
+:GETISA
+set arc=%PROCESSOR_ARCHITEW6432%
+IF "!arc!" EQU "" (set arc=%PROCESSOR_ARCHITECTURE%)
+IF /I "!arc!" EQU "ARM64" (
+set ISA=ARM64
+exit /b
+)
+call "%~dp0GameModeLib-x64.exe" "/?" >nul 2>&1
+IF !ERRORLEVEL! NEQ 0 (set ISA=x86) ELSE (set ISA=x64)
+exit /b
+
 :CHKTAMPER
 set tameper=F
 FOR /F "delims=" %%I IN ('powershell "Get-MpComputerStatus | select IsTamperProtected"') DO (
