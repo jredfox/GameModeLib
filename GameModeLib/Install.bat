@@ -16,7 +16,7 @@ set rc=%~dp0Resources
 set ustall=%~dp0Uninstall
 set ugen=!ustall!\Global
 REM ## Enable Registry Access ##
-call "!rc!\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul
+call "!rc!\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul 2>&1
 
 REM ## Main Registry Settings ##
 IF /I "%Settings:~0,1%" NEQ "T" (GOTO RMAIN)
