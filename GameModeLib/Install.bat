@@ -16,6 +16,11 @@ set rc=%~dp0Resources
 set ustall=%~dp0Uninstall
 set ugen=!ustall!\Global
 set itmp=%~dp0TMP\Install
+set logs=%~dp0Logs
+set log_graphics=!logs!\log_graphics.txt
+set log_wd=!logs!\log_wd.txt
+set log_wdlowcpu=!logs!\log_wdlowcpu.txt
+mkdir "!logs!" >nul 2>&1
 call :CLNUP
 call :GETISA
 REM ## Enable Registry Access ##
@@ -80,7 +85,7 @@ call "!rc!\PowerModeOverlay.exe" "ded574b5-45a0-4f42-8737-46345c09c238"
 REM ## Graphics 3D Settings ##
 IF /I "%Settings:~1,1%" NEQ "T" (GOTO GRAPHICS)
 ::AMD 3D Graphics Settings
-start /MIN cmd /c call "!rc!\AMD3dSettings.exe" "!ugen!"
+start /MIN cmd /c call "!rc!\AMD3dSettings.exe" "!ugen!" ^>"!log_graphics!" ^2^>^&1
 :GRAPHICS
 
 REM ## Update Sticky Keys ##
@@ -99,14 +104,14 @@ REM ## Enable Windows Defender Low CPU Priority ##
 IF /I "%Settings:~7,1%" NEQ "T" (GOTO WDLOWCPU)
 echo Enabling Windows Defender Low CPU Priority
 call :CHKTAMPER
-start /MIN cmd /c call "%~dp0InstallWDLowCPU.bat" "F"
+start /MIN cmd /c call "%~dp0InstallWDLowCPU.bat" "F" ^>"!log_wdlowcpu!" ^2^>^&1
 :WDLOWCPU
 
 REM ## Fully Disable Windows Defender Except FireWall ##
 IF /I "%Settings:~8,1%" NEQ "T" (GOTO WDDISABLE)
 echo Disabling Windows Defender
 IF "!chkedtamper!" NEQ "T" (call :CHKTAMPER)
-start /MIN cmd /c call "%~dp0InstallWDDisabler.bat" "F"
+start /MIN cmd /c call "%~dp0InstallWDDisabler.bat" "F" ^>"!log_wd!" ^2^>^&1
 :WDDISABLE
 
 :END
