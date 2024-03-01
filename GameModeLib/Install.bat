@@ -17,6 +17,7 @@ set ustall=%~dp0Uninstall
 set ugen=!ustall!\Global
 set itmp=%~dp0TMP\Install
 call :CLNUP
+call :GETISA
 REM ## Enable Registry Access ##
 call "!rc!\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul 2>&1
 
@@ -59,18 +60,22 @@ IF /I "%Settings:~5,1%" NEQ "T" (GOTO RPPThrottling)
 set regs=!regs!^;PowerThrottling.reg
 :RPPThrottling
 
+REM ## Create Power Plan and Generate GPUEntries reg ##
+IF /I "%Settings:~0,1%" NEQ "T" (GOTO MAIN)
+call "%~dp0GameModeLib-!ISA!^.exe" -GenReg -UGenInfo "%~dp0TMP\Install" -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPlan -SetPowerPlan
+set regs=!regs!^;%~dp0TMP\Install\UGpuEntry.reg
+:MAIN
+
 REM ## Install Registry Settings of all Enabled Modules ##
 IF "!regs!" NEQ "" (
 echo Installing GameModeLib Full Edition
 call "!rc!\RegImport.exe" "TTTTF" "!SIDS!" "!rc!;!ustall!;!regs:~1!"
 )
 
-IF /I "%Settings:~0,1%" NEQ "T" (GOTO MAIN)
-call :GETISA
-call "%~dp0GameModeLib-!ISA!^.exe" -UGenInfo "%~dp0TMP\Install" -GPUEntry "java.exe|true;javaw.exe|true;py.exe|true;pyw.exe|true" -PowerPlan -SetPowerPlan
+IF /I "%Settings:~0,1%" NEQ "T" (GOTO MAINPOST)
 IF NOT EXIST "!ugen!\PowerPlan.txt" (copy /Y "!itmp!\PowerPlan.txt" "!ugen!\PowerPlan.txt" >nul)
 call "!rc!\PowerModeOverlay.exe" "ded574b5-45a0-4f42-8737-46345c09c238"
-:MAIN
+:MAINPOST
 
 REM ## Graphics 3D Settings ##
 IF /I "%Settings:~1,1%" NEQ "T" (GOTO GRAPHICS)
