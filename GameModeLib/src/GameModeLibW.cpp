@@ -43,7 +43,6 @@ void init(string dir)
 	if(UGenInfo)
 	{
 		wstring ustall = UGenDir + L"\\UGpuEntry.reg";
-		wcout << L"HERE " << ustall << endl;
 		CreateDirectoryW(UGenDir.c_str(), NULL);
 		bool printHeader = !GAMEMODELIB::isFile(ustall);
 		//cache previous installation
@@ -54,8 +53,40 @@ void init(string dir)
 	        while (std::getline(ureg, line))
 	        {
 	        	line = trim(line);
-	        	if(line != L"")
+	        	int i = GAMEMODELIB::IndexOf(line, L"\"");
+	        	if(line != L"" && !GAMEMODELIB::startsWith(line, L";") && i >= 0)
 	        	{
+	        		auto prev = L' ';
+	        		int index_end = -1;
+	        		bool s = false;//Started
+	        		for(std::size_t index = 0; index < line.length(); index++)
+	        		{
+	        			auto c = line[index];
+	        			//ESC backslash
+	        			if(c == L'\\' && prev == L'\\')
+	        			{
+	        				prev = L' ';
+	        			}
+                        if (c == L'"' && prev != L'\\')
+                        {
+                            if (s)
+                            {
+                                index_end = (int) (index - 1);
+                                break;
+                            }
+                            s = true;
+                        }
+	        			prev = c;
+	        		}
+	        		//Handle Maulformed Lines without Erroring
+	        		if(index_end == -1)
+	        		{
+	        			wcerr << L"Maulformed Reg Line:" << line << endl;
+	        			index_end = line.length() - 1;
+	        		}
+	        		line = line.substr(i + 1, index_end - i);
+	            	ReplaceAll(line, L"\\\\", L"\\");
+	            	ReplaceAll(line, L"\\\"", L"\"");
 	        		ugpulines.push_back(line);
 	        	}
 	        }
@@ -218,17 +249,16 @@ void SetGPUPreference(string e, bool force)
     bool exists = RegExists(hKey, exe);
     if(force || !exists)
     {
-        if(UGenInfo)
+        if(UGenInfo && (std::find(ugpulines.begin(), ugpulines.end(), exe) == ugpulines.end()) )
         {
+        	ugpulines.push_back(exe);//Prevent Duplication
         	wstring exereg = exe;
         	//ESC Path
         	ReplaceAll(exereg, L"\\", L"\\\\");
         	ReplaceAll(exereg, L"\"", L"\\\"");
         	if(!exists)
         	{
-				wstring uentry = L"\"" + exereg + L"\"=-";
-				ugpulines.push_back(uentry);
-				ugpu << uentry << std::endl;
+				ugpu << L"\"" + exereg + L"\"=-" << std::endl;
         	}
         	else
         	{
@@ -238,9 +268,7 @@ void SetGPUPreference(string e, bool force)
         			//ESC Data
             		ReplaceAll(sz, L"\\", L"\\\\");
             		ReplaceAll(sz, L"\"", L"\\\"");
-    				wstring uentry = L"\"" + exereg + L"\"=\"" + sz + L"\"";
-    				ugpulines.push_back(uentry);
-    				ugpu << uentry << std::endl;
+            		ugpu << L"\"" + exereg + L"\"=\"" + sz + L"\"" << endl;
         		}
         	}
         }
