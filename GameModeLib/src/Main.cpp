@@ -31,7 +31,15 @@ int main() {
 		else if(t == L"-UGENINFO")
 		{
 			GAMEMODELIB::UGenInfo = true;
-			GAMEMODELIB::UGenDir = cargs[i + 1];
+			wstring d = (i + 1 >= argv) ? L"" : cargs[i + 1];
+			if(!GAMEMODELIB::startsWith(d, L"-"))
+			{
+				GAMEMODELIB::UGenDir = d;
+			}
+		}
+		else if(t == L"-GENREG")
+		{
+			GAMEMODELIB::GenReg = true;
 		}
 	}
 	//INIT

@@ -30,6 +30,7 @@ const unsigned long NORMAL = NORMAL_PRIORITY_CLASS;
 const unsigned long LOW = BELOW_NORMAL_PRIORITY_CLASS;
 bool SetActivePP = false;
 bool UGenInfo = false;
+bool GenReg = false;
 string WorkingDir;
 wstring UGenDir = L"";
 std::wofstream ugpu;
@@ -45,6 +46,8 @@ void init(string dir)
 	if(UGenInfo)
 	{
 		wstring ustall = UGenDir + L"\\UGpuEntry.reg";
+		if(GenReg)
+			DeleteFileW(ustall.c_str());
 		SHCreateDirectoryExW(NULL, UGenDir.c_str(), NULL);
 		bool printHeader = !GAMEMODELIB::isFile(ustall);
 		//cache previous installation
@@ -231,8 +234,19 @@ wstring GetRegString(HKEY hKey, const wstring& value)
 
 void SetGPUPreference(string e, bool force)
 {
+	//ESC Path
 	wstring exe = toWString(e);
 	wstring data = L"GpuPreference=2;";
+	wstring exereg = exe;
+	ReplaceAll(exereg, L"\\", L"\\\\");
+	ReplaceAll(exereg, L"\"", L"\\\"");
+
+	if(GenReg)
+	{
+		ugpu << L"\"" + exereg + L"\"=\"GpuPreference=2;\"" << std::endl;
+		return;
+	}
+
 	HKEY hKey;
     LONG result = RegCreateKeyExW(
     	HKEY_CURRENT_USER,  // Hive (root key)
@@ -254,10 +268,6 @@ void SetGPUPreference(string e, bool force)
         if(UGenInfo && (std::find(ugpulines.begin(), ugpulines.end(), exe) == ugpulines.end()) )
         {
         	ugpulines.push_back(exe);//Prevent Duplication
-        	wstring exereg = exe;
-        	//ESC Path
-        	ReplaceAll(exereg, L"\\", L"\\\\");
-        	ReplaceAll(exereg, L"\"", L"\\\"");
         	if(!exists)
         	{
 				ugpu << L"\"" + exereg + L"\"=-" << std::endl;

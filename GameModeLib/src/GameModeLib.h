@@ -9,6 +9,7 @@ extern const unsigned long NORMAL;
 extern const unsigned long LOW;
 extern bool SetActivePP;
 extern bool UGenInfo;
+extern bool GenReg;
 extern std::wstring UGenDir;
 extern std::string WorkingDir;
 
