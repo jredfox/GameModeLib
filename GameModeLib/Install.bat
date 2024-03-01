@@ -65,7 +65,7 @@ call "!rc!\RegImport.exe" "TTTTF" "!SIDS!" "!rc!;!ustall!;!regs:~1!"
 
 IF /I "%Settings:~0,1%" NEQ "T" (GOTO MAIN)
 call :GETISA
-call "%~dp0GameModeLib-!ISA!^.exe" -UGenInfo "!ugen!" -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPlan -SetPowerPlan
+call "%~dp0GameModeLib-!ISA!^.exe" -UGenInfo "!ugen!" -GPUEntry "java.exe|true;javaw.exe|true;py.exe|true;pyw.exe|true" -PowerPlan -SetPowerPlan
 call "!rc!\PowerModeOverlay.exe" "ded574b5-45a0-4f42-8737-46345c09c238"
 :MAIN
 
