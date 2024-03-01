@@ -9,7 +9,7 @@ REM ##  "*" "jredfox;jgrayfox" "S-1-5-21-368394509-689051271-14200874-1012;S-1-5
 REM ########################################################################################################################
 
 REM ## Set Vars ##
-echo !TIME!
+echo Start !TIME!
 set Settings=%~1
 set SIDS=%~2
 set rc=%~dp0Resources
@@ -116,7 +116,7 @@ start /MIN cmd /c call "%~dp0InstallWDDisabler.bat" "F" ^>"!log_wd!" ^2^>^&1
 
 :END
 call :CLNUP
-echo !TIME!
+echo Finish !TIME!
 exit /b
 
 :GETISA
