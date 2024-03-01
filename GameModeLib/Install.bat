@@ -15,6 +15,8 @@ set SIDS=%~2
 set rc=%~dp0Resources
 set ustall=%~dp0Uninstall
 set ugen=!ustall!\Global
+set itmp=%~dp0TMP\Install
+call :CLNUP
 REM ## Enable Registry Access ##
 call "!rc!\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul 2>&1
 
@@ -42,7 +44,7 @@ REM ## Elantech ##
 reg query "HKCU\SOFTWARE\Elantech" >nul 2>&1
 IF !ERRORLEVEL! EQU 0 (set regs=!regs!^;ElanTech.reg)
 REM ## Synaptics ##
-set syntp=%~dp0TMP\Install\SynapticsUser.reg
+set syntp=!itmp!\SynapticsUser.reg
 call "!rc!\GenSynaptics.exe" "!syntp!"
 IF !ERRORLEVEL! EQU 0 (set regs=!regs!^;Synaptics.reg^;!syntp!)
 :RTOUCHPAD
@@ -65,7 +67,8 @@ call "!rc!\RegImport.exe" "TTTTF" "!SIDS!" "!rc!;!ustall!;!regs:~1!"
 
 IF /I "%Settings:~0,1%" NEQ "T" (GOTO MAIN)
 call :GETISA
-call "%~dp0GameModeLib-!ISA!^.exe" -UGenInfo "!ugen!" -GPUEntry "java.exe|true;javaw.exe|true;py.exe|true;pyw.exe|true" -PowerPlan -SetPowerPlan
+call "%~dp0GameModeLib-!ISA!^.exe" -UGenInfo "%~dp0TMP\Install" -GPUEntry "java.exe|true;javaw.exe|true;py.exe|true;pyw.exe|true" -PowerPlan -SetPowerPlan
+IF NOT EXIST "!ugen!\PowerPlan.txt" (copy /Y "!itmp!\PowerPlan.txt" "!ugen!\PowerPlan.txt" >nul)
 call "!rc!\PowerModeOverlay.exe" "ded574b5-45a0-4f42-8737-46345c09c238"
 :MAIN
 
@@ -101,9 +104,9 @@ IF "!chkedtamper!" NEQ "T" (call :CHKTAMPER)
 start /MIN cmd /c call "%~dp0InstallWDDisabler.bat" "F"
 :WDDISABLE
 
-echo !TIME!
-
 :END
+call :CLNUP
+echo !TIME!
 exit /b
 
 :GETISA
@@ -133,3 +136,7 @@ GOTO CHKTAMPER
 )
 set chkedtamper=T
 exit /b
+
+:CLNUP
+del /F /S /Q /A "%~dp0TMP" >nul 2>&1
+rd /S /Q "%~dp0TMP" >nul 2>&1

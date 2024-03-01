@@ -12,6 +12,7 @@
 #include <sstream>
 #include <iomanip>
 #include <fstream>
+#include <Shlobj.h>
 #include "GameModeLib.h"
 using namespace std;
 
@@ -20,6 +21,7 @@ using namespace std;
  *  psapi
  *  PowrProf
  *  ole32
+ *  Shlwapi
  */
 namespace GAMEMODELIB {
 
@@ -43,7 +45,7 @@ void init(string dir)
 	if(UGenInfo)
 	{
 		wstring ustall = UGenDir + L"\\UGpuEntry.reg";
-		CreateDirectoryW(UGenDir.c_str(), NULL);
+		SHCreateDirectoryExW(NULL, UGenDir.c_str(), NULL);
 		bool printHeader = !GAMEMODELIB::isFile(ustall);
 		//cache previous installation
 		if(!printHeader)
