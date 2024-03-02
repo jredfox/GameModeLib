@@ -93,6 +93,10 @@ IF /I "%Settings:~2,1%" NEQ "T" (GOTO STKYKYS)
 call "!rc!\StickyKeysSetFlag.exe" "sync"
 :STKYKYS
 
+REM ## Start ADMIN Only Modules ##
+call :CHKADMIN
+IF /I "!IsAdmin!" NEQ "T" (GOTO ENDADMIN)
+
 REM ## Disable Bitlocker on C Drive If Enabled ##
 IF /I "%Settings:~6,1%" NEQ "T" (GOTO BTLCKR)
 echo Disabling Bitlocker OS "C:" Drive
@@ -113,6 +117,9 @@ echo Disabling Windows Defender
 IF "!chkedtamper!" NEQ "T" (call :CHKTAMPER)
 start /MIN cmd /c call "%~dp0InstallWDDisabler.bat" "F" ^>"!log_wd!" ^2^>^&1
 :WDDISABLE
+
+REM ## END ADMIN MODULES ##
+:ENDADMIN
 
 :END
 call :CLNUP
@@ -150,3 +157,10 @@ exit /b
 :CLNUP
 del /F /S /Q /A "%~dp0TMP" >nul 2>&1
 rd /S /Q "%~dp0TMP" >nul 2>&1
+exit /b
+
+:CHKADMIN
+set IsAdmin=F
+net session >nul 2>&1
+IF !ERRORLEVEL! EQU 0 (set IsAdmin=T)
+exit /b
