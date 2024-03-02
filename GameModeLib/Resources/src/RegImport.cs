@@ -24,6 +24,47 @@ namespace RegImport
         }
     }
 
+    public class RegWriter : StreamWriter
+    {
+        public bool HasWritten = false;
+        public string File = null;
+
+        public RegWriter(string path) : base(path)
+        {
+            this.File = path;
+        }
+
+        public override void WriteLine(string v)
+        {
+            HasWritten = true;
+            base.WriteLine(v);
+        }
+
+        public override void Write(string v)
+        {
+            HasWritten = true;
+            base.Write(v);
+        }
+
+        /// <summary>
+        /// Writes a Line Without Triggering HasWritten
+        /// </summary>
+        /// <param name="v"></param>
+        public void WriteLineParent(string v)
+        {
+            base.WriteLine(v);
+        }
+
+        /// <summary>
+        /// Writes without Triggering HasWritten
+        /// </summary>
+        /// <param name="v"></param>
+        public void WriteParent(string v)
+        {
+            base.Write(v);
+        }
+    }
+
     class Hive
     {
         [DllImport("advapi32.dll", SetLastError = true)]
@@ -488,25 +529,25 @@ namespace RegImport
 
             //Fetch the StreamWriter to write the REG file
             string UserReg = UninstallDir + @"\Users\" + SID + @"\" + reg.RelPath;
-            StreamWriter writer_current = null;
+            RegWriter writer_current = null;
             if (UNINSTALL_GLOBAL && !USR)
             {
                 string GlobalReg = UninstallDir + @"\Global\" + reg.RelPath;
                 if (!UNINSTALL_OVERWRITE && File.Exists(GlobalReg))
                     return;
                 mkdir(Path.GetDirectoryName(GlobalReg));
-                writer_current = new StreamWriter(GlobalReg);
+                writer_current = new RegWriter(GlobalReg);
             }
             else if (UNINSTALL_USER && USR && (UNINSTALL_OVERWRITE || !File.Exists(UserReg)))
             {
                 mkdir(Path.GetDirectoryName(UserReg));
-                writer_current = new StreamWriter(UserReg);
+                writer_current = new RegWriter(UserReg);
             }
             else
             {
                 return;
             }
-            writer_current.WriteLine("Windows Registry Editor Version 5.00");
+            writer_current.WriteLineParent("Windows Registry Editor Version 5.00");
             RegistryKey LastKey = null;
 
             //Gen Uninstall Data
@@ -563,6 +604,23 @@ namespace RegImport
             }
             Close(writer_current);
             Close(LastKey);
+
+            //Delete Blank Reg Files
+            if(!writer_current.HasWritten)
+            {
+                try
+                {
+                    if (File.Exists(writer_current.File))
+                    {
+                        File.Delete(writer_current.File);
+                    }
+                }
+                catch(Exception e)
+                {
+                    Console.Error.Write("Error Deleting Blank REG File: ");
+                    Console.Error.WriteLine(e);
+                }
+            }
         }
 
         public static void RegImport(RegFile reg, string SID)
