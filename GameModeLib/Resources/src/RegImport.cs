@@ -361,7 +361,7 @@ namespace RegImport
                 int index_rel = d.IndexOf(@"|");
                 if (index_rel >= 0)
                 {
-                    
+
                     rel = SubStringIndex(d, index_rel + 1, d.Length - 1);
                     d = SubStringIndex(d, 0, index_rel - 1);
                 }
@@ -415,7 +415,6 @@ namespace RegImport
                                     try
                                     {
                                         h.Load();
-                                        Console.WriteLine($"Reg Import User: {user.SamAccountName}, SID: {sid}");
                                     }
                                     catch (Exception)
                                     {
@@ -424,27 +423,31 @@ namespace RegImport
                                     }
                                     finally
                                     {
-                                        try
+                                        if(HasUser(sid))
                                         {
-                                            foreach (RegFile r in regs)
-                                            {
-                                                RegGenUninstall(r, sid);
-                                                RegImport(r, sid);
-                                            }
-                                        }
-                                        catch (Exception f)
-                                        {
-                                            Console.Error.WriteLine(f);
-                                        }
-                                        if (h != null)
-                                        {
+                                            Console.WriteLine($"Reg Import User: {user.SamAccountName}, SID: {sid}");
                                             try
                                             {
-                                                h.UnLoad();
+                                                foreach (RegFile r in regs)
+                                                {
+                                                    RegGenUninstall(r, sid);
+                                                    RegImport(r, sid);
+                                                }
                                             }
-                                            catch (Exception)
+                                            catch (Exception f)
                                             {
-                                                Console.Error.WriteLine("Failed to Unload NTUSER.DAT:" + user.SamAccountName);
+                                                Console.Error.WriteLine(f);
+                                            }
+                                            if (h != null)
+                                            {
+                                                try
+                                                {
+                                                    h.UnLoad();
+                                                }
+                                                catch (Exception)
+                                                {
+                                                    Console.Error.WriteLine("Failed to Unload NTUSER.DAT:" + user.SamAccountName);
+                                                }
                                             }
                                         }
                                     }
@@ -457,6 +460,19 @@ namespace RegImport
 
             long done = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             Console.WriteLine("Done MS:" + (done - milliseconds));
+        }
+
+        public static bool HasUser(string sid)
+        {
+            try
+            {
+                return GetRegTree("HKU").OpenSubKey(sid, false) != null;
+            }
+            catch(Exception)
+            {
+
+            }
+            return false;
         }
 
         public static string GetCurrentSID()
