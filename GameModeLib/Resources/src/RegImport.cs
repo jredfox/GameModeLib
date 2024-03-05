@@ -126,17 +126,44 @@ namespace RegImport
     {
         public string File { get; set; }
         public string RelPath { get; set; }
+        public bool IsMeta { get; set; }
         public List<RegObj> Global { get; set; }
         public List<RegObj> User { get; set; }
 
         public RegFile(string file, string relpath)
         {
-            this.File = file;
-            this.RelPath = relpath;
+            this.File = this.GetRegPath(file, null);
+            this.RelPath = this.GetRegPath(relpath, null);
+            this.IsMeta = this.File.Contains("<SID>");
+        }
+
+        public RegFile GetRegFile(string sid)
+        {
+            if (!this.IsMeta)
+                return this;
+            RegFile reg = new RegFile(GetRegPath(this.File, sid), GetRegPath(this.RelPath, sid));
+            reg.Parse();
+            return reg;
+        }
+
+        public string GetRegPath(string path, string SID)
+        {
+            if (!path.Contains("<"))
+                return path;
+            foreach (var v in Program.fields)
+            {
+                path = path.Replace(v.Key, v.Value);
+            }
+            if (SID != null)
+                path = path.Replace("<SID>", SID);
+            return path;
         }
 
         public void Parse()
         {
+            //If the Reg File is Meta Data Object then it's not a real Reg File don't parse
+            if (this.IsMeta)
+                return;
             this.Global = new List<RegObj>();
             this.User = new List<RegObj>();
 
@@ -317,7 +344,7 @@ namespace RegImport
             this.SubKey = key.Substring(i + 1);
             this.Name = this.Hive.Name + @"\" + this.SubKey;
             this.Delete = delete;
-            this.IsUser = this.Hive.Name.Equals("HKEY_CURRENT_USER");
+            this.IsUser = this.Hive.Name.Equals("HKEY_CURRENT_USER") || this.Hive.Name.Equals("HKEY_USERS");
         }
         public RegKey(string hive, string subkey, bool delete)
         {
@@ -325,12 +352,12 @@ namespace RegImport
             this.SubKey = subkey;
             this.Name = hive + @"\" + subkey;
             this.Delete = delete;
-            this.IsUser = this.Hive.Name.Equals("HKEY_CURRENT_USER");
+            this.IsUser = this.Hive.Name.Equals("HKEY_CURRENT_USER") || this.Hive.Name.Equals("HKEY_USERS");
         }
 
         public RegKey GetRegKey(string sid)
         {
-            return new RegKey("HKEY_USERS", sid + @"\" + this.SubKey, this.Delete);
+            return new RegKey("HKEY_USERS", (this.SubKey.StartsWith(sid) ? this.SubKey : (sid + @"\" + this.SubKey)), this.Delete);
         }
     }
 
@@ -365,6 +392,8 @@ namespace RegImport
         public static string BaseDir;
         public static string UninstallDir;
         public static string[] dirs;
+        public static Dictionary<string, string> fields = new Dictionary<string, string>();
+
         static void Main(string[] args)
         {
             long milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds();
@@ -388,6 +417,34 @@ namespace RegImport
             UNINSTALL_GLOBAL = set[2] == 'T';
             UNINSTALL_USER = set[3] == 'T';
             UNINSTALL_OVERWRITE = set[4] == 'T';
+
+            //Get Command Line Variables
+            if (args.Length > 3)
+            {
+                Dictionary<string, string> tmp = new Dictionary<string, string>();
+                foreach (string arr in args[3].Split(';'))
+                {
+                    string[] parts = arr.Split('=');
+                    fields.Add("<" + parts[0].Trim('<', '>').Trim() + ">", parts[1]);
+                }
+
+                //Expand the global variables with 256 tries
+                foreach (var k in fields)
+                {
+                    var key = k.Key;
+                    var v = k.Value.Replace("<SID>", ">SID>");
+                    for (int i = 0; i < 256; i++)
+                    {
+                        foreach (var kk in fields)
+                            v = v.Replace(kk.Key, kk.Value);
+                        if (!v.Contains("<"))
+                            break;
+                    }
+                    tmp.Add(key, v.Replace(">SID>", "<SID>"));
+                }
+                fields.Clear();
+                fields = tmp;
+            }
 
             //Parse the Reg File Into Objects
             dirs = args[2].Split(';');
@@ -413,8 +470,11 @@ namespace RegImport
                 regs.Add(reg);
 
                 //Apply Global Settings
-                RegGenUninstall(reg, null);
-                RegImport(reg, null);
+                if(!reg.IsMeta)
+                {
+                    RegGenUninstall(reg, null);
+                    RegImport(reg, null);
+                }
             }
 
             //Get ARG_SID
@@ -424,8 +484,9 @@ namespace RegImport
             if (ARG_SID.Equals("") || ARG_SID.Equals("NULL"))
             {
                 ARG_SID = GetCurrentSID();
-                foreach (RegFile r in regs)
+                foreach (RegFile re in regs)
                 {
+                    RegFile r = re.GetRegFile(ARG_SID);
                     RegGenUninstall(r, ARG_SID);
                     RegImport(r, ARG_SID);
                 }
@@ -469,8 +530,9 @@ namespace RegImport
                                             Console.WriteLine($"Reg Import User: {user.SamAccountName}, SID: {sid}");
                                             try
                                             {
-                                                foreach (RegFile r in regs)
+                                                foreach (RegFile re in regs)
                                                 {
+                                                    RegFile r = re.GetRegFile(sid);
                                                     RegGenUninstall(r, sid);
                                                     RegImport(r, sid);
                                                 }
@@ -518,7 +580,7 @@ namespace RegImport
 
         public static string GetCurrentSID()
         {
-            return WindowsIdentity.GetCurrent().User.Value;
+            return WindowsIdentity.GetCurrent().User.Value.ToUpper();
         }
 
         public static void RegGenUninstall(RegFile reg, string SID)
