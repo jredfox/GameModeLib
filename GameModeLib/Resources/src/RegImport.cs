@@ -141,7 +141,7 @@ namespace RegImport
         {
             if (!this.IsMeta)
                 return this;
-            RegFile reg = new RegFile(GetRegPath(this.File, sid), GetRegPath(this.RelPath, sid));
+            RegFile reg = new RegFile(this.GetRegPath(this.File, sid), this.GetRegPath(this.RelPath, sid));
             reg.Parse();
             return reg;
         }
@@ -337,6 +337,7 @@ namespace RegImport
         public RegistryKey Hive;
         public string SubKey { get; set; }
         public bool IsUser;
+        public bool IsCurrentUser;
         public RegKey(string key, bool delete)
         {
             int i = key.IndexOf(@"\");
@@ -344,7 +345,8 @@ namespace RegImport
             this.SubKey = key.Substring(i + 1);
             this.Name = this.Hive.Name + @"\" + this.SubKey;
             this.Delete = delete;
-            this.IsUser = this.Hive.Name.Equals("HKEY_CURRENT_USER") || this.Hive.Name.Equals("HKEY_USERS");
+            this.IsCurrentUser = this.Hive.Name.Equals("HKEY_CURRENT_USER");
+            this.IsUser = this.IsCurrentUser || this.Hive.Name.Equals("HKEY_USERS");
         }
         public RegKey(string hive, string subkey, bool delete)
         {
@@ -352,12 +354,13 @@ namespace RegImport
             this.SubKey = subkey;
             this.Name = hive + @"\" + subkey;
             this.Delete = delete;
-            this.IsUser = this.Hive.Name.Equals("HKEY_CURRENT_USER") || this.Hive.Name.Equals("HKEY_USERS");
+            this.IsCurrentUser = this.Hive.Name.Equals("HKEY_CURRENT_USER");
+            this.IsUser = this.IsCurrentUser || this.Hive.Name.Equals("HKEY_USERS");
         }
 
         public RegKey GetRegKey(string sid)
         {
-            return new RegKey("HKEY_USERS", (this.SubKey.StartsWith(sid) ? this.SubKey : (sid + @"\" + this.SubKey)), this.Delete);
+            return this.IsCurrentUser ? new RegKey("HKEY_USERS", sid + @"\" + this.SubKey, this.Delete) : this;
         }
     }
 
