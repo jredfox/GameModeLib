@@ -134,6 +134,12 @@ namespace RegImport
         {
             this.File = this.GetRegPath(file, null);
             this.RelPath = this.GetRegPath(relpath, null);
+            if (this.RelPath.StartsWith(@"Global\"))
+                this.RelPath = this.RelPath.Substring(7);
+            else if(this.RelPath.StartsWith(@"Users\<SID>\"))
+            {
+                this.RelPath = this.RelPath.Substring(this.RelPath.IndexOf('\\', this.RelPath.IndexOf('\\') + 1) + 1);
+            }
             this.IsMeta = this.File.Contains("<SID>");
         }
 
@@ -632,6 +638,10 @@ namespace RegImport
                             Console.Error.WriteLine(e);
                         }
                         k = USR ? k.GetRegKey(SID) : k; //Redirect Current User Keys to SID User Keys
+                        if(USR && !k.SubKey.StartsWith(SID))
+                        {
+                            Console.WriteLine("HERE " + k.Name);
+                        }
                         LastKey = k.Hive.OpenSubKey(k.SubKey, false);
                         if (k.Delete && LastKey != null)
                         {
