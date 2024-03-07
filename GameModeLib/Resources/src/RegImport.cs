@@ -172,6 +172,9 @@ namespace RegImport
                 return;
             this.Global = new List<RegObj>();
             this.User = new List<RegObj>();
+            //Don't Parse Non Existing Files
+            if (!System.IO.File.Exists(this.File))
+                return;
 
             int index_line = -1;
             RegKey LastKey = null;
