@@ -592,36 +592,50 @@ namespace RegImport
             return WindowsIdentity.GetCurrent().User.Value.ToUpper();
         }
 
+        public static RegWriter GetRegWriter(string RelPath, string SID, bool USR)
+        {
+            if (UNINSTALL_GLOBAL && !USR)
+            {
+                string GlobalReg = UninstallDir + @"\Global\" + RelPath;
+                if (!UNINSTALL_OVERWRITE && File.Exists(GlobalReg))
+                    return null;
+                mkdir(Path.GetDirectoryName(GlobalReg));
+                RegWriter w = new RegWriter(GlobalReg);
+                w.WriteLineParent("Windows Registry Editor Version 5.00");
+                return w;
+            }
+            else if (UNINSTALL_USER && USR)
+            {
+                string UserReg = UninstallDir + @"\Users\" + SID + @"\" + RelPath;
+                if (!UNINSTALL_OVERWRITE && File.Exists(UserReg))
+                    return null;
+                mkdir(Path.GetDirectoryName(UserReg));
+                RegWriter w = new RegWriter(UserReg);
+                w.WriteLineParent("Windows Registry Editor Version 5.00");
+                return w;
+            }
+            return null;
+        }
+
+        public static Dictionary<string, RegWriter> writer_cache = new Dictionary<string, RegWriter>();
+
         public static void RegGenUninstall(RegFile reg, string SID)
         {
             bool USR = (SID != null);
             if (!UNINSTALL_GLOBAL && !USR || !UNINSTALL_USER && USR)
                 return;
 
-            //Fetch the StreamWriter to write the REG file
-            string UserReg = UninstallDir + @"\Users\" + SID + @"\" + reg.RelPath;
-            RegWriter writer_current = null;
-            if (UNINSTALL_GLOBAL && !USR)
-            {
-                string GlobalReg = UninstallDir + @"\Global\" + reg.RelPath;
-                if (!UNINSTALL_OVERWRITE && File.Exists(GlobalReg))
-                    return;
-                mkdir(Path.GetDirectoryName(GlobalReg));
-                writer_current = new RegWriter(GlobalReg);
-            }
-            else if (UNINSTALL_USER && USR && (UNINSTALL_OVERWRITE || !File.Exists(UserReg)))
-            {
-                mkdir(Path.GetDirectoryName(UserReg));
-                writer_current = new RegWriter(UserReg);
-            }
-            else
-            {
+            RegWriter writer_org = GetRegWriter(reg.RelPath, SID, USR);
+            if (writer_org == null)
                 return;
-            }
-            writer_current.WriteLineParent("Windows Registry Editor Version 5.00");
-            RegistryKey LastKey = null;
+            //Clear the Writer Cache of other users
+            if (writer_cache.Count != 0)
+                writer_cache.Clear();
+
+            RegWriter writer_current = writer_org;
 
             //Gen Uninstall Data
+            RegistryKey LastKey = null;
             foreach (RegObj o in (USR ? reg.User : reg.Global))
             {
                 if (o is RegKey k)
@@ -638,9 +652,31 @@ namespace RegImport
                             Console.Error.WriteLine(e);
                         }
                         k = USR ? k.GetRegKey(SID) : k; //Redirect Current User Keys to SID User Keys
+                        //Re-Direct Other Users to a Different Reg File
                         if(USR && !k.SubKey.StartsWith(SID))
                         {
-                            Console.WriteLine("HERE " + k.Name);
+                            string OtherSID = k.SubKey.Split('\\')[0];
+                            if(!writer_cache.ContainsKey(OtherSID))
+                            {
+                                RegWriter w = GetRegWriter("Gen_" + reg.RelPath, OtherSID, true);
+                                writer_cache.Add(OtherSID, w);
+                                writer_current = w;
+                            }
+                            else
+                            {
+                                writer_current = writer_cache[OtherSID];
+                            }
+                            //Handle Previously Generated Reg Files
+                            if (writer_current == null)
+                            {
+                                LastKey = null;
+                                writer_current = writer_org;
+                                continue;
+                            }
+                        }
+                        else
+                        {
+                            writer_current = writer_org;
                         }
                         LastKey = k.Hive.OpenSubKey(k.SubKey, false);
                         if (k.Delete && LastKey != null)
@@ -677,17 +713,40 @@ namespace RegImport
                     }
                 }
             }
-            Close(writer_current);
+            //Close Other User RegWriters
+            foreach (var c in writer_cache)
+            {
+                if (c.Value == null)
+                    continue;
+                Close(c.Value);
+                //Delete Blank Reg Files
+                if (!c.Value.HasWritten)
+                {
+                    try
+                    {
+                        if (File.Exists(c.Value.File))
+                        {
+                            File.Delete(c.Value.File);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Console.Error.Write("Error Deleting Blank REG File: ");
+                        Console.Error.WriteLine(e);
+                    }
+                }
+            }
+            Close(writer_org);
             Close(LastKey);
 
             //Delete Blank Reg Files
-            if(!writer_current.HasWritten)
+            if(!writer_org.HasWritten)
             {
                 try
                 {
-                    if (File.Exists(writer_current.File))
+                    if (File.Exists(writer_org.File))
                     {
-                        File.Delete(writer_current.File);
+                        File.Delete(writer_org.File);
                     }
                 }
                 catch(Exception e)
@@ -1030,7 +1089,6 @@ namespace RegImport
             Console.WriteLine(@"Current User: RegImport.exe ""TTTT"" """" ""C:\GameModeLib\Dir;FileName.reg;SubDir/FileName2.reg""");
             Console.WriteLine(@"Example Other User: RegImport.exe ""TTFF"" ""S-1-5-21-368394509-689051271-14200874-1011;S-1-5-21-368394509-689051271-14200874-1099"" ""C:\GameModeLib\Resources;C:\GameModeLib\Uninstall;FileName.reg;SubDir/FileName2.reg""");
             Console.WriteLine(@"Example OverWrite Previous Uninstall Gen For All Users: RegImport.exe ""TTTTT"" ""*"" ""C:\GameModeLib\Dir;FileName.reg;SubDir/FileName2.reg""");
-            Console.WriteLine(@"NOTE: NTUSER.DAT has to be loaded to HKU\<SID> Before Calling RegImport.exe");
             Console.WriteLine("_________________________________________________________________________________");
             Environment.Exit(0);
         }
