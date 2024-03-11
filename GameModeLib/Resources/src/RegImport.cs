@@ -546,12 +546,12 @@ namespace RegImport
                                 string file_hive = Users + user.SamAccountName + @"\NTUSER.DAT";
                                 string sid = IsDefault(usrname) ? ".DEFAULT" : user.Sid.ToString().ToUpper();
                                 bool exists = File.Exists(file_hive);
-                                if (exists && allsids || sids.Contains(sid) || sids.Contains(usrname) )
+                                if (exists && allsids || sids.Contains(sid) || sids.Contains(usrname))
                                 {
                                     Hive h = new Hive(file_hive, sid, RegistryHive.Users);
                                     try
                                     {
-                                        if(exists)
+                                        if (exists)
                                             h.Load();
                                     }
                                     catch (Exception)
@@ -623,7 +623,9 @@ namespace RegImport
         {
             try
             {
-                return GetRegTree("HKU").OpenSubKey(sid, false) != null;
+                RegistryKey k = GetRegTree("HKU").OpenSubKey(sid, false);
+                Close(k);
+                return k != null;
             }
             catch (Exception)
             {
