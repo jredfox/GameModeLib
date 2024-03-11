@@ -267,6 +267,11 @@ namespace AMD3dSettings
                                     {
                                         SetValue((JValue)GetJValue(index, "Value"), 0);
                                     }
+                                    //# Anti Aliasing Disable Override
+                                    else if (name.Equals("antialias"))
+                                    {
+                                        SetValue((JValue)GetJValue(index, "Value"), 0);
+                                    }
                                     //# Texture Filtering Quality High #
                                     else if (name.Equals("tfq"))
                                     {
