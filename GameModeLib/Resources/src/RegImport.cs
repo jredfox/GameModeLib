@@ -462,13 +462,6 @@ namespace RegImport
             string ARG_SID = args[1].Trim().ToUpper();
             bool allsids = ARG_SID.Contains("*");
             List<string> sids = new List<string>(ARG_SID.Split(';'));
-            bool applydef = false;
-            const string DSID = ".DEFAULT";
-            foreach (var s in sids)
-            {
-                if (s.Equals(DSID) || s.Equals("DEFAULT"))
-                    applydef = true;
-            }
 
             //Parse the Reg File Into Objects
             dirs = args[2].Split(';');
@@ -549,14 +542,17 @@ namespace RegImport
                         {
                             if (result is UserPrincipal user)
                             {
-                                string sid = user.Sid.ToString();
+                                string usrname = user.SamAccountName.ToUpper();
                                 string file_hive = Users + user.SamAccountName + @"\NTUSER.DAT";
-                                if (File.Exists(file_hive) && (allsids || sids.Contains(sid.ToUpper()) || sids.Contains(user.SamAccountName.ToUpper())))
+                                string sid = IsDefault(usrname) ? ".DEFAULT" : user.Sid.ToString().ToUpper();
+                                bool exists = File.Exists(file_hive);
+                                if (exists && allsids || sids.Contains(sid) || sids.Contains(usrname) )
                                 {
                                     Hive h = new Hive(file_hive, sid, RegistryHive.Users);
                                     try
                                     {
-                                        h.Load();
+                                        if(exists)
+                                            h.Load();
                                     }
                                     catch (Exception)
                                     {
@@ -616,6 +612,11 @@ namespace RegImport
 
             long done = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             Console.WriteLine("Import Settings Done in MS:" + (done - milliseconds));
+        }
+
+        public static bool IsDefault(string usrname)
+        {
+            return usrname.Equals("DEFAULTACCOUNT") || usrname.Equals(".DEFAULT") || usrname.Equals("DEFAULT");
         }
 
         public static bool HasUser(string sid)
