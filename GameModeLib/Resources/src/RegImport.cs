@@ -553,6 +553,8 @@ namespace RegImport
                                     {
                                         if (exists)
                                             h.Load();
+                                        else
+                                            h = null;
                                     }
                                     catch (Exception)
                                     {
