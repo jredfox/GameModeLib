@@ -60,6 +60,10 @@ namespace AMD3dSettings
                         string cmd = udir + "\\AMD3DSettings.bat";
                         if (!File.Exists(bak))
                         {
+                            if (!Directory.Exists(udir))
+                            {
+                                Directory.CreateDirectory(udir);
+                            }
                             File.Copy(AMD3D, bak);
                             File.WriteAllText(cmd, "@ECHO OFF\r\nsetlocal enableDelayedExpansion\r\ncall \"" + cncmd + "\" import \"%~dp0AMD3DSettings.zip\"\r\ntimeout /NOBREAK /t 3 >nul 2>&1\r\ncall \"" + cncmd + "\" import \"%~dp0AMD3DSettings.zip\"");
                         }
