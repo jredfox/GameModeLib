@@ -136,7 +136,7 @@ namespace RegImport
             this.RelPath = this.GetRegPath(relpath, null);
             if (this.RelPath.StartsWith(@"Global\"))
                 this.RelPath = this.RelPath.Substring(7);
-            else if(this.RelPath.StartsWith(@"Users\<SID>\"))
+            else if (this.RelPath.StartsWith(@"Users\<SID>\"))
             {
                 this.RelPath = this.RelPath.Substring(this.RelPath.IndexOf('\\', this.RelPath.IndexOf('\\') + 1) + 1);
             }
@@ -458,6 +458,18 @@ namespace RegImport
                 fields = tmp;
             }
 
+            //Get ARG_SID
+            string ARG_SID = args[1].Trim().ToUpper();
+            bool allsids = ARG_SID.Contains("*");
+            List<string> sids = new List<string>(ARG_SID.Split(';'));
+            bool applydef = false;
+            const string DSID = ".DEFAULT";
+            foreach (var s in sids)
+            {
+                if (s.Equals(DSID) || s.Equals("DEFAULT"))
+                    applydef = true;
+            }
+
             //Parse the Reg File Into Objects
             dirs = args[2].Split(';');
             BaseDir = Path.GetFullPath(dirs[0]);
@@ -481,33 +493,49 @@ namespace RegImport
                 reg.Parse();
                 regs.Add(reg);
 
-                //Apply Global Settings
-                if(!reg.IsMeta)
+                //Gen Uninstall Data
+                if (UNINSTALL_GLOBAL && !reg.IsMeta)
                 {
                     RegGenUninstall(reg, null);
-                    RegImport(reg, null);
                 }
             }
 
-            //Get ARG_SID
-            string ARG_SID = args[1].Trim().ToUpper();
+            //Import all Global Data
+            if (IMPORT_GLOBAL)
+            {
+                foreach (var reg in regs)
+                {
+                    if (!reg.IsMeta)
+                        RegImport(reg, null);
+                }
+            }
 
             //Install Current User
             if (ARG_SID.Equals("") || ARG_SID.Equals("NULL"))
             {
                 ARG_SID = GetCurrentSID();
-                foreach (RegFile re in regs)
+                //Gen Uninstall Data
+                if (UNINSTALL_USER)
                 {
-                    RegFile r = re.GetRegFile(ARG_SID);
-                    RegGenUninstall(r, ARG_SID);
-                    RegImport(r, ARG_SID);
+                    foreach (RegFile re in regs)
+                    {
+                        RegFile r = re.GetRegFile(ARG_SID);
+                        RegGenUninstall(r, ARG_SID);
+                    }
+                }
+                //Import Data
+                if (IMPORT_USER)
+                {
+                    foreach (RegFile re in regs)
+                    {
+                        RegFile r = re.GetRegFile(ARG_SID);
+                        RegImport(r, ARG_SID);
+                    }
                 }
             }
             //Install For A Different User(s) or * for All Users
-            else
+            else if (UNINSTALL_USER || IMPORT_USER)
             {
-                bool allsids = ARG_SID.Equals("*");
-                List<string> sids = new List<string>(ARG_SID.Split(';'));
                 string HomeDrive = Environment.ExpandEnvironmentVariables("%HOMEDRIVE%").Substring(0, 1).ToUpper();
                 string Users = HomeDrive + @":\Users\";
 
@@ -537,16 +565,29 @@ namespace RegImport
                                     }
                                     finally
                                     {
-                                        if(HasUser(sid))
+                                        if (HasUser(sid))
                                         {
                                             Console.WriteLine($"Reg Import User: {user.SamAccountName}, SID: {sid}");
                                             try
                                             {
-                                                foreach (RegFile re in regs)
+                                                //Gen Uninstall Data Per User
+                                                if (UNINSTALL_USER)
                                                 {
-                                                    RegFile r = re.GetRegFile(sid);
-                                                    RegGenUninstall(r, sid);
-                                                    RegImport(r, sid);
+                                                    foreach (RegFile re in regs)
+                                                    {
+                                                        RegFile r = re.GetRegFile(sid);
+                                                        RegGenUninstall(r, sid);
+                                                    }
+                                                }
+
+                                                //Import Data Per User
+                                                if (IMPORT_USER)
+                                                {
+                                                    foreach (RegFile re in regs)
+                                                    {
+                                                        RegFile r = re.GetRegFile(sid);
+                                                        RegImport(r, sid);
+                                                    }
                                                 }
                                             }
                                             catch (Exception f)
@@ -574,7 +615,7 @@ namespace RegImport
             }
 
             long done = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            Console.WriteLine("Done MS:" + (done - milliseconds));
+            Console.WriteLine("Import Settings Done in MS:" + (done - milliseconds));
         }
 
         public static bool HasUser(string sid)
@@ -583,7 +624,7 @@ namespace RegImport
             {
                 return GetRegTree("HKU").OpenSubKey(sid, false) != null;
             }
-            catch(Exception)
+            catch (Exception)
             {
 
             }
@@ -656,10 +697,10 @@ namespace RegImport
                         }
                         k = USR ? k.GetRegKey(SID) : k; //Redirect Current User Keys to SID User Keys
                         //Re-Direct Other Users to a Different Reg File
-                        if(USR && !k.SubKey.StartsWith(SID))
+                        if (USR && !k.SubKey.StartsWith(SID))
                         {
                             string OtherSID = k.SubKey.Split('\\')[0];
-                            if(!writer_cache.ContainsKey(OtherSID))
+                            if (!writer_cache.ContainsKey(OtherSID))
                             {
                                 RegWriter w = GetRegWriter("Gen_" + reg.RelPath, OtherSID, true);
                                 writer_cache.Add(OtherSID, w);
@@ -743,7 +784,7 @@ namespace RegImport
             Close(LastKey);
 
             //Delete Blank Reg Files
-            if(!writer_org.HasWritten)
+            if (!writer_org.HasWritten)
             {
                 try
                 {
@@ -752,7 +793,7 @@ namespace RegImport
                         File.Delete(writer_org.File);
                     }
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     Console.Error.Write("Error Deleting Blank REG File: ");
                     Console.Error.WriteLine(e);
