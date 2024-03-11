@@ -270,7 +270,7 @@ namespace AMD3dSettings
                                     //# Anti Aliasing Disable Override
                                     else if (name.Equals("antialias"))
                                     {
-                                        SetValue((JValue)GetJValue(index, "Value"), 0);
+                                        SetValue((JValue)GetJValue(index, "Value"), 1);
                                     }
                                     //# Texture Filtering Quality High #
                                     else if (name.Equals("tfq"))
