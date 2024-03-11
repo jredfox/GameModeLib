@@ -122,7 +122,7 @@ namespace AMD3dSettings
             {
                 //Handle Display Settings for AMD
                 JArray display = (JArray)GetJValue(root, "Display");
-                if(display == null)
+                if (display == null)
                 {
                     Console.Error.WriteLine("Missing: Display Settings");
                     return;
@@ -174,7 +174,7 @@ namespace AMD3dSettings
                     }
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.Error.WriteLine("Error: Display");
                 Console.Error.WriteLine(e);
@@ -187,7 +187,7 @@ namespace AMD3dSettings
             {
                 //Handle 3d Settings
                 JArray global = (JArray)GetJValue(root, "Global Settings");
-                if(global == null)
+                if (global == null)
                 {
                     Console.Error.WriteLine("Missing: Global 3D Settings");
                     return;
@@ -200,14 +200,14 @@ namespace AMD3dSettings
                         object objset = GetJValue(json, "Settings");
                         if (objset is JArray)
                         {
-                            JArray set = (JArray) objset;
+                            JArray set = (JArray)objset;
                             foreach (var setting in set)
                             {
                                 if (setting is JObject)
                                 {
                                     JObject index = (JObject)setting;
                                     string name = GetName(index);
-                                    if(name == null)
+                                    if (name == null)
                                     {
                                         Console.Error.WriteLine("Maulformed: Global 3D Settings Name");
                                         continue;
@@ -313,8 +313,8 @@ namespace AMD3dSettings
                         JToken vset = GetJValue(ji, "Settings");
                         if (vset is JArray)
                         {
-                            JArray videoset = (JArray) vset;
-                            int videoid = -1;
+                            JArray videoset = (JArray)vset;
+                            int videoid = 6;
                             foreach (var v in videoset)
                             {
                                 if (v is JObject)
@@ -333,22 +333,19 @@ namespace AMD3dSettings
                                     }
                                 }
                             }
-                            if (videoid != -1)
+                            foreach (var v in videoset)
                             {
-                                foreach (var v in videoset)
+                                if (v is JObject)
                                 {
-                                    if (v is JObject)
+                                    JObject j = (JObject)v;
+                                    string name = GetName(j);
+                                    if (name == null)
                                     {
-                                        JObject j = (JObject)v;
-                                        string name = GetName(j);
-                                        if (name == null)
-                                        {
-                                            continue;
-                                        }
-                                        if (name.ToLower().Equals("video profile"))
-                                        {
-                                            SetValue((JValue)GetJValue(j, "Value"), videoid);
-                                        }
+                                        continue;
+                                    }
+                                    if (name.ToLower().Equals("video profile"))
+                                    {
+                                        SetValue((JValue)GetJValue(j, "Value"), videoid);
                                     }
                                 }
                             }
@@ -385,7 +382,7 @@ namespace AMD3dSettings
                         JToken wizztoken = GetJValue((JObject)w, "Settings");
                         if (wizztoken is JArray)
                         {
-                            JArray wizzset = (JArray) wizztoken;
+                            JArray wizzset = (JArray)wizztoken;
                             foreach (var v in wizzset)
                             {
                                 if (v is JObject)
