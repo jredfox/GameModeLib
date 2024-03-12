@@ -820,7 +820,6 @@ namespace RegImport
 
         public static void RegImport(RegFile reg, string SID)
         {
-            Console.WriteLine(reg.File + " Exists:" + File.Exists(reg.File));
             bool USR = (SID != null);
             if (!IMPORT_GLOBAL && !USR || !IMPORT_USER && USR)
                 return;
