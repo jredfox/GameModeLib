@@ -9,6 +9,7 @@ set Settings=%Settings:~2%
 set SIDS=%~2
 set u=^<u^>
 set g=^<g^>
+set rc=%~dp0Resources
 set udir=%~dp0Uninstall
 set logs=%~dp0Logs\Uninstall
 set log_graphics=!logs!\log_graphics.txt
@@ -50,6 +51,10 @@ REM ## Disable Full Screen Optimizations ##
 IF /I "%Settings:~5,1%" NEQ "T" (GOTO RPPThrottling)
 set regs=!regs!^;!g!PowerThrottling.reg
 :RPPThrottling
+
+REM ## Tell Using GameModeLib is Uninstalling ##
+echo Uninstalling GameModeLib
+call "!rc!\RegImport.exe" "!UseGlobal!!UseUSR!"
 
 echo "!regs:~1!"
 

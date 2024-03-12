@@ -414,6 +414,8 @@ namespace RegImport
             {
                 Help();
             }
+            //Get Proper Privileges
+            Hive.GetHivePrivileges();
             //Fix Arguments Path Seperators
             for (int i = 0; i < args.Length; i++)
                 args[i] = args[i].Replace(@"/", @"\");
@@ -533,7 +535,6 @@ namespace RegImport
                 string Users = HomeDrive + @":\Users\";
 
                 //Loop through All SIDS / Users Specified
-                Hive.GetHivePrivileges();//Get Proper Privileges
                 using (PrincipalContext context = new PrincipalContext(ContextType.Machine))
                 {
                     using (PrincipalSearcher searcher = new PrincipalSearcher(new UserPrincipal(context)))
