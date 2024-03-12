@@ -409,16 +409,18 @@ namespace RegImport
         static void Main(string[] args)
         {
             long milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            //Fix Arguments Path Seperators
+            for (int i = 0; i < args.Length; i++)
+                args[i] = args[i].Replace(@"/", @"\");
+
             //HELP
             if (args.Length < 3 || args[0].Equals("/?") || args[0].ToLower().Equals("/help"))
             {
                 Help();
             }
+
             //Get Proper Privileges
             Hive.GetHivePrivileges();
-            //Fix Arguments Path Seperators
-            for (int i = 0; i < args.Length; i++)
-                args[i] = args[i].Replace(@"/", @"\");
 
             //Parse Flags
             string set = args[0].ToUpper();
@@ -809,10 +811,11 @@ namespace RegImport
 
         public static void RegImport(RegFile reg, string SID)
         {
+            Console.WriteLine(reg.File + " Exists:" + File.Exists(reg.File));
             bool USR = (SID != null);
             if (!IMPORT_GLOBAL && !USR || !IMPORT_USER && USR)
                 return;
-
+            
             RegistryKey LastKey = null;
             foreach (RegObj o in (USR ? reg.User : reg.Global))
             {

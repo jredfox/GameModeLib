@@ -55,7 +55,7 @@ set regs=!regs!^;!g!PowerThrottling.reg
 
 REM ## Uninstall GameMode Lib Modules ##
 echo Uninstalling GameModeLib
-call "!rc!\RegImport.exe" "!ImportGlobal!!ImportUSR!" "!SIDS!" "!regs:~1!" "!g!=Global^;!u!=Users\<SID>"
+echo call "!rc!\RegImport.exe" "!ImportGlobal!!ImportUSR!" "!SIDS!" "!udir!;NULL;!regs:~1!" "!g!=Global/^;!u!=Users/<SID>/"
 
 REM echo "!regs:~1!"
 
