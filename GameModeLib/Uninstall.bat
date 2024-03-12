@@ -3,8 +3,8 @@ setlocal enableDelayedExpansion
 
 REM ## Set Vars ##
 set Settings=%~1
-set UseGlobal=%Settings:~0,1%
-set UseUSR=%Settings:~1,1%
+set ImportGlobal=%Settings:~0,1%
+set ImportUSR=%Settings:~1,1%
 set Settings=%Settings:~2%
 set SIDS=%~2
 set u=^<u^>
@@ -34,7 +34,8 @@ set regs=!regs!^;!u!Intel.reg
 REM ## Disable Sticky Keys Via The Registry ##
 IF /I "%Settings:~2,1%" NEQ "T" (GOTO RSTKYKYS)
 REM TODO Change uGen_StickyKeys.reg to be .DEFAULT always after confirmed working
-set regs=!regs!^;!u!StickyKeys.reg^;!u!Gen_StickyKeys.reg
+IF /I "!ImportGlobal!" EQU "T" (set GenSticky=!u!Gen_StickyKeys.reg)
+set regs=!regs!^;!u!StickyKeys.reg^;!GenSticky!
 :RSTKYKYS
 
 REM ## TouchPad Disable Palmcheck ##
@@ -52,11 +53,11 @@ IF /I "%Settings:~5,1%" NEQ "T" (GOTO RPPThrottling)
 set regs=!regs!^;!g!PowerThrottling.reg
 :RPPThrottling
 
-REM ## Tell Using GameModeLib is Uninstalling ##
+REM ## Uninstall GameMode Lib Modules ##
 echo Uninstalling GameModeLib
-call "!rc!\RegImport.exe" "!UseGlobal!!UseUSR!"
+call "!rc!\RegImport.exe" "!ImportGlobal!!ImportUSR!" "!SIDS!" "!regs:~1!" "!g!=Global^;!u!=Users\<SID>"
 
-echo "!regs:~1!"
+REM echo "!regs:~1!"
 
 :END
 exit /b
