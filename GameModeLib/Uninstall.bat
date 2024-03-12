@@ -1,115 +1,74 @@
 @ECHO OFF
 setlocal enableDelayedExpansion
-REM ## Set Global Variables ##
-set uset=%~1
+
+REM ## Set Vars ##
+set Settings=%~1
+set UseGlobal=%Settings:~0,1%
+set UseUSR=%Settings:~1,1%
+set Settings=%Settings:~2%
+set SIDS=%~2
+set u=^<u^>
+set g=^<g^>
 set udir=%~dp0Uninstall
-set rc=%~dp0Resources
+set logs=%~dp0Logs\Uninstall
+set log_graphics=!logs!\log_graphics.txt
+set log_wd=!logs!\log_wd.txt
+set log_wdlowcpu=!logs!\log_wdlowcpu.txt
+mkdir "!logs!" >nul 2>&1
+call :GETISA
 
-REM ## Start Main Uninstall ##
-IF /I "%uset:~0,1%" NEQ "T" (GOTO MAIN)
-echo Uninstalling GameModeLib Main Settings
-REM ## Revert the Power Plan ##
-call "!rc!\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul
-set gm=b8e6d75e-26e8-5e8f-efef-e94a209a3467
-FOR /F "delims=" %%I IN ('type "!udir!\PowerPlan.txt"') DO (
-set prevpp=%%I
-set prevpp=!prevpp: =!
-)
-IF "!prevpp!" EQU "!gm!" (set prevpp=381b4222-f694-41f0-9685-ff5bb260df2e)
-powercfg /SETACTIVE "!prevpp!"
-If !ERRORLEVEL! NEQ 0 (powercfg /SETACTIVE "381b4222-f694-41f0-9685-ff5bb260df2e")
-powercfg /DELETE "!gm!"
-del /F /Q /A "!udir!\PowerPlan.txt" >nul 2>&1
-call :USTALL "Main.reg"
-call "!rc!\PowerModeOverlay.exe" "sync"
-call :USTALL "UGpuEntry.reg"
-:MAIN
+REM ## Enable Registry Access ##
+call "!rc!\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul 2>&1
 
-IF /I "%uset:~1,1%" NEQ "T" (GOTO GRAPHICS)
-echo Uninstalling GameModeLib 3D Graphic Settings
-IF EXIST "!udir!\Intel.reg" (call :USTALL "Intel.reg")
-IF EXIST "!udir!\AMD3DSettings.bat" (
-call "!udir!\AMD3DSettings.bat"
-del /F /Q /A "!udir!\AMD3DSettings.bat"
-del /F /Q /A "!udir!\AMD3DSettings.zip"
-)
-:GRAPHICS
+REM ## Main Registry Settings ##
+IF /I "%Settings:~0,1%" NEQ "T" (GOTO RMAIN)
+set regs=!regs!^;!g!Main.reg^;!u!Main.reg^;!u!UGpuEntry.reg
+:RMAIN
 
-IF /I "%uset:~2,1%" EQU "T" (echo ERR BitLocker Has To Be Manually Re-Installed Through Windows UI)
+REM ## Graphics 3D Settings Registry ##
+IF /I "%Settings:~1,1%" NEQ "T" (GOTO RGRAPHICS)
+set regs=!regs!^;!u!Intel.reg
+:RGRAPHICS
 
-IF /I "%uset:~3,1%" NEQ "T" (GOTO WDLOWCPU)
-echo Uninstalling GameModeLib Windows Defender Low CPU
-call :CHKTAMPER
-FOR /F "tokens=1-2" %%A IN ('type "!udir!\WDCPUStat.txt"') DO (
-set avg=%%A
-set lowcpu=%%B
-)
-del /F /Q /A "!udir!\WDCPUStat.txt" >nul 2>&1
-powershell -ExecutionPolicy Bypass -File "!rc!\WDSetLowCPU.ps1" -EnableLowCPU "!lowcpu!" -ScanAvg "!avg!"
-:WDLOWCPU
+REM ## Disable Sticky Keys Via The Registry ##
+IF /I "%Settings:~2,1%" NEQ "T" (GOTO RSTKYKYS)
+REM TODO Change uGen_StickyKeys.reg to be .DEFAULT always after confirmed working
+set regs=!regs!^;!u!StickyKeys.reg^;!u!Gen_StickyKeys.reg
+:RSTKYKYS
 
-IF /I "%uset:~4,1%" NEQ "T" (GOTO WDDISABLE)
-echo Uninstalling GameModeLib Windows Defender Disabler
-IF "!chkedtamper!" NEQ "T" (call :CHKTAMPER)
-schtasks /DELETE /tn "WDStaticDisabler" /F
-call "!rc!\WDStaticEnable.bat"
-powershell Remove-MpPreference -ExclusionPath "!rc!"
-call :USTALL "WDEnable.reg"
-:WDDISABLE
+REM ## TouchPad Disable Palmcheck ##
+IF /I "%Settings:~3,1%" NEQ "T" (GOTO RTOUCHPAD)
+set regs=!regs!^;!u!TouchPad.reg^;!g!ElanTech.reg^;!u!ElanTech.reg^;!g!Synaptics.reg^;!u!SynapticsUser.reg
+:RTOUCHPAD
 
-REM ## Uninstall Stickey Keys and Sync Changes ##
-IF /I "%uset:~5,1%" NEQ "T" (GOTO STKYKYS)
-echo Uninstalling GameModeLib Sticky Keys
-call :USTALL "StickyKeys.reg"
-call "!rc!\StickyKeysSetFlag.exe" "sync"
-:STKYKYS
+REM ## Disable Full Screen Optimizations ##
+IF /I "%Settings:~4,1%" NEQ "T" (GOTO RDISFSO)
+set regs=!regs!^;!g!DisableFSO.reg^;!u!DisableFSO.reg
+:RDISFSO
 
-REM ## Uninstall Disabling of PalmCheck ##
-IF /I "%uset:~6,1%" NEQ "T" (GOTO TOUCHPAD)
-echo Uninstalling PalmCheck Settings
-call :USTALL "TouchPad.reg"
-call :USTALL "Elantech.reg"
-call :USTALL "Synaptics.reg"
-REM delete registry key and apply backup for clean uninstall of synaptic edits
-reg delete "HKEY_CURRENT_USER\SOFTWARE\Synaptics" /f
-call :USTALL "SynapticsUser.reg"
-:TOUCHPAD
+REM ## Disable Full Screen Optimizations ##
+IF /I "%Settings:~5,1%" NEQ "T" (GOTO RPPThrottling)
+set regs=!regs!^;!g!PowerThrottling.reg
+:RPPThrottling
 
-REM ## Uninstall Disable Full Screen Optimizations ##
-IF /I "%uset:~7,1%" NEQ "T" (GOTO DISFSO)
-echo Uninstalling Full Screen Optimizations
-call :USTALL "DisableFSO.reg"
-:DISFSO
-
-REM ## Uninstall Power Plan Throttling ##
-IF /I "%uset:~8,1%" NEQ "T" (GOTO PPThrottling)
-echo Uninstalling Power Plan Throttling
-call :USTALL "PowerThrottling.reg"
-:PPThrottling
+echo "!regs:~1!"
 
 :END
 exit /b
 
-:USTALL
-set name=%~1
-set ufile=!udir!\!name!
-reg import "!ufile!"
-del /F /Q /A "!ufile!" >nul 2>&1
+:GETISA
+set arc=%PROCESSOR_ARCHITEW6432%
+IF "!arc!" EQU "" (set arc=%PROCESSOR_ARCHITECTURE%)
+IF /I "!arc!" EQU "ARM64" (
+set ISA=ARM64
+exit /b
+)
+call "%~dp0GameModeLib-x64.exe" "/?" >nul 2>&1
+IF !ERRORLEVEL! NEQ 0 (set ISA=x86) ELSE (set ISA=x64)
 exit /b
 
-:CHKTAMPER
-set tameper=F
-FOR /F "delims=" %%I IN ('powershell "Get-MpComputerStatus | select IsTamperProtected"') DO (
-set a=%%I
-set a=!a: =!
-IF "!a!" EQU "True" (set tameper=T)
-IF "!a!" EQU "true" (set tameper=T)
-)
-IF "!tameper!" EQU "T" (
-cscript /NOLOGO "!rc!\MSG.vbs" "Disable Tamper Protection"
-start windowsdefender://threatsettings/
-set /p a="Press ENTER To Continue..."
-GOTO CHKTAMPER
-)
-set chkedtamper=T
+:CHKADMIN
+set IsAdmin=F
+net session >nul 2>&1
+IF !ERRORLEVEL! EQU 0 (set IsAdmin=T)
 exit /b
