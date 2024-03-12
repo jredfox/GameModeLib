@@ -34,8 +34,11 @@ set regs=!regs!^;!u!Intel.reg
 REM ## Disable Sticky Keys Via The Registry ##
 IF /I "%Settings:~2,1%" NEQ "T" (GOTO RSTKYKYS)
 REM TODO Change uGen_StickyKeys.reg to be .DEFAULT always after confirmed working
-IF /I "!ImportGlobal!" EQU "T" (set GenSticky=!u!Gen_StickyKeys.reg)
-set regs=!regs!^;!u!StickyKeys.reg^;!GenSticky!
+IF /I "!ImportGlobal!" EQU "T" (
+IF /I "!SIDS!" EQU "" (set SIDS=CURRENT_USER)
+set SIDS=!SIDS!^;^.DEFAULT
+)
+set regs=!regs!^;!u!StickyKeys.reg^;!u!Gen_StickyKeys.reg
 :RSTKYKYS
 
 REM ## TouchPad Disable Palmcheck ##
@@ -55,7 +58,7 @@ set regs=!regs!^;!g!PowerThrottling.reg
 
 REM ## Uninstall GameMode Lib Modules ##
 echo Uninstalling GameModeLib
-echo call "!rc!\RegImport.exe" "!ImportGlobal!!ImportUSR!" "!SIDS!" "!udir!;NULL;!regs:~1!" "!g!=Global/^;!u!=Users/<SID>/"
+call "!rc!\RegImport.exe" "!ImportGlobal!!ImportUSR!" "!SIDS!" "!udir!;NULL;!regs:~1!" "!g!=Global/^;!u!=Users/<SID>/"
 
 REM echo "!regs:~1!"
 

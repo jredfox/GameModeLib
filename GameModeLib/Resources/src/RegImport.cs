@@ -464,8 +464,6 @@ namespace RegImport
 
             //Get ARG_SID
             string ARG_SID = args[1].Trim().ToUpper();
-            bool allsids = ARG_SID.Contains("*");
-            List<string> sids = new List<string>(ARG_SID.Split(';'));
 
             //Parse the Reg File Into Objects
             dirs = args[2].Split(';');
@@ -508,7 +506,7 @@ namespace RegImport
             }
 
             //Install Current User
-            if (ARG_SID.Equals("") || ARG_SID.Equals("NULL"))
+            if (ARG_SID.Equals("") || ARG_SID.Equals("NULL") || ARG_SID.Equals("CURRENT_USER"))
             {
                 ARG_SID = GetCurrentSID();
                 //Gen Uninstall Data
@@ -533,6 +531,17 @@ namespace RegImport
             //Install For A Different User(s) or * for All Users
             else if (UNINSTALL_USER || IMPORT_USER)
             {
+                string CurrentSID = GetCurrentSID();
+                bool allsids = ARG_SID.Contains("*");
+                List<string> sids = new List<string>(ARG_SID.Split(';'));
+                //Transform Empty SID or KeyWords Into the Current SID
+                for (int i = 0; i < sids.Count; i++)
+                {
+                    var v = sids[i];
+                    if (v.Equals("") || v.Equals("NULL") || v.Equals("CURRENT_USER"))
+                        sids[i] = CurrentSID;
+                }
+
                 string HomeDrive = Environment.ExpandEnvironmentVariables("%HOMEDRIVE%").Substring(0, 1).ToUpper();
                 string Users = HomeDrive + @":\Users\";
 
