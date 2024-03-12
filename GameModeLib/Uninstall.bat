@@ -33,7 +33,8 @@ set regs=!regs!^;!u!Intel.reg
 
 REM ## Disable Sticky Keys Via The Registry ##
 IF /I "%Settings:~2,1%" NEQ "T" (GOTO RSTKYKYS)
-set regs=!regs!^;!u!StickyKeys.reg^;Users\^.DEFAULT\Gen_StickyKeys.reg
+set regs=!regs!^;!u!StickyKeys.reg
+IF /I "!ImportGlobal!" EQU "T" (set regs=!regs!^;Users\^.DEFAULT\Gen_StickyKeys.reg)
 :RSTKYKYS
 
 REM ## TouchPad Disable Palmcheck ##
