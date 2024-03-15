@@ -83,6 +83,7 @@ namespace RegImport
         static extern bool LookupPrivilegeValue(IntPtr lpSystemName, string lpName, ref UInt64 lpLuid);
 
         public string file_hive;
+        public string rootname;
         public string subkey;
         public RegistryHive root;
 
@@ -91,6 +92,7 @@ namespace RegImport
             this.file_hive = file_hive;
             this.subkey = subkey;
             this.root = root;
+            this.rootname = Program.GetRegTree(this.root);
         }
 
         public void Load()
@@ -369,6 +371,13 @@ namespace RegImport
 
         public RegKey GetRegKey(string sid)
         {
+            //Redirect the Custom Default Hive if it's already loaded from another process
+            if(Program.CDH && this.IsUser && sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase))
+            {
+                if(this.IsCurrentUser)
+                    return new RegKey(Program.DefHive.rootname, Program.DefHive.subkey + @"\" + this.SubKey, this.Delete);
+                return this.SubKey.StartsWith(@"DEFAULT\", StringComparison.OrdinalIgnoreCase) ? new RegKey(Program.DefHive.rootname, Program.DefHive.subkey + @"\" + this.SubKey.Substring(8), this.Delete) : this;
+            }
             return this.IsCurrentUser ? new RegKey("HKEY_USERS", sid + @"\" + this.SubKey, this.Delete) : this;
         }
     }
@@ -403,6 +412,8 @@ namespace RegImport
         public static bool IMPORT_GLOBAL, IMPORT_USER, UNINSTALL_GLOBAL, UNINSTALL_USER, UNINSTALL_OVERWRITE, UNINSTALL_DEL;
         public static string BaseDir;
         public static string UninstallDir;
+        public static bool CDH = false;//CUSTOM DEFAULT HIVE
+        public static Hive DefHive = null;
         public static string[] dirs;
         public static Dictionary<string, string> fields = new Dictionary<string, string>();
 
@@ -422,7 +433,7 @@ namespace RegImport
             //Get Proper Privileges
             Hive.GetHivePrivileges();
             //Load the Default User Template Hive
-            Hive DefHive = LoadDefaultHive();
+            DefHive = LoadDefaultHive();
 
             //Parse Flags
             string set = args[0].ToUpper();
@@ -578,8 +589,8 @@ namespace RegImport
                                 string usrname = user.SamAccountName.ToUpper();
                                 string file_hive = Users + user.SamAccountName + @"\NTUSER.DAT";
                                 string sid = user.Sid.ToString().ToUpper();
-                                //Handle Default SID
-                                if(IsDefault(usrname))
+                                //Handle Default Account SID
+                                if(usrname.Equals("DEFAULTACCOUNT") || usrname.Equals("DEFAULT"))
                                 {
                                     sid = "DEFAULT";
                                     HasRunDefault = true;
@@ -722,7 +733,8 @@ namespace RegImport
                         string s = o.ToString().Trim().Trim('\0');
                         if (s.Equals(DosPath, StringComparison.OrdinalIgnoreCase))
                         {
-                            if(v.StartsWith(@"\REGISTRY\USER\", StringComparison.OrdinalIgnoreCase))
+                            CDH = !v.Equals(@"\REGISTRY\USER\Default", StringComparison.OrdinalIgnoreCase);
+                            if (v.StartsWith(@"\REGISTRY\USER\", StringComparison.OrdinalIgnoreCase))
                             {
                                 return new Hive(DefHive, v.Substring(15).Trim('\0'), RegistryHive.Users);
                             }
@@ -790,11 +802,6 @@ namespace RegImport
         private static string GetHomeDrive()
         {
             return Environment.ExpandEnvironmentVariables("%HOMEDRIVE%").Substring(0, 1).ToUpper();
-        }
-
-        public static bool IsDefault(string usrname)
-        {
-            return usrname.Equals("DEFAULTACCOUNT") || usrname.Equals("DEFAULT");
         }
 
         public static bool HasUser(string sid)
@@ -1354,6 +1361,26 @@ namespace RegImport
                 return HKEY_CURRENT_CONFIG;
             }
             return null;
+        }
+
+        public static string GetRegTree(RegistryHive k)
+        {
+            Console.WriteLine(RegistryHive.LocalMachine.ToString());
+            switch (k)
+            {
+                case RegistryHive.LocalMachine:
+                    return "HKEY_LOCAL_MACHINE";
+                case RegistryHive.CurrentUser:
+                    return "HKEY_CURRENT_USER";
+                case RegistryHive.Users:
+                    return "HKEY_USERS";
+                case RegistryHive.ClassesRoot:
+                    return "HKEY_CLASSES_ROOT";
+                case RegistryHive.CurrentConfig:
+                    return "HKEY_CURRENT_CONFIG";
+                default:
+                    return null;
+            }
         }
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
