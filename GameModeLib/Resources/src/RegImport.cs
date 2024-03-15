@@ -400,7 +400,7 @@ namespace RegImport
 
     class Program
     {
-        public static bool IMPORT_GLOBAL, IMPORT_USER, UNINSTALL_GLOBAL, UNINSTALL_USER, UNINSTALL_OVERWRITE;
+        public static bool IMPORT_GLOBAL, IMPORT_USER, UNINSTALL_GLOBAL, UNINSTALL_USER, UNINSTALL_OVERWRITE, UNINSTALL_DEL;
         public static string BaseDir;
         public static string UninstallDir;
         public static string[] dirs;
@@ -426,7 +426,7 @@ namespace RegImport
 
             //Parse Flags
             string set = args[0].ToUpper();
-            for (int i = set.Length; i < 5; i++)
+            for (int i = set.Length; i < 6; i++)
             {
                 set += "F";
             }
@@ -435,6 +435,7 @@ namespace RegImport
             UNINSTALL_GLOBAL = set[2] == 'T';
             UNINSTALL_USER = set[3] == 'T';
             UNINSTALL_OVERWRITE = set[4] == 'T';
+            UNINSTALL_DEL = set[5] == 'T';
 
             //Get Command Line Variables
             if (args.Length > 3)
@@ -696,6 +697,18 @@ namespace RegImport
         public static Hive LoadDefaultHive()
         {
             string DefHive = GetDefaultUserDat();
+            //Backup The Default NTUSER.DAT if it's not been backed up before
+            if (!File.Exists(DefHive + @".bak"))
+            {
+                try
+                {
+                    File.Copy(DefHive, DefHive + @".bak");
+                }
+                catch (Exception)
+                {
+
+                }
+            }
             //See if the Default NTUSER.DAT is Already Opened and if so Return it
             try
             {
@@ -724,19 +737,6 @@ namespace RegImport
             catch(Exception e)
             {
                 Console.Error.WriteLine(e);
-            }
-
-            //Backup The Default NTUSER.DAT if it's not been backed up before
-            if (!File.Exists(DefHive + @".bak"))
-            {
-                try
-                {
-                    File.Copy(DefHive, DefHive + @".bak");
-                }
-                catch(Exception)
-                {
-
-                }
             }
             Hive d = new Hive(DefHive, "Default", RegistryHive.Users);
             try
