@@ -82,9 +82,9 @@ namespace RegImport
         [DllImport("advapi32.dll")]
         static extern bool LookupPrivilegeValue(IntPtr lpSystemName, string lpName, ref UInt64 lpLuid);
 
-        private string file_hive;
-        private string subkey;
-        private RegistryHive root;
+        public string file_hive;
+        public string subkey;
+        public RegistryHive root;
 
         public Hive(string file_hive, string subkey, RegistryHive root)
         {
@@ -421,6 +421,8 @@ namespace RegImport
 
             //Get Proper Privileges
             Hive.GetHivePrivileges();
+            //Load the Default User Template Hive
+            Hive DefHive = LoadDefaultHive();
 
             //Parse Flags
             string set = args[0].ToUpper();
@@ -465,6 +467,26 @@ namespace RegImport
             //Get ARG_SID
             string ARG_SID = args[1].Trim().ToUpper();
             string SID_CURRENT = GetCurrentSID();
+            bool allsids = false;
+            bool USER_DEFAULT = false;
+            bool USER_DOTDEFAULT = false;
+            bool OtherUsers = false;
+            List<string> sids = new List<string>(ARG_SID.Split(';'));
+            //Transform Empty SID or KeyWords Into the Current SID
+            for (int i = 0; i < sids.Count; i++)
+            {
+                var v = sids[i];
+                if (v.Equals("") || v.Equals("NULL") || v.Equals("CURRENT_USER") || v.Equals(SID_CURRENT))
+                    sids[i] = SID_CURRENT;
+                else if (v.Equals("DEFAULT"))
+                    USER_DEFAULT = true;
+                else if (v.Equals(".DEFAULT"))
+                    USER_DOTDEFAULT = true;
+                else if (v.Equals("*"))
+                    allsids = true;
+                else
+                    OtherUsers = true;
+            }
 
             //Parse the Reg File Into Objects
             dirs = args[2].Split(';');
@@ -507,7 +529,7 @@ namespace RegImport
             }
 
             //Install Current User
-            if (ARG_SID.Equals("") || ARG_SID.Equals("NULL") || ARG_SID.Equals("CURRENT_USER") || ARG_SID.Equals(SID_CURRENT))
+            if (!OtherUsers)
             {
                 ARG_SID = SID_CURRENT;
                 //Gen Uninstall Data
@@ -517,6 +539,10 @@ namespace RegImport
                     {
                         RegFile r = re.GetRegFile(ARG_SID);
                         RegGenUninstall(r, ARG_SID);
+                        if(USER_DEFAULT)
+                            RegGenUninstall(r, "DEFAULT");
+                        if(USER_DOTDEFAULT)
+                            RegGenUninstall(r, ".DEFAULT");
                     }
                 }
                 //Import Data
@@ -526,25 +552,18 @@ namespace RegImport
                     {
                         RegFile r = re.GetRegFile(ARG_SID);
                         RegImport(r, ARG_SID);
+                        if (USER_DEFAULT)
+                            RegImport(r, "DEFAULT");
+                        if (USER_DOTDEFAULT)
+                            RegImport(r, ".DEFAULT");
                     }
                 }
             }
             //Install For A Different User(s) or * for All Users
             else if (UNINSTALL_USER || IMPORT_USER)
             {
-                string CurrentSID = GetCurrentSID();
-                bool allsids = ARG_SID.Contains("*");
-                List<string> sids = new List<string>(ARG_SID.Split(';'));
-                //Transform Empty SID or KeyWords Into the Current SID
-                for (int i = 0; i < sids.Count; i++)
-                {
-                    var v = sids[i];
-                    if (v.Equals("") || v.Equals("NULL") || v.Equals("CURRENT_USER") || v.Equals(SID_CURRENT))
-                        sids[i] = CurrentSID;
-                }
-
-                string HomeDrive = Environment.ExpandEnvironmentVariables("%HOMEDRIVE%").Substring(0, 1).ToUpper();
-                string Users = HomeDrive + @":\Users\";
+                string Users = GetUsersDir() + @"\";
+                bool HasRunDefault = false;
 
                 //Loop through All SIDS / Users Specified
                 using (PrincipalContext context = new PrincipalContext(ContextType.Machine))
@@ -557,7 +576,13 @@ namespace RegImport
                             {
                                 string usrname = user.SamAccountName.ToUpper();
                                 string file_hive = Users + user.SamAccountName + @"\NTUSER.DAT";
-                                string sid = IsDefault(usrname) ? "DEFAULT" : user.Sid.ToString().ToUpper();
+                                string sid = user.Sid.ToString().ToUpper();
+                                //Handle Default SID
+                                if(IsDefault(usrname))
+                                {
+                                    sid = "DEFAULT";
+                                    HasRunDefault = true;
+                                }
                                 bool exists = File.Exists(file_hive);
                                 if (exists && allsids || sids.Contains(sid) || sids.Contains(usrname))
                                 {
@@ -623,10 +648,148 @@ namespace RegImport
                         }
                     }
                 }
+
+                //Gen Uninstall Data
+                if (UNINSTALL_USER && (USER_DEFAULT || USER_DOTDEFAULT))
+                {
+                    foreach (RegFile re in regs)
+                    {
+                        RegFile r = re.GetRegFile(ARG_SID);
+                        if (USER_DEFAULT && !HasRunDefault)
+                            RegGenUninstall(r, "DEFAULT");
+                        if (USER_DOTDEFAULT)
+                            RegGenUninstall(r, ".DEFAULT");
+                    }
+                }
+                //Import Data
+                if (IMPORT_USER && (USER_DEFAULT || USER_DOTDEFAULT))
+                {
+                    foreach (RegFile re in regs)
+                    {
+                        RegFile r = re.GetRegFile(ARG_SID);
+                        if (USER_DEFAULT && !HasRunDefault)
+                            RegImport(r, "DEFAULT");
+                        if (USER_DOTDEFAULT)
+                            RegImport(r, ".DEFAULT");
+                    }
+                }
+            }
+
+            //Unload Default Hive Quietly
+            try
+            {
+                DefHive.UnLoad();
+            }
+            catch(Exception)
+            {
+
             }
 
             long done = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             Console.WriteLine("Import Settings Done in MS:" + (done - milliseconds));
+        }
+
+        /// <summary>
+        /// Loads the Default Hive and Returns The Registry Key Name
+        /// </summary>
+        /// <returns></returns>
+        public static Hive LoadDefaultHive()
+        {
+            string DefHive = GetDefaultUserDat();
+            //See if the Default NTUSER.DAT is Already Opened and if so Return it
+            try
+            {
+                string DosPath = GetDevicePath(DefHive);
+                RegistryKey k = GetRegTree("HKLM").OpenSubKey(@"SYSTEM\CurrentControlSet\Control\hivelist", false);
+                foreach (var v in k.GetValueNames())
+                {
+                    var o = k.GetValue(v);
+                    if(o is string)
+                    {
+                        string s = o.ToString().Trim().Trim('\0');
+                        if (s.Equals(DosPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            if(v.StartsWith(@"\REGISTRY\USER\", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return new Hive(DefHive, v.Substring(15).Trim('\0'), RegistryHive.Users);
+                            }
+                            else if (v.StartsWith(@"\REGISTRY\MACHINE\", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return new Hive(DefHive, v.Substring(18).Trim('\0'), RegistryHive.LocalMachine);
+                            }
+                        }
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                Console.Error.WriteLine(e);
+            }
+
+            //Backup The Default NTUSER.DAT if it's not been backed up before
+            if (!File.Exists(DefHive + @".bak"))
+            {
+                try
+                {
+                    File.Copy(DefHive, DefHive + @".bak");
+                }
+                catch(Exception)
+                {
+
+                }
+            }
+            Hive d = new Hive(DefHive, "Default", RegistryHive.Users);
+            try
+            {
+                d.Load();
+            }
+            catch(Exception)
+            {
+                Console.Error.WriteLine("Failed to Load Default NTUSER.DAT");
+            }
+            return d;
+        }
+
+        private static string GetDefaultUserDat()
+        {
+            try
+            {
+                RegistryKey k = GetRegTree("HKLM").OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList", false);
+                string u = Environment.ExpandEnvironmentVariables((string)k.GetValue("Default"));
+                if (u.EndsWith(@"\"))
+                    u = u.Substring(0, u.Length - 1);
+                Close(k);
+                return Path.Combine(u ,"NTUSER.DAT");
+            }
+            catch(Exception e)
+            {
+                Console.Error.WriteLine(e);
+            }
+            return GetHomeDrive() + @":\Users\Default\NTUSER.DAT";
+        }
+
+        private static string GetUsersDir()
+        {
+            try
+            {
+                RegistryKey k = GetRegTree("HKLM").OpenSubKey(@"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList", false);
+                string u = Environment.ExpandEnvironmentVariables((string)k.GetValue("ProfilesDirectory"));
+                if (u.EndsWith(@"\"))
+                    u = u.Substring(0, u.Length - 1);
+                Close(k);
+                return u;
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine(e);
+            }
+            
+            return GetHomeDrive() + @":\Users";
+        }
+
+        private static string GetHomeDrive()
+        {
+            return Environment.ExpandEnvironmentVariables("%HOMEDRIVE%").Substring(0, 1).ToUpper();
         }
 
         public static bool IsDefault(string usrname)
@@ -720,7 +883,7 @@ namespace RegImport
                             string OtherSID = k.SubKey.Split('\\')[0];
                             if (!writer_cache.ContainsKey(OtherSID))
                             {
-                                RegWriter w = GetRegWriter("Gen_" + reg.RelPath, OtherSID, true);
+                                RegWriter w = GetRegWriter(Path.GetFileNameWithoutExtension(reg.RelPath) + "_gen.reg", OtherSID, true);
                                 writer_cache.Add(OtherSID, w);
                                 writer_current = w;
                             }
@@ -1189,6 +1352,36 @@ namespace RegImport
                 if (HKEY_CURRENT_CONFIG == null)
                     HKEY_CURRENT_CONFIG = RegistryKey.OpenBaseKey(RegistryHive.CurrentConfig, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
                 return HKEY_CURRENT_CONFIG;
+            }
+            return null;
+        }
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        static extern uint QueryDosDevice(string lpDeviceName, IntPtr lpTargetPath, uint ucchMax);
+
+        public static string GetDevicePath(string path)
+        {
+            IntPtr lpTargetPath = IntPtr.Zero;
+
+            try
+            {
+                string driveLetter = path.Substring(0, 2);
+                lpTargetPath = Marshal.AllocHGlobal(260);
+                // Query DOS device to get the device path
+                uint result = QueryDosDevice(driveLetter, lpTargetPath, 260);
+                if (result != 0)
+                {
+                    return Marshal.PtrToStringAuto(lpTargetPath) + path.Substring(2);
+                }
+                else
+                {
+                    Console.Error.WriteLine("Failed to retrieve device path");
+                }
+            }
+            finally
+            {
+                if (lpTargetPath != IntPtr.Zero)
+                    Marshal.FreeHGlobal(lpTargetPath);
             }
             return null;
         }
