@@ -464,6 +464,7 @@ namespace RegImport
 
             //Get ARG_SID
             string ARG_SID = args[1].Trim().ToUpper();
+            string SID_CURRENT = GetCurrentSID();
 
             //Parse the Reg File Into Objects
             dirs = args[2].Split(';');
@@ -506,9 +507,9 @@ namespace RegImport
             }
 
             //Install Current User
-            if (ARG_SID.Equals("") || ARG_SID.Equals("NULL") || ARG_SID.Equals("CURRENT_USER"))
+            if (ARG_SID.Equals("") || ARG_SID.Equals("NULL") || ARG_SID.Equals("CURRENT_USER") || ARG_SID.Equals(SID_CURRENT))
             {
-                ARG_SID = GetCurrentSID();
+                ARG_SID = SID_CURRENT;
                 //Gen Uninstall Data
                 if (UNINSTALL_USER)
                 {
@@ -538,7 +539,7 @@ namespace RegImport
                 for (int i = 0; i < sids.Count; i++)
                 {
                     var v = sids[i];
-                    if (v.Equals("") || v.Equals("NULL") || v.Equals("CURRENT_USER"))
+                    if (v.Equals("") || v.Equals("NULL") || v.Equals("CURRENT_USER") || v.Equals(SID_CURRENT))
                         sids[i] = CurrentSID;
                 }
 
@@ -556,7 +557,7 @@ namespace RegImport
                             {
                                 string usrname = user.SamAccountName.ToUpper();
                                 string file_hive = Users + user.SamAccountName + @"\NTUSER.DAT";
-                                string sid = IsDefault(usrname) ? ".DEFAULT" : user.Sid.ToString().ToUpper();
+                                string sid = IsDefault(usrname) ? "DEFAULT" : user.Sid.ToString().ToUpper();
                                 bool exists = File.Exists(file_hive);
                                 if (exists && allsids || sids.Contains(sid) || sids.Contains(usrname))
                                 {
@@ -630,7 +631,7 @@ namespace RegImport
 
         public static bool IsDefault(string usrname)
         {
-            return usrname.Equals("DEFAULTACCOUNT") || usrname.Equals(".DEFAULT") || usrname.Equals("DEFAULT");
+            return usrname.Equals("DEFAULTACCOUNT") || usrname.Equals("DEFAULT");
         }
 
         public static bool HasUser(string sid)
@@ -823,7 +824,7 @@ namespace RegImport
             bool USR = (SID != null);
             if (!IMPORT_GLOBAL && !USR || !IMPORT_USER && USR)
                 return;
-            
+
             RegistryKey LastKey = null;
             foreach (RegObj o in (USR ? reg.User : reg.Global))
             {
