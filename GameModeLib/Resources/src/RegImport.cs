@@ -438,27 +438,13 @@ namespace RegImport
             //HELP
             if (args.Length < 3 || args[0].Equals("/?") || args[0].ToLower().Equals("/help"))
             {
-                //Help();
+                Help();
             }
 
             //Get Proper Privileges
             Hive.GetHivePrivileges();
             //Load the Default User Template Hive
             DefHive = LoadDefaultHive();
-
-            //Debug Testing
-            Console.WriteLine(new RegKey(@"HKU\Default\A", false).Name);
-            Console.WriteLine(new RegKey(@"HKU", @"Default\A", false).Name);
-            Console.WriteLine(new RegKey(@"HKCU", @"A", false).GetRegKey("DEFAULT").Name);
-            Console.WriteLine();
-            Console.WriteLine(new RegKey(@"HKU\Default", false).Name);
-            Console.WriteLine(new RegKey(@"HKU", @"Default", false).Name);
-            Console.WriteLine(new RegKey(@"HKCU", @"", false).GetRegKey("DEFAULT").Name);
-            Console.WriteLine();
-            Console.WriteLine(new RegKey(@"HKU\Default\", false).Name);
-            Console.WriteLine(new RegKey(@"HKU", @"Default\", false).Name);
-            Console.WriteLine(new RegKey(@"HKCU", @"\", false).GetRegKey("DEFAULT").Name);
-            Environment.Exit(0);
 
             //Parse Flags
             string set = args[0].ToUpper();
