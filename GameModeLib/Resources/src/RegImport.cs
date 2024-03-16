@@ -339,6 +339,18 @@ namespace RegImport
                     Console.Error.WriteLine("Error:" + e);
                 }
             }
+            //Delete File After Parsing if Specified to do so
+            if(Program.UNINSTALL_DEL)
+            {
+                try
+                {
+                    System.IO.File.Delete(this.File);
+                }
+                catch(Exception e)
+                {
+                    Console.Error.WriteLine(e);
+                }
+            }
         }
     }
 
