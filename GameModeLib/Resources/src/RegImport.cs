@@ -352,9 +352,21 @@ namespace RegImport
         public RegKey(string key, bool delete)
         {
             int i = key.IndexOf(@"\");
+            //Safe Gaurd for Empty SubKeys
+            if(i == -1)
+            {
+                key += @"\";
+                i = key.IndexOf(@"\");
+            }
             this.Hive = Program.GetRegTree(Program.SubStringIndex(key, 0, i));
             this.SubKey = key.Substring(i + 1);
-            this.Name = this.Hive.Name + @"\" + this.SubKey;
+            //Redirect the Default Hive
+            if (Program.CDH && this.Hive.Name.Equals("HKEY_USERS") && (this.SubKey.StartsWith(@"DEFAULT\", StringComparison.OrdinalIgnoreCase) || this.SubKey.Equals(@"DEFAULT", StringComparison.OrdinalIgnoreCase)))
+            {
+                this.Hive = Program.GetRegTree(Program.DefHive.rootname);
+                this.SubKey = Program.DefHive.subkey + (this.SubKey.Length > 8 ? (@"\" + this.SubKey.Substring(8)) : "");
+            }
+            this.Name = this.Hive.Name + (this.SubKey.Length != 0 ? (@"\" + this.SubKey) : "");
             this.Delete = delete;
             this.IsCurrentUser = this.Hive.Name.Equals("HKEY_CURRENT_USER");
             this.IsUser = this.IsCurrentUser || this.Hive.Name.Equals("HKEY_USERS");
@@ -362,8 +374,14 @@ namespace RegImport
         public RegKey(string hive, string subkey, bool delete)
         {
             this.Hive = Program.GetRegTree(hive);
+            //Redirect the Default Hive
+            if (Program.CDH && this.Hive.Name.Equals("HKEY_USERS") && (subkey.StartsWith(@"DEFAULT\", StringComparison.OrdinalIgnoreCase) || subkey.Equals(@"DEFAULT", StringComparison.OrdinalIgnoreCase)))
+            {
+                this.Hive = Program.GetRegTree(Program.DefHive.rootname);
+                subkey = Program.DefHive.subkey + (subkey.Length > 8 ? (@"\" + subkey.Substring(8)) : "");
+            }
             this.SubKey = subkey;
-            this.Name = hive + @"\" + subkey;
+            this.Name = this.Hive.Name + (this.SubKey.Length != 0 ? (@"\" + this.SubKey) : "");
             this.Delete = delete;
             this.IsCurrentUser = this.Hive.Name.Equals("HKEY_CURRENT_USER");
             this.IsUser = this.IsCurrentUser || this.Hive.Name.Equals("HKEY_USERS");
@@ -371,13 +389,6 @@ namespace RegImport
 
         public RegKey GetRegKey(string sid)
         {
-            //Redirect the Custom Default Hive if it's already loaded from another process
-            if(Program.CDH && this.IsUser && sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase))
-            {
-                if(this.IsCurrentUser)
-                    return new RegKey(Program.DefHive.rootname, Program.DefHive.subkey + @"\" + this.SubKey, this.Delete);
-                return this.SubKey.StartsWith(@"DEFAULT\", StringComparison.OrdinalIgnoreCase) ? new RegKey(Program.DefHive.rootname, Program.DefHive.subkey + @"\" + this.SubKey.Substring(8), this.Delete) : this;
-            }
             return this.IsCurrentUser ? new RegKey("HKEY_USERS", sid + @"\" + this.SubKey, this.Delete) : this;
         }
     }
@@ -427,13 +438,27 @@ namespace RegImport
             //HELP
             if (args.Length < 3 || args[0].Equals("/?") || args[0].ToLower().Equals("/help"))
             {
-                Help();
+                //Help();
             }
 
             //Get Proper Privileges
             Hive.GetHivePrivileges();
             //Load the Default User Template Hive
             DefHive = LoadDefaultHive();
+
+            //Debug Testing
+            Console.WriteLine(new RegKey(@"HKU\Default\A", false).Name);
+            Console.WriteLine(new RegKey(@"HKU", @"Default\A", false).Name);
+            Console.WriteLine(new RegKey(@"HKCU", @"A", false).GetRegKey("DEFAULT").Name);
+            Console.WriteLine();
+            Console.WriteLine(new RegKey(@"HKU\Default", false).Name);
+            Console.WriteLine(new RegKey(@"HKU", @"Default", false).Name);
+            Console.WriteLine(new RegKey(@"HKCU", @"", false).GetRegKey("DEFAULT").Name);
+            Console.WriteLine();
+            Console.WriteLine(new RegKey(@"HKU\Default\", false).Name);
+            Console.WriteLine(new RegKey(@"HKU", @"Default\", false).Name);
+            Console.WriteLine(new RegKey(@"HKCU", @"\", false).GetRegKey("DEFAULT").Name);
+            Environment.Exit(0);
 
             //Parse Flags
             string set = args[0].ToUpper();
