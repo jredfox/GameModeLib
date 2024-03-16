@@ -493,14 +493,19 @@ namespace RegImport
             bool allsids = false;
             bool USER_DEFAULT = false;
             bool USER_DOTDEFAULT = false;
+            bool CurrentUser = false;
             bool OtherUsers = false;
+            bool HasRunDefault = false;
             List<string> sids = new List<string>(ARG_SID.Split(';'));
             //Transform Empty SID or KeyWords Into the Current SID
             for (int i = 0; i < sids.Count; i++)
             {
                 var v = sids[i];
                 if (v.Equals("") || v.Equals("NULL") || v.Equals("CURRENT_USER") || v.Equals(SID_CURRENT))
+                {
                     sids[i] = SID_CURRENT;
+                    CurrentUser = true;
+                }
                 else if (v.Equals("DEFAULT"))
                     USER_DEFAULT = true;
                 else if (v.Equals(".DEFAULT"))
@@ -561,11 +566,8 @@ namespace RegImport
                     foreach (RegFile re in regs)
                     {
                         RegFile r = re.GetRegFile(ARG_SID);
-                        RegGenUninstall(r, ARG_SID);
-                        if(USER_DEFAULT)
-                            RegGenUninstall(r, "DEFAULT");
-                        if(USER_DOTDEFAULT)
-                            RegGenUninstall(r, ".DEFAULT");
+                        if(CurrentUser)
+                            RegGenUninstall(r, ARG_SID);
                     }
                 }
                 //Import Data
@@ -574,11 +576,8 @@ namespace RegImport
                     foreach (RegFile re in regs)
                     {
                         RegFile r = re.GetRegFile(ARG_SID);
-                        RegImport(r, ARG_SID);
-                        if (USER_DEFAULT)
-                            RegImport(r, "DEFAULT");
-                        if (USER_DOTDEFAULT)
-                            RegImport(r, ".DEFAULT");
+                        if (CurrentUser)
+                            RegImport(r, ARG_SID);
                     }
                 }
             }
@@ -586,7 +585,6 @@ namespace RegImport
             else if (UNINSTALL_USER || IMPORT_USER)
             {
                 string Users = GetUsersDir() + @"\";
-                bool HasRunDefault = false;
 
                 //Loop through All SIDS / Users Specified
                 using (PrincipalContext context = new PrincipalContext(ContextType.Machine))
@@ -671,30 +669,30 @@ namespace RegImport
                         }
                     }
                 }
+            }
 
-                //Gen Uninstall Data
-                if (UNINSTALL_USER && (USER_DEFAULT || USER_DOTDEFAULT))
+            //Gen Uninstall Data
+            if (UNINSTALL_USER && (USER_DEFAULT || USER_DOTDEFAULT))
+            {
+                foreach (RegFile re in regs)
                 {
-                    foreach (RegFile re in regs)
-                    {
-                        RegFile r = re.GetRegFile(ARG_SID);
-                        if (USER_DEFAULT && !HasRunDefault)
-                            RegGenUninstall(r, "DEFAULT");
-                        if (USER_DOTDEFAULT)
-                            RegGenUninstall(r, ".DEFAULT");
-                    }
+                    RegFile r = re.GetRegFile(ARG_SID);
+                    if (USER_DEFAULT && !HasRunDefault)
+                        RegGenUninstall(re.GetRegFile("DEFAULT"), "DEFAULT");
+                    if (USER_DOTDEFAULT)
+                        RegGenUninstall(re.GetRegFile(".DEFAULT"), ".DEFAULT");
                 }
-                //Import Data
-                if (IMPORT_USER && (USER_DEFAULT || USER_DOTDEFAULT))
+            }
+            //Import Data
+            if (IMPORT_USER && (USER_DEFAULT || USER_DOTDEFAULT))
+            {
+                foreach (RegFile re in regs)
                 {
-                    foreach (RegFile re in regs)
-                    {
-                        RegFile r = re.GetRegFile(ARG_SID);
-                        if (USER_DEFAULT && !HasRunDefault)
-                            RegImport(r, "DEFAULT");
-                        if (USER_DOTDEFAULT)
-                            RegImport(r, ".DEFAULT");
-                    }
+                    RegFile r = re.GetRegFile(ARG_SID);
+                    if (USER_DEFAULT && !HasRunDefault)
+                        RegImport(re.GetRegFile("DEFAULT"), "DEFAULT");
+                    if (USER_DOTDEFAULT)
+                        RegImport(re.GetRegFile(".DEFAULT"), ".DEFAULT");
                 }
             }
 
@@ -1376,7 +1374,6 @@ namespace RegImport
 
         public static string GetRegTree(RegistryHive k)
         {
-            Console.WriteLine(RegistryHive.LocalMachine.ToString());
             switch (k)
             {
                 case RegistryHive.LocalMachine:
