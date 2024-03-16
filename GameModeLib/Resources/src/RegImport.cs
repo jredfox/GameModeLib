@@ -255,7 +255,6 @@ namespace RegImport
                         {
                             v = new RegValue(str_name, Program.DeESC(Program.SubStringIndex(str_dat, 1, str_dat.Length - 2)), RegistryValueKind.String);
                         }
-                        //TODO: Make sure DWORD and QWORD Works with ARM64
                         //QWORD
                         else if (str_dat.StartsWith("hex(b):"))
                         {
@@ -696,10 +695,11 @@ namespace RegImport
                 }
             }
 
-            //Unload Default Hive Quietly
+            //Unload Default Hive Quietly if we loaded it
             try
             {
-                DefHive.UnLoad();
+                if(!CDH)
+                    DefHive.UnLoad();
             }
             catch(Exception)
             {
