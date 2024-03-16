@@ -1182,6 +1182,7 @@ namespace RegImport
                 }
                 else if (type == RegistryValueKind.ExpandString)
                 {
+                    val = k.GetValue(vname, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
                     byte[] bytes = Encoding.Unicode.GetBytes(val.ToString());
                     string hexString = BitConverter.ToString(bytes).Replace("-", ",").ToLower();
                     hexString += ",00,00";//Null Terminator UTF-16 two bytes to represent '\0'
