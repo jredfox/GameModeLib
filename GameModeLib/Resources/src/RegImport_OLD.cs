@@ -86,7 +86,6 @@ namespace RegImport
         public string rootname;
         public string subkey;
         public RegistryHive root;
-        public bool IsLoaded = false;
 
         public Hive(string file_hive, string subkey, RegistryHive root)
         {
@@ -98,79 +97,22 @@ namespace RegImport
 
         public void Load()
         {
-            this.IsLoaded = false;
             if (!File.Exists(this.file_hive))
             {
-                return;
+                throw new FileNotFoundException("Missing Hive:" + this.file_hive);
             }
             RegistryKey key_tree = RegistryKey.OpenBaseKey(root, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
             IntPtr TreeHandle = key_tree.Handle.DangerousGetHandle();
             RegLoadKey(TreeHandle, this.subkey, this.file_hive);
             key_tree.Close();
-            this.IsLoaded = true;
         }
-
         public void UnLoad()
         {
-            this.IsLoaded = false;
             RegistryKey key_tree = RegistryKey.OpenBaseKey(root, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
             IntPtr TreeHandle = key_tree.Handle.DangerousGetHandle();
             RegUnLoadKey(TreeHandle, this.subkey);
             key_tree.Close();
         }
-
-        public void LoadSafely()
-        {
-            this.LoadSafely("", "");
-        }
-
-        public void LoadSafely(string msg, string err_msg)
-        {
-            try
-            {
-                this.Load();
-                if(!this.IsLoaded)
-                {
-                    if(err_msg.Length != 0)
-                        Console.WriteLine(err_msg);
-                    return;
-                }
-                else if (msg.Length != 0)
-                    Console.WriteLine(msg);
-            }
-            catch (Exception)
-            {
-                if (err_msg.Length != 0)
-                    Console.WriteLine(err_msg);
-            }
-        }
-
-        public void UnLoadSafely()
-        {
-            this.UnLoadSafely("", "");
-        }
-
-        public void UnLoadSafely(string msg, string err_msg)
-        {
-            try
-            {
-                this.UnLoad();
-                if (!this.IsLoaded)
-                {
-                    if (err_msg.Length != 0)
-                        Console.WriteLine(err_msg);
-                    return;
-                }
-                else if (msg.Length != 0)
-                    Console.WriteLine(msg);
-            }
-            catch (Exception)
-            {
-                if (err_msg.Length != 0)
-                    Console.WriteLine(err_msg);
-            }
-        }
-
         public static void GetHivePrivileges()
         {
             ulong luid = 0;
@@ -559,6 +501,32 @@ namespace RegImport
 
             //Get ARG_SID
             string ARG_SID = args[1].Trim().ToUpper();
+            string SID_CURRENT = GetCurrentSID();
+            bool allsids = false;
+            bool USER_DEFAULT = false;
+            bool USER_DOTDEFAULT = false;
+            bool CurrentUser = false;
+            bool OtherUsers = false;
+            bool HasRunDefault = false;
+            List<string> sids = new List<string>(ARG_SID.Split(';'));
+            //Transform Empty SID or KeyWords Into the Current SID
+            for (int i = 0; i < sids.Count; i++)
+            {
+                var v = sids[i];
+                if (v.Equals("") || v.Equals("NULL") || v.Equals("CURRENT_USER") || v.Equals(SID_CURRENT))
+                {
+                    sids[i] = SID_CURRENT;
+                    CurrentUser = true;
+                }
+                else if (v.Equals("DEFAULT"))
+                    USER_DEFAULT = true;
+                else if (v.Equals(".DEFAULT"))
+                    USER_DOTDEFAULT = true;
+                else if (v.Equals("*"))
+                    allsids = true;
+                else
+                    OtherUsers = true;
+            }
 
             //Parse the Reg File Into Objects
             dirs = args[2].Split(';');
@@ -582,153 +550,177 @@ namespace RegImport
                 RegFile reg = new RegFile(r, rel != null ? rel : (full ? Path.GetFileName(d) : d));
                 reg.Parse();
                 regs.Add(reg);
+
+                //Gen Uninstall Data
+                if (UNINSTALL_GLOBAL && !reg.IsMeta)
+                {
+                    RegGenUninstall(reg, null);
+                }
             }
 
-            //Start Main Program Process
-            Dictionary<string, string> usrs = GetSIDS(ARG_SID);
-            string Users = GetUsersDir() + @"\";
-
-            //Generate the Uninstall Data
-            if (UNINSTALL_GLOBAL || UNINSTALL_USER)
+            //Import all Global Data
+            if (IMPORT_GLOBAL)
             {
-                if(UNINSTALL_GLOBAL)
+                foreach (var reg in regs)
                 {
-                    foreach (var r in regs)
+                    if (!reg.IsMeta)
+                        RegImport(reg, null);
+                }
+            }
+
+            //Install Current User
+            if (!OtherUsers)
+            {
+                ARG_SID = SID_CURRENT;
+                //Gen Uninstall Data
+                if (UNINSTALL_USER)
+                {
+                    foreach (RegFile re in regs)
                     {
-                        if (!r.IsMeta)
+                        RegFile r = re.GetRegFile(ARG_SID);
+                        if(CurrentUser)
+                            RegGenUninstall(r, ARG_SID);
+                    }
+                }
+                //Import Data
+                if (IMPORT_USER)
+                {
+                    foreach (RegFile re in regs)
+                    {
+                        RegFile r = re.GetRegFile(ARG_SID);
+                        if (CurrentUser)
+                            RegImport(r, ARG_SID);
+                    }
+                }
+            }
+            //Install For A Different User(s) or * for All Users
+            else if (UNINSTALL_USER || IMPORT_USER)
+            {
+                string Users = GetUsersDir() + @"\";
+
+                //Loop through All SIDS / Users Specified
+                using (PrincipalContext context = new PrincipalContext(ContextType.Machine))
+                {
+                    using (PrincipalSearcher searcher = new PrincipalSearcher(new UserPrincipal(context)))
+                    {
+                        foreach (Principal result in searcher.FindAll())
                         {
-                            try
+                            if (result is UserPrincipal user)
                             {
-                                RegGenUninstall(r, null);
-                            }
-                            catch (Exception f)
-                            {
-                                Console.Error.Write($"Error GenUninstall Global \"{r.File}\" ");
-                                Console.Error.WriteLine(f);
+                                string usrname = user.SamAccountName.ToUpper();
+                                string file_hive = Users + user.SamAccountName + @"\NTUSER.DAT";
+                                string sid = user.Sid.ToString().ToUpper();
+                                //Handle Default Account SID
+                                if(usrname.Equals("DEFAULTACCOUNT") || usrname.Equals("DEFAULT"))
+                                {
+                                    sid = "DEFAULT";
+                                    HasRunDefault = true;
+                                }
+                                bool exists = File.Exists(file_hive);
+                                if (exists && allsids || sids.Contains(sid) || sids.Contains(usrname))
+                                {
+                                    Hive h = new Hive(file_hive, sid, RegistryHive.Users);
+                                    try
+                                    {
+                                        if (exists)
+                                            h.Load();
+                                        else
+                                            h = null;
+                                    }
+                                    catch (Exception)
+                                    {
+                                        Console.Error.WriteLine("Failed to Load NTUSER.DAT:" + user.SamAccountName);
+                                        h = null;
+                                    }
+                                    finally
+                                    {
+                                        if (HasUser(sid))
+                                        {
+                                            Console.WriteLine($"Reg Import User: {user.SamAccountName}, SID: {sid}");
+                                            try
+                                            {
+                                                //Gen Uninstall Data Per User
+                                                if (UNINSTALL_USER)
+                                                {
+                                                    foreach (RegFile re in regs)
+                                                    {
+                                                        RegFile r = re.GetRegFile(sid);
+                                                        RegGenUninstall(r, sid);
+                                                    }
+                                                }
+
+                                                //Import Data Per User
+                                                if (IMPORT_USER)
+                                                {
+                                                    foreach (RegFile re in regs)
+                                                    {
+                                                        RegFile r = re.GetRegFile(sid);
+                                                        RegImport(r, sid);
+                                                    }
+                                                }
+                                            }
+                                            catch (Exception f)
+                                            {
+                                                Console.Error.WriteLine(f);
+                                            }
+                                            if (h != null)
+                                            {
+                                                try
+                                                {
+                                                    h.UnLoad();
+                                                }
+                                                catch (Exception)
+                                                {
+                                                    Console.Error.WriteLine("Failed to Unload NTUSER.DAT:" + user.SamAccountName);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                 }
+            }
 
-                if (UNINSTALL_USER)
+            //Gen Uninstall Data
+            if (UNINSTALL_USER && (USER_DEFAULT || USER_DOTDEFAULT))
+            {
+                foreach (RegFile re in regs)
                 {
-                    foreach (var usr in usrs)
-                    {
-                        string sid = usr.Key;
-                        string usrname = usr.Value;
-
-                        //Load the Hive (NTUSER.DAT to it's SID)
-                        Hive h = new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
-                        h.LoadSafely($"Reg Import: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
-
-                        //Generate the Uninstall Data
-                        foreach (var reg in regs)
-                        {
-                            RegFile r = reg.GetRegFile(sid);
-                            try
-                            {
-                                RegGenUninstall(r, sid);
-                            }
-                            catch (Exception f)
-                            {
-                                Console.Error.Write($"Error GenUninstall User \"{r.File}\" ");
-                                Console.Error.WriteLine(f);
-                            }
-                        }
-                       
-                        //Unload NTUSER.DAT for Memory Reasons
-                        h.UnLoadSafely("", $"Failed To Unload NTUSER.DAT:{usrname}");
-                    }
+                    RegFile r = re.GetRegFile(ARG_SID);
+                    if (USER_DEFAULT && !HasRunDefault)
+                        RegGenUninstall(re.GetRegFile("DEFAULT"), "DEFAULT");
+                    if (USER_DOTDEFAULT)
+                        RegGenUninstall(re.GetRegFile(".DEFAULT"), ".DEFAULT");
+                }
+            }
+            //Import Data
+            if (IMPORT_USER && (USER_DEFAULT || USER_DOTDEFAULT))
+            {
+                foreach (RegFile re in regs)
+                {
+                    RegFile r = re.GetRegFile(ARG_SID);
+                    if (USER_DEFAULT && !HasRunDefault)
+                        RegImport(re.GetRegFile("DEFAULT"), "DEFAULT");
+                    if (USER_DOTDEFAULT)
+                        RegImport(re.GetRegFile(".DEFAULT"), ".DEFAULT");
                 }
             }
 
             //Unload Default Hive Quietly if we loaded it
-            if(!CDH)
-                DefHive.UnLoadSafely();
+            try
+            {
+                if(!CDH)
+                    DefHive.UnLoad();
+            }
+            catch(Exception)
+            {
+
+            }
 
             long done = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             Console.WriteLine("Import Settings Done in MS:" + (done - milliseconds));
-        }
-
-        public static Dictionary<string, string> GetSIDS(string str_filter)
-        {
-            str_filter = str_filter.Trim().ToUpper();
-            List<string> filter = new List<string>(str_filter.Split(';'));
-            string SID_CURRENT = GetCurrentSID();
-
-            //Generate Flag Options from the filter
-            bool allsids = false;
-            bool USER_DEFAULT = false;
-            bool USER_DOTDEFAULT = false;
-            bool CurrentUser = false;
-            bool OtherUsers = false;
-
-            //Transform Empty SID or KeyWords Into the Current SID
-            for (int i = 0; i < filter.Count; i++)
-            {
-                var v = filter[i];
-                if (v.Equals("") || v.Equals("NULL") || v.Equals("CURRENT_USER") || v.Equals(SID_CURRENT))
-                {
-                    filter[i] = SID_CURRENT;
-                    CurrentUser = true;
-                }
-                else if (v.Equals("DEFAULT"))
-                {
-                    USER_DEFAULT = true;
-                }
-                else if (v.Equals(".DEFAULT"))
-                {
-                    USER_DOTDEFAULT = true;
-                }
-                else if (v.Equals("*"))
-                {
-                    allsids = true;
-                    OtherUsers = true;
-                }
-                else
-                {
-                    OtherUsers = true;
-                }
-            }
-
-            Dictionary<string, string> USER_SIDS = new Dictionary<string, string>(256);
-            string Users = GetUsersDir() + @"\";
-            if (USER_DEFAULT)
-                USER_SIDS["DEFAULT"] = "DEFAULT";
-            if(USER_DOTDEFAULT)
-                USER_SIDS[".DEFAULT"] = ".DEFAULT";
-            if (CurrentUser)
-                USER_SIDS[SID_CURRENT] = GetCurrentUserName();
-            //Optimization if not DEFAULT, .DEFAULT, or HKCU(Current User) then return
-            if (!OtherUsers)
-                return USER_SIDS;
-
-            using (PrincipalContext context = new PrincipalContext(ContextType.Machine))
-            {
-                using (PrincipalSearcher searcher = new PrincipalSearcher(new UserPrincipal(context)))
-                {
-                    foreach (Principal result in searcher.FindAll())
-                    {
-                        if (result is UserPrincipal user)
-                        {
-                            string usrname = user.SamAccountName.ToUpper();
-                            string file_hive = Users + user.SamAccountName + @"\NTUSER.DAT";
-                            string sid = user.Sid.ToString().ToUpper();
-                            //Handle Default Account SID
-                            if (usrname.Equals("DEFAULTACCOUNT") || usrname.Equals("DEFAULT"))
-                            {
-                                sid = "DEFAULT";
-                            }
-                            bool exists = File.Exists(file_hive);
-                            if (exists && allsids || filter.Contains(sid) || filter.Contains(usrname))
-                            {
-                                USER_SIDS[sid] = user.SamAccountName;
-                            }
-                        }
-                    }
-                }
-            }
-            return USER_SIDS;
         }
 
         /// <summary>
@@ -857,13 +849,6 @@ namespace RegImport
         public static string GetCurrentSID()
         {
             return WindowsIdentity.GetCurrent().User.Value.ToUpper();
-        }
-
-        public static string GetCurrentUserName()
-        {
-            string s = WindowsIdentity.GetCurrent().Name;
-            string[] parts = s.Split('\\');
-            return parts[parts.Length - 1];
         }
 
         public static RegWriter GetRegWriter(string RelPath, string SID, bool USR)
