@@ -86,7 +86,6 @@ namespace RegImport
         public string rootname;
         public string subkey;
         public RegistryHive root;
-        public bool IsLoaded = false;
 
         public Hive(string file_hive, string subkey, RegistryHive root)
         {
@@ -98,7 +97,6 @@ namespace RegImport
 
         public void Load()
         {
-            this.IsLoaded = false;
             if (!File.Exists(this.file_hive))
             {
                 return;
@@ -107,12 +105,10 @@ namespace RegImport
             IntPtr TreeHandle = key_tree.Handle.DangerousGetHandle();
             RegLoadKey(TreeHandle, this.subkey, this.file_hive);
             key_tree.Close();
-            this.IsLoaded = true;
         }
 
         public void UnLoad()
         {
-            this.IsLoaded = false;
             RegistryKey key_tree = RegistryKey.OpenBaseKey(root, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
             IntPtr TreeHandle = key_tree.Handle.DangerousGetHandle();
             RegUnLoadKey(TreeHandle, this.subkey);
@@ -129,13 +125,7 @@ namespace RegImport
             try
             {
                 this.Load();
-                if(!this.IsLoaded)
-                {
-                    if(err_msg.Length != 0)
-                        Console.WriteLine(err_msg);
-                    return;
-                }
-                else if (msg.Length != 0)
+                if (msg.Length != 0)
                     Console.WriteLine(msg);
             }
             catch (Exception)
@@ -155,13 +145,7 @@ namespace RegImport
             try
             {
                 this.UnLoad();
-                if (!this.IsLoaded)
-                {
-                    if (err_msg.Length != 0)
-                        Console.WriteLine(err_msg);
-                    return;
-                }
-                else if (msg.Length != 0)
+                if (msg.Length != 0)
                     Console.WriteLine(msg);
             }
             catch (Exception)
@@ -399,13 +383,13 @@ namespace RegImport
                 }
             }
             //Delete File After Parsing if Specified to do so
-            if(Program.UNINSTALL_DEL)
+            if (Program.UNINSTALL_DEL)
             {
                 try
                 {
                     System.IO.File.Delete(this.File);
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     Console.Error.WriteLine(e);
                 }
@@ -423,7 +407,7 @@ namespace RegImport
         {
             int i = key.IndexOf(@"\");
             //Safe Gaurd for Empty SubKeys
-            if(i == -1)
+            if (i == -1)
             {
                 key += @"\";
                 i = key.IndexOf(@"\");
@@ -591,7 +575,7 @@ namespace RegImport
             //Generate the Uninstall Data
             if (UNINSTALL_GLOBAL || UNINSTALL_USER)
             {
-                if(UNINSTALL_GLOBAL)
+                if (UNINSTALL_GLOBAL)
                 {
                     foreach (var r in regs)
                     {
@@ -616,10 +600,18 @@ namespace RegImport
                     {
                         string sid = usr.Key;
                         string usrname = usr.Value;
+                        bool IsDef = sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase);
 
                         //Load the Hive (NTUSER.DAT to it's SID)
                         Hive h = new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
-                        h.LoadSafely($"Reg Import: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
+                        if (!IsDef)
+                            h.LoadSafely($"Reg Gen Uninstall: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
+                        else
+                            Console.WriteLine($"Reg Gen Uninstall: {usrname} (New Users)");
+
+                        //If the NTUSER.DAT Hive has Failed To Load Skip it
+                        if (!HasUser(sid))
+                            continue;
 
                         //Generate the Uninstall Data
                         foreach (var reg in regs)
@@ -635,15 +627,16 @@ namespace RegImport
                                 Console.Error.WriteLine(f);
                             }
                         }
-                       
+
                         //Unload NTUSER.DAT for Memory Reasons
-                        h.UnLoadSafely("", $"Failed To Unload NTUSER.DAT:{usrname}");
+                        if (!IsDef)
+                            h.UnLoadSafely("", $"Failed To Unload NTUSER.DAT:{usrname}");
                     }
                 }
             }
 
             //Unload Default Hive Quietly if we loaded it
-            if(!CDH)
+            if (!CDH)
                 DefHive.UnLoadSafely();
 
             long done = DateTimeOffset.Now.ToUnixTimeMilliseconds();
@@ -694,8 +687,8 @@ namespace RegImport
             Dictionary<string, string> USER_SIDS = new Dictionary<string, string>(256);
             string Users = GetUsersDir() + @"\";
             if (USER_DEFAULT)
-                USER_SIDS["DEFAULT"] = "DEFAULT";
-            if(USER_DOTDEFAULT)
+                USER_SIDS["DEFAULT"] = "Default";
+            if (USER_DOTDEFAULT)
                 USER_SIDS[".DEFAULT"] = ".DEFAULT";
             if (CurrentUser)
                 USER_SIDS[SID_CURRENT] = GetCurrentUserName();
@@ -717,7 +710,7 @@ namespace RegImport
                             //Handle Default Account SID
                             if (usrname.Equals("DEFAULTACCOUNT") || usrname.Equals("DEFAULT"))
                             {
-                                sid = "DEFAULT";
+                                continue;//Skip as we already handle the Default Account already
                             }
                             bool exists = File.Exists(file_hive);
                             if (exists && allsids || filter.Contains(sid) || filter.Contains(usrname))
@@ -759,7 +752,7 @@ namespace RegImport
                 {
                     var v = p.Trim('\0');
                     var o = k.GetValue(v);
-                    if(o is string)
+                    if (o is string)
                     {
                         string s = o.ToString().Trim().Trim('\0');
                         if (s.Equals(DosPath, StringComparison.OrdinalIgnoreCase))
@@ -781,19 +774,12 @@ namespace RegImport
                     }
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.Error.WriteLine(e);
             }
             Hive d = new Hive(DefHive, "Default", RegistryHive.Users);
-            try
-            {
-                d.Load();
-            }
-            catch(Exception)
-            {
-                Console.Error.WriteLine("Failed to Load Default NTUSER.DAT");
-            }
+            d.LoadSafely("", "Failed to Load Default NTUSER.DAT");
             return d;
         }
 
@@ -806,9 +792,9 @@ namespace RegImport
                 if (u.EndsWith(@"\"))
                     u = u.Substring(0, u.Length - 1);
                 Close(k);
-                return Path.Combine(u ,"NTUSER.DAT");
+                return Path.Combine(u, "NTUSER.DAT");
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.Error.WriteLine(e);
             }
@@ -830,7 +816,7 @@ namespace RegImport
             {
                 Console.Error.WriteLine(e);
             }
-            
+
             return GetHomeDrive() + @":\Users";
         }
 
