@@ -569,7 +569,7 @@ namespace RegImport
             }
 
             //Start Main Program Process
-            Dictionary<string, string> usrs = GetSIDS(ARG_SID);
+            Dictionary<string, string> usrs = (IMPORT_USER || UNINSTALL_USER) ? GetSIDS(ARG_SID) : new Dictionary<string, string>(1);
             string Users = GetUsersDir() + @"\";
 
             //Generate the Uninstall Data
@@ -587,7 +587,7 @@ namespace RegImport
                             }
                             catch (Exception f)
                             {
-                                Console.Error.Write($"Error GenUninstall Global \"{r.File}\" ");
+                                Console.Error.Write($"Error Gen Uninstall Global \"{r.File}\" ");
                                 Console.Error.WriteLine(f);
                             }
                         }
@@ -623,7 +623,70 @@ namespace RegImport
                             }
                             catch (Exception f)
                             {
-                                Console.Error.Write($"Error GenUninstall User \"{r.File}\" ");
+                                Console.Error.Write($"Error Gen Uninstall User \"{r.File}\" ");
+                                Console.Error.WriteLine(f);
+                            }
+                        }
+
+                        //Unload NTUSER.DAT for Memory Reasons
+                        if (!IsDef)
+                            h.UnLoadSafely("", $"Failed To Unload NTUSER.DAT:{usrname}");
+                    }
+                }
+            }
+
+            //Generate the Uninstall Data
+            if (IMPORT_GLOBAL || IMPORT_USER)
+            {
+                if (IMPORT_GLOBAL)
+                {
+                    foreach (var r in regs)
+                    {
+                        if (!r.IsMeta)
+                        {
+                            try
+                            {
+                                RegImport(r, null);
+                            }
+                            catch (Exception f)
+                            {
+                                Console.Error.Write($"Error Reg Import Global \"{r.File}\" ");
+                                Console.Error.WriteLine(f);
+                            }
+                        }
+                    }
+                }
+
+                if (IMPORT_USER)
+                {
+                    foreach (var usr in usrs)
+                    {
+                        string sid = usr.Key;
+                        string usrname = usr.Value;
+                        bool IsDef = sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase);
+
+                        //Load the Hive (NTUSER.DAT to it's SID)
+                        Hive h = new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
+                        if (!IsDef)
+                            h.LoadSafely($"Reg Import: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
+                        else
+                            Console.WriteLine($"Reg Import: {usrname} (New Users)");
+
+                        //If the NTUSER.DAT Hive has Failed To Load Skip it
+                        if (!HasUser(sid))
+                            continue;
+
+                        //Generate the Uninstall Data
+                        foreach (var reg in regs)
+                        {
+                            RegFile r = reg.GetRegFile(sid);
+                            try
+                            {
+                                RegImport(r, sid);
+                            }
+                            catch (Exception f)
+                            {
+                                Console.Error.Write($"Error Reg Import User \"{r.File}\" ");
                                 Console.Error.WriteLine(f);
                             }
                         }
