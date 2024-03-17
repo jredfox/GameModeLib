@@ -757,11 +757,11 @@ namespace RegImport
                             CDH = !v.Equals(@"\REGISTRY\USER\Default", StringComparison.OrdinalIgnoreCase);
                             if (v.StartsWith(@"\REGISTRY\USER\", StringComparison.OrdinalIgnoreCase))
                             {
-                                return new Hive(DefHive, v.Substring(15).Trim('\0'), RegistryHive.Users);
+                                return new Hive(DefHive, v.Trim('\0').Substring(15), RegistryHive.Users);
                             }
                             else if (v.StartsWith(@"\REGISTRY\MACHINE\", StringComparison.OrdinalIgnoreCase))
                             {
-                                return new Hive(DefHive, v.Substring(18).Trim('\0'), RegistryHive.LocalMachine);
+                                return new Hive(DefHive, v.Trim('\0').Substring(18), RegistryHive.LocalMachine);
                             }
                         }
                     }
