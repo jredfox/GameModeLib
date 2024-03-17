@@ -321,6 +321,7 @@ namespace RegImport
                                 string sz = System.Text.Encoding.Unicode.GetString(byteArray);
                                 multi_sz[counter_multi++] = sz;
                             }
+                            multi_sz[multi_sz.Length - 1] = multi_sz[multi_sz.Length - 1].Trim('\0');//Fix Null Terminator Sometimes Occuring
                             v = new RegValue(str_name, multi_sz, RegistryValueKind.MultiString);
                         }
 
