@@ -746,8 +746,9 @@ namespace RegImport
             {
                 string DosPath = GetDevicePath(DefHive);
                 RegistryKey k = GetRegTree("HKLM").OpenSubKey(@"SYSTEM\CurrentControlSet\Control\hivelist", false);
-                foreach (var v in k.GetValueNames())
+                foreach (var p in k.GetValueNames())
                 {
+                    var v = p.Trim('\0');
                     var o = k.GetValue(v);
                     if(o is string)
                     {
@@ -757,11 +758,15 @@ namespace RegImport
                             CDH = !v.Equals(@"\REGISTRY\USER\Default", StringComparison.OrdinalIgnoreCase);
                             if (v.StartsWith(@"\REGISTRY\USER\", StringComparison.OrdinalIgnoreCase))
                             {
-                                return new Hive(DefHive, v.Trim('\0').Substring(15), RegistryHive.Users);
+                                return new Hive(DefHive, v.Substring(15), RegistryHive.Users);
                             }
                             else if (v.StartsWith(@"\REGISTRY\MACHINE\", StringComparison.OrdinalIgnoreCase))
                             {
-                                return new Hive(DefHive, v.Trim('\0').Substring(18), RegistryHive.LocalMachine);
+                                return new Hive(DefHive, v.Substring(18), RegistryHive.LocalMachine);
+                            }
+                            else
+                            {
+                                Console.Error.WriteLine("Error Default Hive Is Loaded but Isn't Under HKLM or HKU");
                             }
                         }
                     }
@@ -1419,7 +1424,7 @@ namespace RegImport
                 uint result = QueryDosDevice(driveLetter, lpTargetPath, 260);
                 if (result != 0)
                 {
-                    return Marshal.PtrToStringAuto(lpTargetPath) + path.Substring(2);
+                    return Marshal.PtrToStringAuto(lpTargetPath).Trim('\0') + path.Substring(2);
                 }
                 else
                 {
