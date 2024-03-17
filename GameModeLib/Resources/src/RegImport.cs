@@ -703,7 +703,7 @@ namespace RegImport
                 DefHive.UnLoadSafely();
 
             long done = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            Console.WriteLine("Import Settings Done in MS:" + (done - milliseconds));
+            Console.WriteLine("Reg Import Settings Done in MS:" + (done - milliseconds));
         }
 
         public static Dictionary<string, string> GetSIDS(string str_filter)
@@ -944,7 +944,7 @@ namespace RegImport
 
         public static void RegGenUninstall(RegFile reg, string SID)
         {
-            bool USR = (SID != null);
+            bool USR = SID != null;
             if (!UNINSTALL_GLOBAL && !USR || !UNINSTALL_USER && USR)
                 return;
 
