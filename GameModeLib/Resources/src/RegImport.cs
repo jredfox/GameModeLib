@@ -1168,6 +1168,7 @@ namespace RegImport
                     writer_current.WriteLine("\"" + valESC + "\"=-");
                     return;
                 }
+
                 RegistryValueKind type = k.GetValueKind(vname);
                 if (type == RegistryValueKind.DWord)
                 {
@@ -1176,7 +1177,7 @@ namespace RegImport
                 }
                 else if (type == RegistryValueKind.String)
                 {
-                    writer_current.WriteLine("\"" + valESC + "\"=\"" + ESC((string)val) + "\"");
+                    writer_current.WriteLine("\"" + valESC + "\"=\"" + ESC(((string)val).Trim('\0')) + "\"");
                 }
                 else if (type == RegistryValueKind.QWord)
                 {
@@ -1187,7 +1188,7 @@ namespace RegImport
                 }
                 else if (type == RegistryValueKind.ExpandString)
                 {
-                    val = k.GetValue(vname, null, RegistryValueOptions.DoNotExpandEnvironmentNames);
+                    val = ((string)k.GetValue(vname, null, RegistryValueOptions.DoNotExpandEnvironmentNames)).Trim('\0');
                     byte[] bytes = Encoding.Unicode.GetBytes(val.ToString());
                     string hexString = BitConverter.ToString(bytes).Replace("-", ",").ToLower();
                     hexString += ",00,00";//Null Terminator UTF-16 two bytes to represent '\0'
@@ -1272,9 +1273,9 @@ namespace RegImport
                 {
                     foreach (string value in values)
                     {
-                        bw.Write(System.Text.Encoding.Unicode.GetBytes(value));
+                        bw.Write(System.Text.Encoding.Unicode.GetBytes(value.Trim('\0')));//Remove Junk Null Terminators from C# APIs
                         bw.Write((byte)0);
-                        bw.Write((byte)0);
+                        bw.Write((byte)0);//Add Null Terminator Per string
                     }
                     // NULL Terminator of the REG_MULTI_SZ Array
                     bw.Write((byte)0);
