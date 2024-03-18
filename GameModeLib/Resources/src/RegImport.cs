@@ -690,14 +690,20 @@ namespace RegImport
 
                         //Load the Hive (NTUSER.DAT to it's SID)
                         Hive h = new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
-                        if (!IsDef && !HasUser(sid))
-                            h.LoadSafely($"Reg Import: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
+                        if (!IsDef)
+                        {
+                            bool IsCached = HasUser(sid);
+                            if (!IsCached)
+                                h.LoadSafely($"Reg Import: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
+                            
+                            //If the NTUSER.DAT Hive has Failed To Load Skip it
+                            if (IsCached || !HasUser(sid))
+                                continue;
+                        }
                         else
+                        {
                             Console.WriteLine($"Reg Import: {usrname} (New Users)");
-
-                        //If the NTUSER.DAT Hive has Failed To Load Skip it
-                        if (!HasUser(sid))
-                            continue;
+                        }
 
                         //Import User Data
                         foreach (var reg in regs)
