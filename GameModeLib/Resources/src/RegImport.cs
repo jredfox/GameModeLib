@@ -627,6 +627,7 @@ namespace RegImport
             //Start Main Program Process
             Dictionary<string, string> usrs = (IMPORT_USER || UNINSTALL_USER) ? GetSIDS(ARG_SID) : new Dictionary<string, string>(1);
             string Users = GetUsersDir() + @"\";
+            int Size = 0;
 
             //Generate the Uninstall Data
             if (UNINSTALL_USER)
@@ -640,7 +641,10 @@ namespace RegImport
                     //Load the Hive (NTUSER.DAT to it's SID)
                     Hive h = new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
                     if (!IsDef)
+                    {
                         h.LoadSafely($"Reg Gen Uninstall: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
+                        Size++;
+                    }
                     else
                         Console.WriteLine($"Reg Gen Uninstall: {usrname} (New Users)");
 
@@ -656,8 +660,8 @@ namespace RegImport
                     }
 
                     //Unload NTUSER.DAT for Memory Reasons
-                    if (!IsDef)
-                        h.UnLoadSafely("", $"Failed To Unload NTUSER.DAT:{usrname}");
+                    if (!IsDef && Size > 256)
+                        h.UnLoadSafely($"Unloading{usrname}", $"Failed To Unload NTUSER.DAT:{usrname}");
                 }
             }
 
@@ -686,7 +690,7 @@ namespace RegImport
 
                         //Load the Hive (NTUSER.DAT to it's SID)
                         Hive h = new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
-                        if (!IsDef)
+                        if (!IsDef && !HasUser(sid))
                             h.LoadSafely($"Reg Import: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
                         else
                             Console.WriteLine($"Reg Import: {usrname} (New Users)");
@@ -704,7 +708,7 @@ namespace RegImport
 
                         //Unload NTUSER.DAT for Memory Reasons
                         if (!IsDef)
-                            h.UnLoadSafely("", $"Failed To Unload NTUSER.DAT:{usrname}");
+                            h.UnLoadSafely($"Unloading Import {usrname}", $"Failed To Unload NTUSER.DAT:{usrname}");
                     }
                 }
             }
