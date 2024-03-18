@@ -194,6 +194,12 @@ namespace RegImport
 
         public void UnLoadSafely(string msg, string err_msg)
         {
+            //Prevent Unloading of Memory Only Hives .DEFAULT or Custom Loaded Users Ones Used by Another Process
+            if (!File.Exists(this.file_hive))
+            {
+                return;
+            }
+
             try
             {
                 this.UnLoad();
@@ -622,6 +628,7 @@ namespace RegImport
 
             //Get ARG_SID
             string ARG_SID = args[1].Trim().ToUpper();
+            string SID_CURRENT = GetCurrentSID();
 
             //Parse the Reg File Into Objects
             dirs = args[2].Split(';');
@@ -694,7 +701,7 @@ namespace RegImport
                     }
 
                     //Unload NTUSER.DAT for Memory Reasons
-                    if (!IsDef && Size > 256)
+                    if (!IsDef && Size > 256 && !SID_CURRENT.Equals(sid))
                         h.UnLoadSafely($"Unloading{usrname}", $"Failed To Unload NTUSER.DAT:{usrname}");
                 }
             }
@@ -746,7 +753,7 @@ namespace RegImport
                         }
 
                         //Unload NTUSER.DAT for Memory Reasons
-                        if (!IsDef)
+                        if (!IsDef && !SID_CURRENT.Equals(sid))
                             h.UnLoadSafely($"Unloading Import {usrname}", $"Failed To Unload NTUSER.DAT:{usrname}");
                     }
                 }
