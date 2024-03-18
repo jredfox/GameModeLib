@@ -589,9 +589,9 @@ namespace RegImport
             IMPORT_USER = set[1] == 'T';
             UNINSTALL_GLOBAL = set[2] == 'T';
             UNINSTALL_USER = set[3] == 'T';
-            HOTLOAD_USER = set[4] == 'T';//Loads User Outside of applying HKCU data when inside the Reg Import / Gen Uninstall
-            UNINSTALL_DEL = set[5] == 'T';
-            UNINSTALL_OVERWRITE = set[6] == 'T';
+            UNINSTALL_DEL = set[4] == 'T';
+            UNINSTALL_OVERWRITE = set[5] == 'T';
+            HOTLOAD_USER = set[6] == 'T';//Loads User Outside of applying HKCU data when inside the Reg Import / Gen Uninstall
 
             //Get Command Line Variables
             if (args.Length > 3)
