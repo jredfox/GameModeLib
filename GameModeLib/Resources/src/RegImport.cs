@@ -268,7 +268,7 @@ namespace RegImport
                             {
                                 CurrentUser.Add(LastKey);
                             }
-                            if (LastKey.IsUser)
+                            else if (LastKey.IsUser)
                             {
                                 User.Add(LastKey);
                             }
@@ -277,7 +277,7 @@ namespace RegImport
                                 Global.Add(LastKey);
                             }
                         }
-                        catch(Exception e)
+                        catch (Exception e)
                         {
                             LastKey = null;
                             Console.Error.Write($"Maulformed Reg Key Skipping:{tl} ");
@@ -403,7 +403,7 @@ namespace RegImport
                             v = new RegValue(str_name, multi_sz, RegistryValueKind.MultiString);
                         }
 
-                        if(LastKey.IsCurrentUser)
+                        if (LastKey.IsCurrentUser)
                         {
                             CurrentUser.Add(v);
                         }
@@ -615,21 +615,29 @@ namespace RegImport
             //Generate the Uninstall Data
             if (UNINSTALL_GLOBAL || UNINSTALL_USER)
             {
-                if (UNINSTALL_GLOBAL)
+                foreach (var r in regs)
                 {
-                    foreach (var r in regs)
+                    if (!r.IsMeta)
                     {
-                        if (!r.IsMeta)
+                        try
                         {
-                            try
-                            {
+                            if (UNINSTALL_GLOBAL)
                                 RegGenUninstall(r, null);
-                            }
-                            catch (Exception f)
-                            {
-                                Console.Error.Write($"Error Gen Uninstall Global \"{r.File}\" ");
-                                Console.Error.WriteLine(f);
-                            }
+                        }
+                        catch (Exception f)
+                        {
+                            Console.Error.Write($"Error Gen Uninstall Global \"{r.File}\" ");
+                            Console.Error.WriteLine(f);
+                        }
+                        try
+                        {
+                            if (UNINSTALL_USER)
+                                RegGenUninstall(r, SID_USER);
+                        }
+                        catch(Exception e)
+                        {
+                            Console.Error.Write($"Error Gen Uninstall Global \"{r.File}\" ");
+                            Console.Error.WriteLine(e);
                         }
                     }
                 }
@@ -659,7 +667,7 @@ namespace RegImport
                             RegFile r = reg.GetRegFile(sid);
                             try
                             {
-                                RegGenUninstall(r, sid);
+                                RegGenUninstall(r, reg.IsMeta ? SID_USER : sid);
                             }
                             catch (Exception f)
                             {
@@ -674,6 +682,7 @@ namespace RegImport
                     }
                 }
             }
+           // Environment.Exit(0);
 
             //Generate the Uninstall Data
             if (IMPORT_GLOBAL || IMPORT_USER)
@@ -1005,7 +1014,7 @@ namespace RegImport
 
             //Gen Uninstall Data
             RegistryKey LastKey = null;
-            foreach (RegObj o in (IsHKCU ? reg.CurrentUser : (IsUser ? reg.User : reg.Global) ) )
+            foreach (RegObj o in (IsHKCU ? reg.CurrentUser : (IsUser ? reg.User : reg.Global)))
             {
                 if (o is RegKey k)
                 {
@@ -1136,7 +1145,7 @@ namespace RegImport
                 return;
 
             RegistryKey LastKey = null;
-            foreach (RegObj o in (IsHKCU ? reg.CurrentUser : (IsUser ? reg.User : reg.Global)) )
+            foreach (RegObj o in (IsHKCU ? reg.CurrentUser : (IsUser ? reg.User : reg.Global)))
             {
                 if (o is RegKey k)
                 {
