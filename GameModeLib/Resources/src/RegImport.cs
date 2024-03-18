@@ -121,6 +121,9 @@ namespace RegImport
             this.rootname = Program.GetRegTree(this.root);
         }
 
+        /// <summary>
+        /// Doesn't Call Sync
+        /// </summary>
         public void Load()
         {
             if (!File.Exists(this.file_hive))
@@ -131,7 +134,6 @@ namespace RegImport
             IntPtr TreeHandle = key_tree.Handle.DangerousGetHandle();
             RegLoadKey(TreeHandle, this.subkey, this.file_hive);
             key_tree.Close();
-            this.Sync();
         }
 
         /// <summary>
@@ -148,18 +150,19 @@ namespace RegImport
             }
             catch (Exception)
             {
-
+                this.IsLoaded = false;
             }
-            this.IsLoaded = false;
         }
 
+        /// <summary>
+        /// Doesn't Call Sync
+        /// </summary>
         public void UnLoad()
         {
             RegistryKey key_tree = RegistryKey.OpenBaseKey(root, Environment.Is64BitOperatingSystem ? RegistryView.Registry64 : RegistryView.Default);
             IntPtr TreeHandle = key_tree.Handle.DangerousGetHandle();
             RegUnLoadKey(TreeHandle, this.subkey);
             key_tree.Close();
-            this.Sync();
         }
 
         public void LoadSafely()
@@ -177,6 +180,7 @@ namespace RegImport
             {
 
             }
+            this.Sync();
 
             string m = this.IsLoaded ? msg : err_msg;
             if (m.Length != 0)
@@ -198,6 +202,7 @@ namespace RegImport
             {
 
             }
+            this.Sync();
 
             string m = !this.IsLoaded ? msg : err_msg;
             if (m.Length != 0)
@@ -831,6 +836,25 @@ namespace RegImport
                             }
                         }
                     }
+                }
+            }
+
+            //Scan the Registry for Possible Users Already loaded under a non SID format
+            if (allsids)
+            {
+                try
+                {
+                    foreach (var s in GetRegTree("HKU").GetSubKeyNames())
+                    {
+                        if (!Char.IsDigit(s[0]) && !s.StartsWith("S-", StringComparison.OrdinalIgnoreCase) && !s.StartsWith(".DEFAULT", StringComparison.OrdinalIgnoreCase) && !s.StartsWith("DEFAULT", StringComparison.OrdinalIgnoreCase) && !s.EndsWith("_classes", StringComparison.OrdinalIgnoreCase))
+                        {
+                            USER_SIDS[s] = s;
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine(e);
                 }
             }
             return USER_SIDS;
