@@ -457,7 +457,7 @@ namespace RegImport
                 }
             }
             //Delete File After Parsing if Specified to do so
-            if (Program.UNINSTALL_DEL)
+            if (Program.REG_DEL)
             {
                 try
                 {
@@ -548,7 +548,7 @@ namespace RegImport
 
     class Program
     {
-        public static bool IMPORT_GLOBAL, IMPORT_USER, UNINSTALL_GLOBAL, UNINSTALL_USER, HOTLOAD_USER, UNINSTALL_DEL, UNINSTALL_OVERWRITE;
+        public static bool IMPORT_GLOBAL, IMPORT_USER, UNINSTALL_GLOBAL, UNINSTALL_USER, REG_DEL, UNINSTALL_OVERWRITE, HOTLOAD_USER;
         public static string BaseDir;
         public static string UninstallDir;
         public static bool CDH = false;//CUSTOM DEFAULT HIVE
@@ -585,12 +585,12 @@ namespace RegImport
             {
                 set += "F";
             }
-            IMPORT_GLOBAL = set[0] == 'T';
-            IMPORT_USER = set[1] == 'T';
-            UNINSTALL_GLOBAL = set[2] == 'T';
-            UNINSTALL_USER = set[3] == 'T';
-            UNINSTALL_DEL = set[4] == 'T';
-            UNINSTALL_OVERWRITE = set[5] == 'T';
+            IMPORT_GLOBAL = set[0] == 'T';//Import Global User Data such as HKLM or anything not HKU / HKCU
+            IMPORT_USER = set[1] == 'T';//Import User Data Such as HKCU / HKU
+            UNINSTALL_GLOBAL = set[2] == 'T';//Generate Uninstall Data Before Importing
+            UNINSTALL_USER = set[3] == 'T';//Generate Uninstall User Data Before Importing
+            REG_DEL = set[4] == 'T';//Deletes the Reg File After Parsing Usefull for when Uninstalling
+            UNINSTALL_OVERWRITE = set[5] == 'T';//Overwrites Previously Generated Uninstall Data if the file exists
             HOTLOAD_USER = set[6] == 'T';//Loads User Outside of applying HKCU data when inside the Reg Import / Gen Uninstall
 
             //Get Command Line Variables
