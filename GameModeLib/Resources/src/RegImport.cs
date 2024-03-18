@@ -670,22 +670,21 @@ namespace RegImport
                 {
                     string sid = usr.Key;
                     string usrname = usr.Value;
-                    bool IsDef = sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase);
+                    bool lh = !sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase) && !SID_CURRENT.Equals(sid) && !sid.Equals(".DEFAULT") && !sid.Equals("UnKnown");
 
                     //Load the Hive (NTUSER.DAT to it's SID)
                     Hive h = new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
-                    if (!IsDef)
+                    if (lh)
                     {
-                        h.LoadSafely($"Reg Gen Uninstall: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
+                        h.LoadSafely($"Reg Loading User: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
                         Size++;
-                        USER_CACHE[sid] = h;
-                    }
-                    else
-                        Console.WriteLine($"Reg Gen Uninstall: {usrname} (New Users)");
+                        if(Size < 257)
+                            USER_CACHE[sid] = h;
 
-                    //If the NTUSER.DAT Hive has Failed To Load Skip it
-                    if (!h.IsLoaded)
-                        continue;
+                        //If the NTUSER.DAT Hive has Failed To Load Skip it
+                        if (!h.IsLoaded)
+                            continue;
+                    }
 
                     //Generate the Uninstall Data
                     foreach (var reg in regs)
@@ -695,8 +694,8 @@ namespace RegImport
                     }
 
                     //Unload NTUSER.DAT for Memory Reasons
-                    if (!IsDef && Size > 256 && !SID_CURRENT.Equals(sid) && !sid.Equals(".DEFAULT") && !sid.Equals("UnKnown"))
-                        h.UnLoadSafely($"Unloading{usrname}", $"Failed To Unload NTUSER.DAT:{usrname}");
+                    if (lh && Size > 256)
+                        h.UnLoadSafely($"Unloading User: {usrname}", $"Failed To Unload NTUSER.DAT:{usrname}");
                 }
             }
 
@@ -721,22 +720,18 @@ namespace RegImport
                     {
                         string sid = usr.Key;
                         string usrname = usr.Value;
-                        bool IsDef = sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase);
+                        bool lh = !sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase) && !SID_CURRENT.Equals(sid) && !sid.Equals(".DEFAULT") && !sid.Equals("UnKnown");
 
                         //Load the Hive (NTUSER.DAT to it's SID)
                         Hive h = USER_CACHE.ContainsKey(sid) ? USER_CACHE[sid] : new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
-                        if (!IsDef)
+                        if (lh)
                         {
                             if (!h.IsLoaded)
-                                h.LoadSafely($"Reg Import: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
+                                h.LoadSafely($"Reg Loading User: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
 
                             //If the NTUSER.DAT Hive has Failed To Load Skip it
                             if (!h.IsLoaded)
                                 continue;
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Reg Import: {usrname} (New Users)");
                         }
 
                         //Import User Data
@@ -747,8 +742,8 @@ namespace RegImport
                         }
 
                         //Unload NTUSER.DAT for Memory Reasons
-                        if (!IsDef && !SID_CURRENT.Equals(sid) && !sid.Equals(".DEFAULT") && !sid.Equals("UnKnown"))
-                            h.UnLoadSafely($"Unloading Import {usrname}", $"Failed To Unload NTUSER.DAT:{usrname}");
+                        if (lh)
+                            h.UnLoadSafely($"Unloading User: {usrname}", $"Failed To Unload NTUSER.DAT:{usrname}");
                     }
                 }
             }
@@ -960,21 +955,6 @@ namespace RegImport
         private static string GetHomeDrive()
         {
             return Environment.ExpandEnvironmentVariables("%HOMEDRIVE%").Substring(0, 1).ToUpper();
-        }
-
-        public static bool HasUser(string sid)
-        {
-            try
-            {
-                RegistryKey k = GetRegTree("HKU").OpenSubKey(sid, false);
-                Close(k);
-                return k != null;
-            }
-            catch (Exception)
-            {
-
-            }
-            return false;
         }
 
         public static string GetCurrentSID()
