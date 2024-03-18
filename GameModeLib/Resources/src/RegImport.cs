@@ -194,12 +194,6 @@ namespace RegImport
 
         public void UnLoadSafely(string msg, string err_msg)
         {
-            //Prevent Unloading of Memory Only Hives .DEFAULT or Custom Loaded Users Ones Used by Another Process
-            if (!File.Exists(this.file_hive))
-            {
-                return;
-            }
-
             try
             {
                 this.UnLoad();
@@ -561,6 +555,7 @@ namespace RegImport
         public static Hive DefHive = null;
         public static string[] dirs;
         public static Dictionary<string, string> fields = new Dictionary<string, string>();
+        public static string SID_CURRENT = GetCurrentSID();
         public const string NAME = "Reg Import";
         public const string VERSION = "1.0.0";
         public const string AUTHOR = "jredfox";
@@ -628,7 +623,6 @@ namespace RegImport
 
             //Get ARG_SID
             string ARG_SID = args[1].Trim().ToUpper();
-            string SID_CURRENT = GetCurrentSID();
 
             //Parse the Reg File Into Objects
             dirs = args[2].Split(';');
@@ -701,7 +695,7 @@ namespace RegImport
                     }
 
                     //Unload NTUSER.DAT for Memory Reasons
-                    if (!IsDef && Size > 256 && !SID_CURRENT.Equals(sid))
+                    if (!IsDef && Size > 256 && !SID_CURRENT.Equals(sid) && !sid.Equals(".DEFAULT") && !sid.Equals("UnKnown"))
                         h.UnLoadSafely($"Unloading{usrname}", $"Failed To Unload NTUSER.DAT:{usrname}");
                 }
             }
@@ -753,7 +747,7 @@ namespace RegImport
                         }
 
                         //Unload NTUSER.DAT for Memory Reasons
-                        if (!IsDef && !SID_CURRENT.Equals(sid))
+                        if (!IsDef && !SID_CURRENT.Equals(sid) && !sid.Equals(".DEFAULT") && !sid.Equals("UnKnown"))
                             h.UnLoadSafely($"Unloading Import {usrname}", $"Failed To Unload NTUSER.DAT:{usrname}");
                     }
                 }
@@ -771,7 +765,6 @@ namespace RegImport
         {
             str_filter = str_filter.Trim().ToUpper();
             List<string> filter = new List<string>(str_filter.Split(';'));
-            string SID_CURRENT = GetCurrentSID();
 
             //Generate Flag Options from the filter
             bool allsids = false;
@@ -855,7 +848,7 @@ namespace RegImport
                     {
                         if (!Char.IsDigit(s[0]) && !s.StartsWith("S-", StringComparison.OrdinalIgnoreCase) && !s.StartsWith(".DEFAULT", StringComparison.OrdinalIgnoreCase) && !s.StartsWith("DEFAULT", StringComparison.OrdinalIgnoreCase) && !s.EndsWith("_classes", StringComparison.OrdinalIgnoreCase))
                         {
-                            USER_SIDS[s] = s;
+                            USER_SIDS[s] = "UnKnown";
                         }
                     }
                 }
