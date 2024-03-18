@@ -108,6 +108,10 @@ namespace RegImport
         public string rootname;
         public string subkey;
         public RegistryHive root;
+        /// <summary>
+        /// Cached Boolean for If the Hive Sucessfully loaded or not
+        /// </summary>
+        public bool IsLoaded = false;
 
         public Hive(string file_hive, string subkey, RegistryHive root)
         {
@@ -127,6 +131,26 @@ namespace RegImport
             IntPtr TreeHandle = key_tree.Handle.DangerousGetHandle();
             RegLoadKey(TreeHandle, this.subkey, this.file_hive);
             key_tree.Close();
+            this.Sync();
+        }
+
+        /// <summary>
+        /// Syncs IsLoaded to the Registry
+        /// </summary>
+        public void Sync()
+        {
+            try
+            {
+                RegistryKey k = Program.GetRegTree(this.rootname).OpenSubKey(this.subkey, false);
+                Program.Close(k);
+                this.IsLoaded = k != null;
+                return;
+            }
+            catch (Exception)
+            {
+
+            }
+            this.IsLoaded = false;
         }
 
         public void UnLoad()
@@ -135,6 +159,7 @@ namespace RegImport
             IntPtr TreeHandle = key_tree.Handle.DangerousGetHandle();
             RegUnLoadKey(TreeHandle, this.subkey);
             key_tree.Close();
+            this.Sync();
         }
 
         public void LoadSafely()
@@ -147,14 +172,15 @@ namespace RegImport
             try
             {
                 this.Load();
-                if (msg.Length != 0)
-                    Console.WriteLine(msg);
             }
             catch (Exception)
             {
-                if (err_msg.Length != 0)
-                    Console.WriteLine(err_msg);
+
             }
+
+            string m = this.IsLoaded ? msg : err_msg;
+            if (m.Length != 0)
+                Console.WriteLine(m);
         }
 
         public void UnLoadSafely()
@@ -167,14 +193,15 @@ namespace RegImport
             try
             {
                 this.UnLoad();
-                if (msg.Length != 0)
-                    Console.WriteLine(msg);
             }
             catch (Exception)
             {
-                if (err_msg.Length != 0)
-                    Console.WriteLine(err_msg);
+
             }
+
+            string m = !this.IsLoaded ? msg : err_msg;
+            if (m.Length != 0)
+                Console.WriteLine(m);
         }
 
         public static void GetHivePrivileges()
@@ -627,6 +654,7 @@ namespace RegImport
             //Start Main Program Process
             Dictionary<string, string> usrs = (IMPORT_USER || UNINSTALL_USER) ? GetSIDS(ARG_SID) : new Dictionary<string, string>(1);
             string Users = GetUsersDir() + @"\";
+            Dictionary<string, Hive> USER_CACHE = new Dictionary<string, Hive>(256);
             int Size = 0;
 
             //Generate the Uninstall Data
@@ -644,12 +672,13 @@ namespace RegImport
                     {
                         h.LoadSafely($"Reg Gen Uninstall: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
                         Size++;
+                        USER_CACHE[sid] = h;
                     }
                     else
                         Console.WriteLine($"Reg Gen Uninstall: {usrname} (New Users)");
 
                     //If the NTUSER.DAT Hive has Failed To Load Skip it
-                    if (!HasUser(sid))
+                    if (!h.IsLoaded)
                         continue;
 
                     //Generate the Uninstall Data
@@ -689,15 +718,14 @@ namespace RegImport
                         bool IsDef = sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase);
 
                         //Load the Hive (NTUSER.DAT to it's SID)
-                        Hive h = new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
+                        Hive h = USER_CACHE.ContainsKey(sid) ? USER_CACHE[sid] : new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
                         if (!IsDef)
                         {
-                            bool IsCached = HasUser(sid);
-                            if (!IsCached)
+                            if (!h.IsLoaded)
                                 h.LoadSafely($"Reg Import: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
-                            
+
                             //If the NTUSER.DAT Hive has Failed To Load Skip it
-                            if (IsCached || !HasUser(sid))
+                            if (!h.IsLoaded)
                                 continue;
                         }
                         else
@@ -862,6 +890,7 @@ namespace RegImport
             {
                 Console.Error.WriteLine(e);
             }
+
             Hive d = new Hive(DefHive, "Default", RegistryHive.Users);
             d.LoadSafely("", "Failed to Load Default NTUSER.DAT");
             return d;
