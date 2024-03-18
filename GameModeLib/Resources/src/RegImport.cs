@@ -615,30 +615,15 @@ namespace RegImport
             //Generate the Uninstall Data
             if (UNINSTALL_GLOBAL || UNINSTALL_USER)
             {
+                //Apply Global & Non Current User Data if it's a real Reg File
                 foreach (var r in regs)
                 {
                     if (!r.IsMeta)
                     {
-                        try
-                        {
-                            if (UNINSTALL_GLOBAL)
-                                RegGenUninstall(r, null);
-                        }
-                        catch (Exception f)
-                        {
-                            Console.Error.Write($"Error Gen Uninstall Global \"{r.File}\" ");
-                            Console.Error.WriteLine(f);
-                        }
-                        try
-                        {
-                            if (UNINSTALL_USER)
-                                RegGenUninstall(r, SID_USER);
-                        }
-                        catch(Exception e)
-                        {
-                            Console.Error.Write($"Error Gen Uninstall Global \"{r.File}\" ");
-                            Console.Error.WriteLine(e);
-                        }
+                        if (UNINSTALL_GLOBAL)
+                            RegGenUninstall(r, null);
+                        if (UNINSTALL_USER)
+                            RegGenUninstall(r, SID_USER);
                     }
                 }
 
@@ -665,15 +650,7 @@ namespace RegImport
                         foreach (var reg in regs)
                         {
                             RegFile r = reg.GetRegFile(sid);
-                            try
-                            {
-                                RegGenUninstall(r, reg.IsMeta ? SID_USER : sid);
-                            }
-                            catch (Exception f)
-                            {
-                                Console.Error.Write($"Error Gen Uninstall User \"{r.File}\" ");
-                                Console.Error.WriteLine(f);
-                            }
+                            RegGenUninstall(r, reg.IsMeta ? SID_USER : sid);
                         }
 
                         //Unload NTUSER.DAT for Memory Reasons
@@ -682,27 +659,19 @@ namespace RegImport
                     }
                 }
             }
-           // Environment.Exit(0);
 
-            //Generate the Uninstall Data
+            //Import Settings From Reg Files
             if (IMPORT_GLOBAL || IMPORT_USER)
             {
-                if (IMPORT_GLOBAL)
+                //Apply Global & Non Current User Data if it's a real Reg File
+                foreach (var r in regs)
                 {
-                    foreach (var r in regs)
+                    if (!r.IsMeta)
                     {
-                        if (!r.IsMeta)
-                        {
-                            try
-                            {
-                                RegImport(r, null);
-                            }
-                            catch (Exception f)
-                            {
-                                Console.Error.Write($"Error Reg Import Global \"{r.File}\" ");
-                                Console.Error.WriteLine(f);
-                            }
-                        }
+                        if (IMPORT_GLOBAL)
+                            RegImport(r, null);
+                        if (IMPORT_USER)
+                            RegImport(r, SID_USER);
                     }
                 }
 
@@ -725,19 +694,11 @@ namespace RegImport
                         if (!HasUser(sid))
                             continue;
 
-                        //Generate the Uninstall Data
+                        //Import User Data
                         foreach (var reg in regs)
                         {
                             RegFile r = reg.GetRegFile(sid);
-                            try
-                            {
-                                RegImport(r, sid);
-                            }
-                            catch (Exception f)
-                            {
-                                Console.Error.Write($"Error Reg Import User \"{r.File}\" ");
-                                Console.Error.WriteLine(f);
-                            }
+                            RegImport(r, reg.IsMeta ? SID_USER : sid);
                         }
 
                         //Unload NTUSER.DAT for Memory Reasons
@@ -819,10 +780,10 @@ namespace RegImport
                             string usrname = user.SamAccountName.ToUpper();
                             string file_hive = Users + user.SamAccountName + @"\NTUSER.DAT";
                             string sid = user.Sid.ToString().ToUpper();
-                            //Handle Default Account SID
+                            //Skip as we already handle the Default Account already
                             if (usrname.Equals("DEFAULTACCOUNT") || usrname.Equals("DEFAULT"))
                             {
-                                continue;//Skip as we already handle the Default Account already
+                                continue;
                             }
                             bool exists = File.Exists(file_hive);
                             if (exists && allsids || filter.Contains(sid) || filter.Contains(usrname))
