@@ -606,6 +606,15 @@ namespace RegImport
                 RegFile reg = new RegFile(r, rel != null ? rel : (full ? Path.GetFileName(d) : d));
                 reg.Parse();
                 regs.Add(reg);
+
+                //Apply Global & Non Current User Data if it's a real Reg File
+                if (!reg.IsMeta)
+                {
+                    if (UNINSTALL_GLOBAL)
+                        RegGenUninstall(reg, null);
+                    if (UNINSTALL_USER)
+                        RegGenUninstall(reg, SID_USER);
+                }
             }
 
             //Start Main Program Process
@@ -613,50 +622,35 @@ namespace RegImport
             string Users = GetUsersDir() + @"\";
 
             //Generate the Uninstall Data
-            if (UNINSTALL_GLOBAL || UNINSTALL_USER)
+            if (UNINSTALL_USER)
             {
-                //Apply Global & Non Current User Data if it's a real Reg File
-                foreach (var r in regs)
+                foreach (var usr in usrs)
                 {
-                    if (!r.IsMeta)
+                    string sid = usr.Key;
+                    string usrname = usr.Value;
+                    bool IsDef = sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase);
+
+                    //Load the Hive (NTUSER.DAT to it's SID)
+                    Hive h = new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
+                    if (!IsDef)
+                        h.LoadSafely($"Reg Gen Uninstall: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
+                    else
+                        Console.WriteLine($"Reg Gen Uninstall: {usrname} (New Users)");
+
+                    //If the NTUSER.DAT Hive has Failed To Load Skip it
+                    if (!HasUser(sid))
+                        continue;
+
+                    //Generate the Uninstall Data
+                    foreach (var reg in regs)
                     {
-                        if (UNINSTALL_GLOBAL)
-                            RegGenUninstall(r, null);
-                        if (UNINSTALL_USER)
-                            RegGenUninstall(r, SID_USER);
+                        RegFile r = reg.GetRegFile(sid);
+                        RegGenUninstall(r, reg.IsMeta ? SID_USER : sid);
                     }
-                }
 
-                if (UNINSTALL_USER)
-                {
-                    foreach (var usr in usrs)
-                    {
-                        string sid = usr.Key;
-                        string usrname = usr.Value;
-                        bool IsDef = sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase);
-
-                        //Load the Hive (NTUSER.DAT to it's SID)
-                        Hive h = new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
-                        if (!IsDef)
-                            h.LoadSafely($"Reg Gen Uninstall: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
-                        else
-                            Console.WriteLine($"Reg Gen Uninstall: {usrname} (New Users)");
-
-                        //If the NTUSER.DAT Hive has Failed To Load Skip it
-                        if (!HasUser(sid))
-                            continue;
-
-                        //Generate the Uninstall Data
-                        foreach (var reg in regs)
-                        {
-                            RegFile r = reg.GetRegFile(sid);
-                            RegGenUninstall(r, reg.IsMeta ? SID_USER : sid);
-                        }
-
-                        //Unload NTUSER.DAT for Memory Reasons
-                        if (!IsDef)
-                            h.UnLoadSafely("", $"Failed To Unload NTUSER.DAT:{usrname}");
-                    }
+                    //Unload NTUSER.DAT for Memory Reasons
+                    if (!IsDef)
+                        h.UnLoadSafely("", $"Failed To Unload NTUSER.DAT:{usrname}");
                 }
             }
 
