@@ -237,9 +237,11 @@ namespace RegImport
             //If the Reg File is Meta Data Object then it's not a real Reg File don't parse
             if (this.IsMeta)
                 return;
+
             this.Global = new List<RegObj>();
             this.User = new List<RegObj>();
             this.CurrentUser = new List<RegObj>();
+
             //Don't Parse Non Existing Files
             if (!System.IO.File.Exists(this.File))
                 return;
@@ -514,17 +516,21 @@ namespace RegImport
 
     class Program
     {
-        public static bool IMPORT_GLOBAL, IMPORT_USER, UNINSTALL_GLOBAL, UNINSTALL_USER, UNINSTALL_OVERWRITE, UNINSTALL_DEL;
+        public static bool IMPORT_GLOBAL, IMPORT_USER, UNINSTALL_GLOBAL, UNINSTALL_USER, HOTLOAD_USER, UNINSTALL_DEL, UNINSTALL_OVERWRITE;
         public static string BaseDir;
         public static string UninstallDir;
         public static bool CDH = false;//CUSTOM DEFAULT HIVE
         public static Hive DefHive = null;
         public static string[] dirs;
         public static Dictionary<string, string> fields = new Dictionary<string, string>();
+        public const string NAME = "Reg Import";
+        public const string VERSION = "1.0.0";
+        public const string AUTHOR = "jredfox";
 
         static void Main(string[] args)
         {
             long milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            //Console.WriteLine($"{NAME} {VERSION}");
             //Fix Arguments Path Seperators
             for (int i = 0; i < args.Length; i++)
                 args[i] = args[i].Replace(@"/", @"\");
@@ -542,7 +548,7 @@ namespace RegImport
 
             //Parse Flags
             string set = args[0].ToUpper();
-            for (int i = set.Length; i < 6; i++)
+            for (int i = set.Length; i < 7; i++)
             {
                 set += "F";
             }
@@ -550,8 +556,9 @@ namespace RegImport
             IMPORT_USER = set[1] == 'T';
             UNINSTALL_GLOBAL = set[2] == 'T';
             UNINSTALL_USER = set[3] == 'T';
-            UNINSTALL_OVERWRITE = set[4] == 'T';
+            HOTLOAD_USER = set[4] == 'T';//Loads User Outside of applying HKCU data when inside the Reg Import / Gen Uninstall
             UNINSTALL_DEL = set[5] == 'T';
+            UNINSTALL_OVERWRITE = set[6] == 'T';
 
             //Get Command Line Variables
             if (args.Length > 3)
