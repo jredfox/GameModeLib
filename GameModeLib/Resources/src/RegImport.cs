@@ -28,10 +28,16 @@ namespace RegImport
     {
         public bool HasWritten = false;
         public string File = null;
-
+        //Should only be True if RegWriter is an instance of RegWriterDummy class. Cached as Boolean for quicker checking
+        public bool IsDummy = false;
         public RegWriter(string path) : base(path)
         {
             this.File = path;
+        }
+
+        public RegWriter(Stream ms) : base(ms)
+        {
+
         }
 
         public override void WriteLine(string v)
@@ -63,6 +69,22 @@ namespace RegImport
         {
             base.Write(v);
         }
+    }
+
+    public class RegWriterDummy : RegWriter
+    {
+        public static MemoryStream ms = new MemoryStream(new byte[2]);
+        public static RegWriterDummy DUMMY = new RegWriterDummy();
+        public RegWriterDummy() : base(ms)
+        {
+            this.IsDummy = true;
+        }
+
+        public new void WriteParent(string v) { }
+        public new void WriteLineParent(string v) { }
+        public override void Write(string v) { }
+        public override void WriteLine(string v) { }
+        public override void Close() { }
     }
 
     class Hive
@@ -173,6 +195,7 @@ namespace RegImport
         public bool IsMeta { get; set; }
         public List<RegObj> Global { get; set; }
         public List<RegObj> User { get; set; }
+        public List<RegObj> CurrentUser { get; set; }
 
         public RegFile(string file, string relpath)
         {
@@ -216,6 +239,7 @@ namespace RegImport
                 return;
             this.Global = new List<RegObj>();
             this.User = new List<RegObj>();
+            this.CurrentUser = new List<RegObj>();
             //Don't Parse Non Existing Files
             if (!System.IO.File.Exists(this.File))
                 return;
@@ -235,17 +259,29 @@ namespace RegImport
                     //Parse Keys
                     if (tl.StartsWith("["))
                     {
-                        bool delkey = tl.StartsWith("[-");
-                        string str_key = Program.SubStringIndex(tl, (delkey ? 2 : 1), tl.Length - 2);
-                        LastKey = new RegKey(str_key, delkey);
-                        bool IsUSR = LastKey.IsUser;
-                        if (IsUSR)
+                        try
                         {
-                            User.Add(LastKey);
+                            bool delkey = tl.StartsWith("[-");
+                            string str_key = Program.SubStringIndex(tl, (delkey ? 2 : 1), tl.Length - 2);
+                            LastKey = new RegKey(str_key, delkey);
+                            if (LastKey.IsCurrentUser)
+                            {
+                                CurrentUser.Add(LastKey);
+                            }
+                            if (LastKey.IsUser)
+                            {
+                                User.Add(LastKey);
+                            }
+                            else
+                            {
+                                Global.Add(LastKey);
+                            }
                         }
-                        else
+                        catch(Exception e)
                         {
-                            Global.Add(LastKey);
+                            LastKey = null;
+                            Console.Error.Write($"Maulformed Reg Key Skipping:{tl} ");
+                            Console.Error.WriteLine(e);
                         }
                     }
                     //Parse Values
@@ -367,7 +403,11 @@ namespace RegImport
                             v = new RegValue(str_name, multi_sz, RegistryValueKind.MultiString);
                         }
 
-                        if (LastKey.IsUser)
+                        if(LastKey.IsCurrentUser)
+                        {
+                            CurrentUser.Add(v);
+                        }
+                        else if (LastKey.IsUser)
                         {
                             User.Add(v);
                         }
@@ -929,6 +969,8 @@ namespace RegImport
             }
             else if (UNINSTALL_USER && USR)
             {
+                if (SID.Equals(SID_USER))
+                    return RegWriterDummy.DUMMY;
                 string UserReg = UninstallDir + @"\Users\" + SID + @"\" + RelPath;
                 if (!UNINSTALL_OVERWRITE && File.Exists(UserReg))
                     return null;
@@ -942,13 +984,17 @@ namespace RegImport
 
         public static Dictionary<string, RegWriter> writer_cache = new Dictionary<string, RegWriter>();
 
+        public const string SID_USER = @"GLOBAL_USER";
+
         public static void RegGenUninstall(RegFile reg, string SID)
         {
-            bool USR = SID != null;
-            if (!UNINSTALL_GLOBAL && !USR || !UNINSTALL_USER && USR)
+            bool IsHKU = SID != null && SID_USER.Equals(SID);
+            bool IsHKCU = SID != null && !IsHKU;
+            bool IsUser = IsHKCU || IsHKU;
+            if (!UNINSTALL_GLOBAL && !IsUser || !UNINSTALL_USER && IsUser)
                 return;
 
-            RegWriter writer_org = GetRegWriter(reg.RelPath, SID, USR);
+            RegWriter writer_org = GetRegWriter(reg.RelPath, SID, IsUser);
             if (writer_org == null)
                 return;
             //Clear the Writer Cache of other users
@@ -959,7 +1005,7 @@ namespace RegImport
 
             //Gen Uninstall Data
             RegistryKey LastKey = null;
-            foreach (RegObj o in (USR ? reg.User : reg.Global))
+            foreach (RegObj o in (IsHKCU ? reg.CurrentUser : (IsUser ? reg.User : reg.Global) ) )
             {
                 if (o is RegKey k)
                 {
@@ -974,9 +1020,9 @@ namespace RegImport
                         {
                             Console.Error.WriteLine(e);
                         }
-                        k = USR ? k.GetRegKey(SID) : k; //Redirect Current User Keys to SID User Keys
+                        k = IsUser ? k.GetRegKey(SID) : k; //Redirect Current User Keys to SID User Keys
                         //Re-Direct Other Users to a Different Reg File
-                        if (USR && !k.SubKey.StartsWith(SID))
+                        if (writer_org.IsDummy || IsUser && !k.SubKey.StartsWith(SID))
                         {
                             string OtherSID = k.SubKey.Split('\\')[0];
                             if (!writer_cache.ContainsKey(OtherSID))
@@ -1082,17 +1128,20 @@ namespace RegImport
 
         public static void RegImport(RegFile reg, string SID)
         {
-            bool USR = (SID != null);
-            if (!IMPORT_GLOBAL && !USR || !IMPORT_USER && USR)
+            bool IsHKU = SID != null && SID_USER.Equals(SID);
+            bool IsHKCU = SID != null && !IsHKU;
+            bool IsUser = IsHKCU || IsHKU;
+
+            if (!IMPORT_GLOBAL && !IsUser || !IMPORT_USER && IsUser)
                 return;
 
             RegistryKey LastKey = null;
-            foreach (RegObj o in (USR ? reg.User : reg.Global))
+            foreach (RegObj o in (IsHKCU ? reg.CurrentUser : (IsUser ? reg.User : reg.Global)) )
             {
                 if (o is RegKey k)
                 {
                     Close(LastKey);
-                    k = USR ? k.GetRegKey(SID) : k; //Redirect Current User Keys to SID User Keys
+                    k = IsUser ? k.GetRegKey(SID) : k; //Redirect Current User Keys to SID User Keys
                     RegistryKey root = k.Hive;
                     if (o.Delete)
                     {
