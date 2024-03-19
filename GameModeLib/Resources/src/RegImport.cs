@@ -1061,6 +1061,7 @@ namespace RegImport
             //Gen Uninstall Data
             RegistryKey LastKey = null;
             Hive LastHive = null;
+            string LastSID = null;
             List<Hive> HotCache = HOTLOAD_USER ? new List<Hive>(256) : null;
             int HiveSize = 0;
             foreach (RegObj o in (IsHKCU ? reg.CurrentUser : (IsUser ? reg.User : reg.Global)))
@@ -1070,11 +1071,6 @@ namespace RegImport
                     try
                     {
                         Close(LastKey);
-                        if (HOTLOAD_USER && LastHive != null && HiveSize > 256)
-                        {
-                            LastHive.UnLoadSafely();
-                            LastHive = null;
-                        }
                         try
                         {
                             writer_current.Flush();
@@ -1089,9 +1085,14 @@ namespace RegImport
                         {
                             string OtherSID = k.SubKey.Split('\\')[0];
                             //HOTLOAD NTUSER.DAT
-                            if(HOTLOAD_USER && OtherSID.StartsWith("S-") && !HasUser(OtherSID) && RegKey.HLSIDS.ContainsValue(OtherSID))
+                            if(HOTLOAD_USER && OtherSID.StartsWith("S-") && !OtherSID.Equals(LastSID) && !HasUser(OtherSID) && RegKey.HLSIDS.ContainsValue(OtherSID))
                             {
+                                if (LastHive != null && HiveSize > 256)
+                                {
+                                    LastHive.UnLoadSafely();
+                                }
                                 LastHive = new Hive(USER_CURRENT + $"{RegKey.HLSIDS.FirstOrDefault(x => x.Value.Equals(OtherSID)).Key}\\NTUSER.DAT", OtherSID, RegistryHive.Users);
+                                LastSID = OtherSID;
                                 LastHive.LoadSafely();
                                 if(HiveSize < 257)
                                 {
