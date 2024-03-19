@@ -851,6 +851,21 @@ namespace RegImport
             if (!OtherUsers)
                 return USER_SIDS;
 
+            //Optimization if HOTLoading is enabled use the cached Dictionary instead of waiting 100+MS for PrincipalSearcher
+            if (HOTLOAD_USER && RegKey.HLSIDS != null)
+            {
+                foreach(var pair in RegKey.HLSIDS)
+                {
+                    string sid = pair.Key;
+                    string usrname = pair.Value;
+                    if (allsids || filter.Contains(sid) || filter.Contains(usrname.ToUpper()))
+                    {
+                        USER_SIDS[sid] = usrname;
+                    }
+                }
+                return USER_SIDS;
+            }
+
             using (PrincipalContext context = new PrincipalContext(ContextType.Machine))
             {
                 using (PrincipalSearcher searcher = new PrincipalSearcher(new UserPrincipal(context)))
