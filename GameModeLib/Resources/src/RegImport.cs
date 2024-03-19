@@ -510,10 +510,11 @@ namespace RegImport
                 }
                 string uname = this.SubKey.Split('\\')[0].ToUpper();
                 int index = uname.Length;
-                if (!uname.StartsWith("S-") && !uname.Equals(".DEFAULT") && !uname.Equals("DEFAULT") && HLSIDS.ContainsKey(uname))
+                if (!uname.StartsWith("S-") && !uname.Equals(".DEFAULT") && !uname.Equals("DEFAULT"))
                 {
-                    string sid = HLSIDS[uname];
-                    this.SubKey = sid + this.SubKey.Substring(index);
+                    string sid = HLSIDS.FirstOrDefault(x => x.Value.Equals(uname, StringComparison.OrdinalIgnoreCase)).Key;
+                    if(sid != null)
+                        this.SubKey = sid + this.SubKey.Substring(index);
                 }
             }
             this.Name = this.Hive.Name + (this.SubKey.Length != 0 ? (@"\" + this.SubKey) : "");
@@ -541,10 +542,11 @@ namespace RegImport
                 }
                 string uname = subkey.Split('\\')[0].ToUpper();
                 int index = uname.Length;
-                if (!uname.StartsWith("S-") && !uname.Equals(".DEFAULT") && !uname.Equals("DEFAULT") && HLSIDS.ContainsKey(uname))
+                if (!uname.StartsWith("S-") && !uname.Equals(".DEFAULT") && !uname.Equals("DEFAULT"))
                 {
-                    string sid = HLSIDS[uname];
-                    subkey = sid + subkey.Substring(index);
+                    string sid = HLSIDS.FirstOrDefault(x => x.Value.Equals(uname, StringComparison.OrdinalIgnoreCase)).Key;
+                    if (sid != null)
+                        subkey = sid + subkey.Substring(index);
                 }
             }
             this.SubKey = subkey;
@@ -632,7 +634,7 @@ namespace RegImport
             REG_DEL = set[4] == 'T';//Deletes the Reg File After Parsing Usefull for when Uninstalling
             UNINSTALL_OVERWRITE = set[5] == 'T';//Overwrites Previously Generated Uninstall Data if the file exists
             HOTLOAD_USER = set[6] == 'T';//Loads User Outside of applying HKCU data when inside the Reg Import / Gen Uninstall
-            RegKey.HLSIDS = HOTLOAD_USER ? Program.GetSIDS("*").ToDictionary(x => x.Value.ToUpper(), x => x.Key) : null;
+            RegKey.HLSIDS = HOTLOAD_USER ? Program.GetSIDS("*") : null;
 
             //Get Command Line Variables
             if (args.Length > 3)
@@ -1085,13 +1087,13 @@ namespace RegImport
                         {
                             string OtherSID = k.SubKey.Split('\\')[0];
                             //HOTLOAD NTUSER.DAT
-                            if(HOTLOAD_USER && OtherSID.StartsWith("S-") && !OtherSID.Equals(LastSID) && !HasUser(OtherSID) && RegKey.HLSIDS.ContainsValue(OtherSID))
+                            if(HOTLOAD_USER && OtherSID.StartsWith("S-") && !OtherSID.Equals(LastSID) && !HasUser(OtherSID) && RegKey.HLSIDS.ContainsKey(OtherSID))
                             {
                                 if (LastHive != null && HiveSize > 256)
                                 {
                                     LastHive.UnLoadSafely();
                                 }
-                                LastHive = new Hive(USER_CURRENT + $"{RegKey.HLSIDS.FirstOrDefault(x => x.Value.Equals(OtherSID)).Key}\\NTUSER.DAT", OtherSID, RegistryHive.Users);
+                                LastHive = new Hive(USER_CURRENT + $"{RegKey.HLSIDS[OtherSID]}\\NTUSER.DAT", OtherSID, RegistryHive.Users);
                                 LastSID = OtherSID;
                                 LastHive.LoadSafely();
                                 if(HiveSize < 257)
