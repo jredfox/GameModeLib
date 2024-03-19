@@ -1616,14 +1616,29 @@ namespace RegImport
         static void Help()
         {
             Console.WriteLine("_________________________________________________________________________________");
-            Console.WriteLine(@"RegImport.exe <Options> <SID;SID2, *, or NULL """"> <BaseDir;UninstallDir;File.REG>");
-            Console.WriteLine("Options T/F {Import Global, Import User, Gen Uninstall Global, Gen Uninstall User, OverWrite Previous Install Data}");
+            Console.WriteLine();
+            Console.WriteLine(@"RegImport.exe <Options> <SID;SID2, *, or Current_User """"> <BaseDir;UninstallDir;File.REG>");
+            Console.WriteLine("Options T/F:\r\n{");
+            Console.WriteLine("  Import Global,");
+            Console.WriteLine("  Import User,");
+            Console.WriteLine("  Gen Uninstall Global,");
+            Console.WriteLine("  Gen Uninstall User,");
+            Console.WriteLine("  Del Reg,");
+            Console.WriteLine("  OverWrite Uninstall Gen,");
+            Console.WriteLine("  Hot Load Users \r\n}");
+            Console.WriteLine();
+            Console.WriteLine("Optional Parameters:");
+            Console.WriteLine("  /CacheSize:<num>");
+            Console.WriteLine("  /HotLoadCacheSize:<num>");
+            Console.WriteLine("NOTE: Setting a CacheSize param -1 Disables Cacheing Limits");
+            Console.WriteLine();
             Console.WriteLine("_________________________________________________________________________________");
             Console.WriteLine("Examples:");
             Console.WriteLine("_________________________________________________________________________________");
             Console.WriteLine(@"Current User: RegImport.exe ""TTTT"" """" ""C:\GameModeLib\Dir;FileName.reg;SubDir/FileName2.reg""");
-            Console.WriteLine(@"Example Other User: RegImport.exe ""TTFF"" ""S-1-5-21-368394509-689051271-14200874-1011;S-1-5-21-368394509-689051271-14200874-1099"" ""C:\GameModeLib\Resources;C:\GameModeLib\Uninstall;FileName.reg;SubDir/FileName2.reg""");
-            Console.WriteLine(@"Example OverWrite Previous Uninstall Gen For All Users: RegImport.exe ""TTTTT"" ""*"" ""C:\GameModeLib\Dir;FileName.reg;SubDir/FileName2.reg""");
+            Console.WriteLine(@"Example Other User: RegImport.exe ""TTFF"" ""S-1-5-21-368394509-689051271-14200874-1011;UserName"" ""C:\GameModeLib\Resources;C:\GameModeLib\Uninstall;FileName.reg;SubDir/FileName2.reg""");
+            Console.WriteLine(@"Example OverWrite Previous Uninstall Gen: RegImport.exe ""TTTTFT"" ""*"" ""C:\GameModeLib\Dir;FileName.reg;SubDir/FileName2.reg""");
+            Console.WriteLine();
             Console.WriteLine("_________________________________________________________________________________");
             Environment.Exit(0);
         }
