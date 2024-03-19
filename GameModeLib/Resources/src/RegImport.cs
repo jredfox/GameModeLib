@@ -1297,6 +1297,10 @@ namespace RegImport
                 return;
 
             RegistryKey LastKey = null;
+
+            Hive LastHive = null;
+            Dictionary<string, Hive> HotCache = HOTLOAD_USER ? new Dictionary<string, Hive>(Math.Max(256, HOTCACHESIZE + 1)) : null;
+
             foreach (RegObj o in (IsHKCU ? reg.CurrentUser : (IsUser ? reg.User : reg.Global)))
             {
                 if (o is RegKey k)
@@ -1304,6 +1308,34 @@ namespace RegImport
                     Close(LastKey);
                     k = IsHKCU ? k.GetRegKey(SID) : k; //Redirect Current User Keys to SID User Keys
                     RegistryKey root = k.Hive;
+
+                    //HOTLOAD NTUSER.DAT
+                    if (HOTLOAD_USER && IsHKU)
+                    {
+                        string OtherSID = k.SubKey.Split('\\')[0];
+                        if (OtherSID.StartsWith("S-") && !OtherSID.Equals(SID_CURRENT) && !HotCache.ContainsKey(OtherSID) && RegKey.HLSIDS.ContainsKey(OtherSID))
+                        {
+                            //Unload Previous UnCached Hive If it's not null
+                            if (LastHive != null)
+                            {
+                                LastHive.UnLoadSafely($"UnLoading:{LastHive.file_hive}", "");
+                                LastHive = null;
+                            }
+
+                            Hive h = new Hive(USER_CURRENT + $"{RegKey.HLSIDS[OtherSID]}\\NTUSER.DAT", OtherSID, RegistryHive.Users);
+                            h.LoadSafely($"Loading:{h.file_hive}", "");
+
+                            if (HotCache.Count < HOTCACHESIZE || HOTCACHESIZE == -1)
+                            {
+                                HotCache[OtherSID] = h;
+                            }
+                            else
+                            {
+                                LastHive = h;
+                            }
+                        }
+                    }
+
                     if (o.Delete)
                     {
                         LastKey = null;
@@ -1326,6 +1358,11 @@ namespace RegImport
                                 LastKey = root.CreateSubKey(k.SubKey);
                         }
                         catch (SecurityException)
+                        {
+                            LastKey = null;
+                            Console.Error.WriteLine("Access Denied Reg Import Key:" + k.Name);
+                        }
+                        catch (UnauthorizedAccessException)
                         {
                             LastKey = null;
                             Console.Error.WriteLine("Access Denied Reg Import Key:" + k.Name);
@@ -1370,6 +1407,22 @@ namespace RegImport
                 }
             }
             Close(LastKey);
+
+            //Close HotCached Hives
+            if (HOTLOAD_USER)
+            {
+                if (LastHive != null)
+                {
+                    LastHive.UnLoadSafely($"UnLoading:{LastHive.file_hive}", "");
+                }
+                foreach (Hive h in HotCache.Values)
+                {
+                    if (h.IsLoaded)
+                    {
+                        h.UnLoadSafely();
+                    }
+                }
+            }
         }
 
         public static string GetBinaryHex(string hexString, int index_line, List<string> filelines)
@@ -1719,7 +1772,7 @@ namespace RegImport
                 }
                 else
                 {
-                    Console.Error.WriteLine("Failed to retrieve device path");
+                    Console.Error.WriteLine($"Failed to retrieve device path from: {path}");
                 }
             }
             finally
