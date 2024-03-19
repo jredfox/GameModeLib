@@ -607,13 +607,42 @@ namespace RegImport
         static void Main(string[] args)
         {
             long milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            //Console.WriteLine($"{NAME} {VERSION}");
-            //Fix Arguments Path Seperators
-            for (int i = 0; i < args.Length; i++)
-                args[i] = args[i].Replace(@"/", @"\");
+            List<string> li = new List<string>(args.Length + 1);
+            //Handle Optional Parameters
+            for(int i = 0; i < args.Length; i++)
+            {
+                string s = args[i].Trim().ToLower();
+                if(s.Equals("/?") || s.Equals("/help"))
+                {
+                    Help();
+                }
+                else if(s.StartsWith("/cachesize:"))
+                {
+                    CACHESIZE = Convert.ToInt32(s.Substring(11));
+                    if(CACHESIZE <= 0)
+                    {
+                        CACHESIZE = -1;
+                    }
+                }
+                else if(s.StartsWith("/hotloadcachesize:"))
+                {
+                    HOTCACHESIZE = Convert.ToInt32(s.Substring(18));
+                    if (HOTCACHESIZE <= 0)
+                    {
+                        HOTCACHESIZE = -1;
+                    }
+                }
+                else
+                {
+                    //Fix Arguments Path Seperators
+                    li.Add(args[i].Replace(@"/", @"\"));
+                }
+            }
+            //Ensure Array Has No Optional Parameters and fixed Slashes
+            args = li.ToArray();
 
             //HELP
-            if (args.Length < 3 || args[0].Equals("/?") || args[0].ToLower().Equals("/help"))
+            if (args.Length < 3)
             {
                 Help();
             }
