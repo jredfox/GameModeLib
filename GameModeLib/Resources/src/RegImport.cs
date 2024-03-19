@@ -706,8 +706,8 @@ namespace RegImport
             Dictionary<string, string> usrs = (IMPORT_USER || UNINSTALL_USER) ? GetSIDS(ARG_SID) : new Dictionary<string, string>(1);
             string Users = USER_CURRENT;
             Dictionary<string, Hive> USER_CACHE = new Dictionary<string, Hive>(256);
-            int Size = 0;
-            int ChkSize = CACHESIZE + 1;
+            bool CacheNoCap = CACHESIZE == -1;
+            bool CacheCap = !CacheNoCap;
 
             //Generate the Uninstall Data
             if (UNINSTALL_USER)
@@ -717,15 +717,17 @@ namespace RegImport
                     string sid = usr.Key;
                     string usrname = usr.Value;
                     bool lh = !sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase) && !SID_CURRENT.Equals(sid) && !sid.Equals(".DEFAULT") && !sid.Equals("UnKnown");
-
+                    int Size = USER_CACHE.Count;
                     //Load the Hive (NTUSER.DAT to it's SID)
                     Hive h = new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
                     if (lh)
                     {
                         h.LoadSafely($"Reg Loading User: {usrname} SID: {sid}", $"Failed To Load NTUSER.DAT For: {usrname} SID: {sid}");
-                        Size++;
-                        if(Size < ChkSize)
+
+                        if (Size < CACHESIZE || CacheNoCap)
+                        {
                             USER_CACHE[sid] = h;
+                        }
 
                         //If the NTUSER.DAT Hive has Failed To Load Skip it
                         if (!h.IsLoaded)
@@ -740,7 +742,7 @@ namespace RegImport
                     }
 
                     //Unload NTUSER.DAT for Memory Reasons
-                    if (lh && Size > CACHESIZE)
+                    if (lh && CacheCap && Size == CACHESIZE)
                         h.UnLoadSafely($"Unloading User: {usrname}", $"Failed To Unload NTUSER.DAT:{usrname}");
                 }
             }
@@ -1103,7 +1105,7 @@ namespace RegImport
                         {
                             string OtherSID = k.SubKey.Split('\\')[0];
                             //HOTLOAD NTUSER.DAT
-                            if(HOTLOAD_USER && OtherSID.StartsWith("S-") && !HotCache.ContainsKey(OtherSID) && RegKey.HLSIDS.ContainsKey(OtherSID))
+                            if (HOTLOAD_USER && OtherSID.StartsWith("S-") && !OtherSID.Equals(SID_CURRENT) && !HotCache.ContainsKey(OtherSID) && RegKey.HLSIDS.ContainsKey(OtherSID))
                             {
                                 //Unload Previous UnCached Hive If it's not null
                                 if (LastHive != null)
