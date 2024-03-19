@@ -503,8 +503,13 @@ namespace RegImport
             //Transform Usernames to SIDS when Possible
             else if (Program.HOTLOAD_USER && usr && this.SubKey.Length > 0)
             {
+                //Fix Lowercase SIDs as HotLoading checks for S- Case Sensitive to Be optimized
+                if(this.SubKey.StartsWith("s-"))
+                {
+                    this.SubKey = "S" + this.SubKey.Substring(1);
+                }
                 string uname = this.SubKey.Split('\\')[0].ToUpper();
-                int index = uname.Length > 0 ? uname.Length - 1 : 0;
+                int index = uname.Length;
                 if (!uname.StartsWith("S-") && !uname.Equals(".DEFAULT") && !uname.Equals("DEFAULT") && HLSIDS.ContainsKey(uname))
                 {
                     string sid = HLSIDS[uname];
@@ -529,8 +534,13 @@ namespace RegImport
             //Transform Usernames to SIDS when Possible
             else if (Program.HOTLOAD_USER && usr && subkey.Length > 0)
             {
+                //Fix Lowercase SIDs as HotLoading checks for S- Case Sensitive to Be optimized
+                if (subkey.StartsWith("s-"))
+                {
+                    subkey = "S" + subkey.Substring(1);
+                }
                 string uname = subkey.Split('\\')[0].ToUpper();
-                int index = uname.Length > 0 ? uname.Length - 1 : 0;
+                int index = uname.Length;
                 if (!uname.StartsWith("S-") && !uname.Equals(".DEFAULT") && !uname.Equals("DEFAULT") && HLSIDS.ContainsKey(uname))
                 {
                     string sid = HLSIDS[uname];
@@ -585,6 +595,7 @@ namespace RegImport
         public static string[] dirs;
         public static Dictionary<string, string> fields = new Dictionary<string, string>();
         public static string SID_CURRENT = GetCurrentSID();
+        public static string USER_CURRENT = GetUsersDir() + @"\";
         public const string NAME = "Reg Import";
         public const string VERSION = "1.0.0";
         public const string AUTHOR = "jredfox";
@@ -689,7 +700,7 @@ namespace RegImport
 
             //Start Main Program Process
             Dictionary<string, string> usrs = (IMPORT_USER || UNINSTALL_USER) ? GetSIDS(ARG_SID) : new Dictionary<string, string>(1);
-            string Users = GetUsersDir() + @"\";
+            string Users = USER_CURRENT;
             Dictionary<string, Hive> USER_CACHE = new Dictionary<string, Hive>(256);
             int Size = 0;
 
@@ -1049,6 +1060,9 @@ namespace RegImport
 
             //Gen Uninstall Data
             RegistryKey LastKey = null;
+            Hive LastHive = null;
+            List<Hive> HotCache = HOTLOAD_USER ? new List<Hive>(256) : null;
+            int HiveSize = 0;
             foreach (RegObj o in (IsHKCU ? reg.CurrentUser : (IsUser ? reg.User : reg.Global)))
             {
                 if (o is RegKey k)
@@ -1056,6 +1070,11 @@ namespace RegImport
                     try
                     {
                         Close(LastKey);
+                        if (HOTLOAD_USER && LastHive != null && HiveSize > 256)
+                        {
+                            LastHive.UnLoadSafely();
+                            LastHive = null;
+                        }
                         try
                         {
                             writer_current.Flush();
@@ -1069,6 +1088,17 @@ namespace RegImport
                         if (writer_org.IsDummy || IsUser && !k.SubKey.StartsWith(SID))
                         {
                             string OtherSID = k.SubKey.Split('\\')[0];
+                            //HOTLOAD NTUSER.DAT
+                            if(HOTLOAD_USER && OtherSID.StartsWith("S-") && !HasUser(OtherSID) && RegKey.HLSIDS.ContainsValue(OtherSID))
+                            {
+                                LastHive = new Hive(USER_CURRENT + $"{RegKey.HLSIDS.FirstOrDefault(x => x.Value.Equals(OtherSID)).Key}\\NTUSER.DAT", OtherSID, RegistryHive.Users);
+                                LastHive.LoadSafely();
+                                if(HiveSize < 257)
+                                {
+                                    HotCache.Add(LastHive);
+                                    HiveSize++;
+                                }
+                            }
                             if (!writer_cache.ContainsKey(OtherSID))
                             {
                                 RegWriter w = GetRegWriter(Path.GetFileNameWithoutExtension(reg.RelPath) + "_gen.reg", OtherSID, true);
@@ -1152,6 +1182,18 @@ namespace RegImport
             Close(writer_org);
             Close(LastKey);
 
+            //Close HotCached Hives
+            if(HOTLOAD_USER)
+            {
+                foreach (Hive h in HotCache)
+                {
+                    if (h.IsLoaded)
+                    {
+                        h.UnLoadSafely();
+                    }
+                }
+            }
+
             //Delete Blank Reg Files
             if (!writer_org.HasWritten)
             {
@@ -1168,6 +1210,21 @@ namespace RegImport
                     Console.Error.WriteLine(e);
                 }
             }
+        }
+
+        public static bool HasUser(string sid)
+        {
+            try
+            {
+                RegistryKey k = GetRegTree("HKU").OpenSubKey(sid, false);
+                Close(k);
+                return k != null;
+            }
+            catch (Exception)
+            {
+
+            }
+            return false;
         }
 
         public static void RegImport(RegFile reg, string SID)
