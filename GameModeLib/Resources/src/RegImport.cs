@@ -224,6 +224,7 @@ namespace RegImport
         public string File { get; set; }
         public string RelPath { get; set; }
         public bool IsMeta { get; set; }
+        public bool WasMeta { get; set; }
         public List<RegObj> Global { get; set; }
         public List<RegObj> User { get; set; }
         public List<RegObj> CurrentUser { get; set; }
@@ -248,6 +249,7 @@ namespace RegImport
             if (!this.IsMeta)
                 return this;
             RegFile reg = new RegFile(this.GetRegPath(this.File, sid), this.GetRegPath(this.RelPath, sid));
+            reg.WasMeta = true;
             reg.Parse();
             return reg;
         }
@@ -1157,7 +1159,7 @@ namespace RegImport
                             }
                             if (!writer_cache.ContainsKey(OtherSID))
                             {
-                                RegWriter w = GetRegWriter(Path.GetFileNameWithoutExtension(reg.RelPath) + "_gen.reg", OtherSID, true);
+                                RegWriter w = GetRegWriter(!reg.WasMeta ? (Path.GetFileNameWithoutExtension(reg.RelPath) + "_gen.reg") : reg.RelPath, OtherSID, true);
                                 writer_cache.Add(OtherSID, w);
                                 writer_current = w;
                             }
