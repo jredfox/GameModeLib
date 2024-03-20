@@ -11,7 +11,7 @@ REM ##  "*;Default" Applies to all current and new users                        
 REM ########################################################################################################################
 
 REM ## Set Vars ##
-echo Start !TIME!
+echo Time %TIME%
 set Settings=%~1
 set SIDS=%~2
 set rc=%~dp0Resources
@@ -97,7 +97,7 @@ call "!rc!\StickyKeysSetFlag.exe" "sync"
 
 REM ## Start ADMIN Only Modules ##
 call :CHKADMIN
-IF /I "!IsAdmin!" NEQ "T" (GOTO ENDADMIN)
+IF /I "!IsAdmin!" NEQ "T" (GOTO END)
 
 REM ## Disable Bitlocker on C Drive If Enabled ##
 IF /I "%Settings:~6,1%" NEQ "T" (GOTO BTLCKR)
@@ -120,12 +120,9 @@ IF "!chkedtamper!" NEQ "T" (call :CHKTAMPER)
 start /MIN cmd /c call "%~dp0InstallWDDisabler.bat" "F" ^>"!log_wd!" ^2^>^&1
 :WDDISABLE
 
-REM ## END ADMIN MODULES ##
-:ENDADMIN
-
 :END
 call :CLNUP
-echo Finish !TIME!
+echo Time %TIME%
 exit /b
 
 :GETISA

@@ -63,8 +63,10 @@ set regs=!regs!^;!g!PowerThrottling.reg
 :RPPThrottling
 
 REM ## Uninstall GameMode Lib Modules ##
-echo Uninstalling GameModeLib
+IF "!regs!" NEQ "" (
+echo Uninstalling GameModeLib Full Edition
 call "!rc!\RegImport.exe" "!ImportGlobal!!ImportUSR!FFT" "!SIDS!" "!udir!;NULL;!regs:~1!" "!gg!=Global/^;!u!=Users/<SID>/"
+)
 
 REM ## Main Module Revert Power Plan Settings ##
 IF /I "%Settings:~0,1%" NEQ "T" (GOTO MAIN)
@@ -106,24 +108,14 @@ REM ## Enable Windows Defender Low CPU Priority ##
 IF /I "%Settings:~7,1%" NEQ "T" (GOTO WDLOWCPU)
 echo Uninstalling GameModeLib Windows Defender Low CPU
 call :CHKTAMPER
-FOR /F "tokens=1-2" %%A IN ('type "!uglobal!\WDCPUStat.txt"') DO (
-set avg=%%A
-set lowcpu=%%B
-)
-del /F /Q /A "!uglobal!\WDCPUStat.txt" >nul 2>&1
-powershell -ExecutionPolicy Bypass -File "!rc!\WDSetLowCPU.ps1" -EnableLowCPU "!lowcpu!" -ScanAvg "!avg!"
+start /MIN cmd /c call "%~dp0InstallWDLowCPU.bat" "FT" ^>"!log_wdlowcpu!" ^2^>^&1
 :WDLOWCPU
 
 REM ## Fully Disable Windows Defender Except FireWall ##
 IF /I "%Settings:~8,1%" NEQ "T" (GOTO WDDISABLE)
-echo Uninstalling WDDisable
+echo Uninstalling WDDisabler
 IF "!chkedtamper!" NEQ "T" (call :CHKTAMPER)
-set wdreg=!uglobal!\WDDisable.reg
-reg import "!wdreg!"
-regedit /S "!wdreg!"
-schtasks /DELETE /tn "WDStaticDisabler" /F
-powershell -ExecutionPolicy Bypass -File "!rc!\WDEnable.ps1"
-powershell Remove-MpPreference -ExclusionPath "!rc!"
+start /MIN cmd /c call "%~dp0InstallWDDisabler.bat" "FT" ^>"!log_wd!" ^2^>^&1
 :WDDISABLE
 
 :END
