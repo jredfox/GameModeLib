@@ -276,10 +276,7 @@ namespace RegImport
 
             //Don't Parse Non Existing Files
             if (!System.IO.File.Exists(this.File))
-            {
-                Console.WriteLine("Skipping Reg:" + this.File);
                 return;
-            }
 
             int index_line = -1;
             RegKey LastKey = null;
