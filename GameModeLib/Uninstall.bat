@@ -13,10 +13,10 @@ set gg=!g!
 set rc=%~dp0Resources
 set udir=%~dp0Uninstall
 set uglobal=%~dp0Uninstall\Global
-set logs=%~dp0Logs\Uninstall
-set log_graphics=!logs!\log_graphics.txt
-set log_wd=!logs!\log_wd.txt
-set log_wdlowcpu=!logs!\log_wdlowcpu.txt
+set logs=%~dp0Logs
+set log_graphics=!logs!\log_uninstall_graphics.txt
+set log_wd=!logs!\log_uninstall_wd.txt
+set log_wdlowcpu=!logs!\log_uninstall_wdlowcpu.txt
 mkdir "!logs!" >nul 2>&1
 call :GETISA
 REM Enforce Non Admins Can Only Use Non Admin Reg Files
@@ -87,9 +87,7 @@ call "!rc!\PowerModeOverlay.exe" "sync"
 IF /I "%Settings:~1,1%" NEQ "T" (GOTO GRAPHICS)
 echo Uninstalling GameModeLib Graphics
 IF EXIST "!uglobal!\AMD3DSettings.bat" (
-call "!uglobal!\AMD3DSettings.bat"
-del /F /Q /A "!uglobal!\AMD3DSettings.bat"
-del /F /Q /A "!uglobal!\AMD3DSettings.zip"
+start /MIN cmd /c call "!uglobal!\AMD3DSettings.bat" "T" ^>"!log_graphics!" ^2^>^&1
 )
 :GRAPHICS
 
