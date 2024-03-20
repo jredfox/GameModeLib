@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Principal;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace RegImport
 {
@@ -228,6 +227,8 @@ namespace RegImport
         public List<RegObj> Global { get; set; }
         public List<RegObj> User { get; set; }
         public List<RegObj> CurrentUser { get; set; }
+
+        public static bool CanDelete = true;
 
         public RegFile(string file, string relpath)
         {
@@ -457,7 +458,7 @@ namespace RegImport
                 }
             }
             //Delete File After Parsing if Specified to do so
-            if (Program.REG_DEL)
+            if (Program.REG_DEL && CanDelete)
             {
                 try
                 {
@@ -738,6 +739,7 @@ namespace RegImport
             //Generate the Uninstall Data
             if (UNINSTALL_USER)
             {
+                RegFile.CanDelete = !IMPORT_USER;//Prevent Meta Regs from Deleting Itself Before Importing Could Be Obtained
                 foreach (var usr in usrs)
                 {
                     string sid = usr.Key;
@@ -771,6 +773,7 @@ namespace RegImport
                     if (lh && CacheCap && Size == CACHESIZE)
                         h.UnLoadSafely($"Unloading User: {usrname}", $"Failed To Unload NTUSER.DAT:{usrname}");
                 }
+                RegFile.CanDelete = true;
             }
 
             //Import Settings From Reg Files
@@ -1778,6 +1781,18 @@ namespace RegImport
                     Marshal.FreeHGlobal(lpTargetPath);
             }
             return null;
+        }
+
+        public static bool IsDirectoryEmpty(string path)
+        {
+            try
+            {
+                return !Directory.EnumerateFileSystemEntries(path).Any();
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
     }
 }
