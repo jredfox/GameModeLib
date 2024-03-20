@@ -4,8 +4,10 @@ setlocal enableDelayedExpansion
 REM #################### Usage #############################################################################################
 REM ##  Modules are T/F and are Indexed From 0-8 and is the First Argument example "TTTTTTTTT"                            ##
 REM ##  Main, Graphics, Sticky Keys, TouchPad, Full Screen Optimizations, PowerThrottling, BitLocker, WDLowCPU, WDDisable ##
-REM ##  SIDs or Usernames or * for all Users is the Second Argument Examples Below                                        ##
+REM ##  SIDs or Usernames or * for all Users is the Second Argument Examples Below.                                       ##
+REM ##  ".DEFAULT" User When your Signed Out "Default" All Future Users                                                   ##
 REM ##  "*" "jredfox;jgrayfox" "S-1-5-21-368394509-689051271-14200874-1012;S-1-5-21-368394509-689051271-14200874-1013"    ##
+REM ##  "*;Default" Applies to all current and new users                                                                  ##
 REM ########################################################################################################################
 
 REM ## Set Vars ##
