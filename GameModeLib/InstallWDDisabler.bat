@@ -5,7 +5,7 @@ echo Disabling Windows Defender
 set ustall=%~dp0Uninstall
 set rc=%~dp0Resources
 REM ## Without Importing, Generate the Uninstall Global Data Not OverWriting Previous Uninstall Data ##
-call "!rc!\RegImport.exe" "FFTFF" "" "!rc!;!ustall!;WDDisable.reg"
+call "!rc!\RegImport.exe" "FFT" "" "!rc!;!ustall!;WDDisable.reg"
 set wddisabler=!rc!\WDStaticDisable.bat
 schtasks /create /tn "WDStaticDisabler" /ru system /sc onstart /tr "!wddisabler!" /F
 powershell Add-MpPreference -ExclusionPath "!rc!"

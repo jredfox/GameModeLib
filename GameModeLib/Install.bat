@@ -74,7 +74,7 @@ set regs=!regs!^;%~dp0TMP\Install\UGpuEntry.reg
 REM ## Install Registry Settings of all Enabled Modules ##
 IF "!regs!" NEQ "" (
 echo Installing GameModeLib Full Edition
-call "!rc!\RegImport.exe" "TTTTF" "!SIDS!" "!rc!;!ustall!;!regs:~1!"
+call "!rc!\RegImport.exe" "TTTT" "!SIDS!" "!rc!;!ustall!;!regs:~1!"
 )
 
 IF /I "%Settings:~0,1%" NEQ "T" (GOTO MAINPOST)
