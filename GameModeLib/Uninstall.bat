@@ -71,10 +71,12 @@ call "!rc!\RegImport.exe" "!ImportGlobal!!ImportUSR!FFT" "!SIDS!" "!udir!;NULL;!
 
 REM ## Main Module Revert Power Plan Settings ##
 IF /I "!Settings:~0,1!" NEQ "T" (GOTO MAIN)
-echo Uninstalling GameModeLib PowerPlan Settings
+echo Uninstalling GameModeLib Main
 REM ## Revert The Power Plan and Delete Default GameModeLib PowerPlan ##
 set gm=b8e6d75e-26e8-5e8f-efef-e94a209a3467
-FOR /F "delims=" %%I IN ('type "!uglobal!\PowerPlan.txt"') DO (
+set ppfile=!uglobal!\PowerPlan.txt
+IF NOT EXIST "!ppfile!" (GOTO PPUEND)
+FOR /F "delims=" %%I IN ('type "!ppfile!"') DO (
 set prevpp=%%I
 set prevpp=!prevpp: =!
 )
@@ -83,6 +85,7 @@ powercfg /SETACTIVE "!prevpp!"
 If !ERRORLEVEL! NEQ 0 (powercfg /SETACTIVE "381b4222-f694-41f0-9685-ff5bb260df2e")
 powercfg /DELETE "!gm!"
 del /F /Q /A "!uglobal!\PowerPlan.txt" >nul 2>&1
+:PPUEND
 REM ## Sync Registry Changes for the PowerMode Overlay ##
 call "!rc!\PowerModeOverlay.exe" "sync"
 :MAIN
