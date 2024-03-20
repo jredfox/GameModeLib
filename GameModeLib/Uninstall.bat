@@ -3,6 +3,7 @@ setlocal enableDelayedExpansion
 
 REM ## Set Vars ##
 set Settings=%~1
+IF "!Settings!" EQU "" (exit /b)
 set ImportGlobal=!Settings:~0,1!
 set ImportUSR=!Settings:~1,1!
 set Settings=!Settings:~2!
