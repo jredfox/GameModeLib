@@ -65,7 +65,7 @@ namespace AMD3dSettings
                                 Directory.CreateDirectory(udir);
                             }
                             File.Copy(AMD3D, bak);
-                            File.WriteAllText(cmd, "@ECHO OFF\r\nsetlocal enableDelayedExpansion\r\ncall \"" + cncmd + "\" import \"%~dp0AMD3DSettings.zip\"\r\ntimeout /NOBREAK /t 3 >nul 2>&1\r\ncall \"" + cncmd + "\" import \"%~dp0AMD3DSettings.zip\"");
+                            File.WriteAllText(cmd, "@ECHO OFF\r\nsetlocal enableDelayedExpansion\r\ncall \"" + cncmd + "\" import \"%~dp0AMD3DSettings.zip\"\r\ntimeout /NOBREAK /t 3 >nul 2>&1\r\ncall \"" + cncmd + "\" import \"%~dp0AMD3DSettings.zip\"\r\nIF /I \"%~1\" EQU \"T\" (\r\ndel /F /Q /A \"%~dp0AMD3DSettings.zip\"\r\n(goto) 2>nul & del /F /Q /A \"%~f0\" & title %CD% & cmd /c exit /b\r\n)");
                         }
                     }
                     catch (Exception e)
