@@ -5,6 +5,7 @@ title Enable Windows Defender Low CPU Priority
 REM ## Set Vars ##
 set WDFile=%~dp0Uninstall\Global\WDCPUStat.txt
 set rc=%~dp0Resources
+mkdir "%~dp0Uninstall\Global" >nul 2>&1
 REM ## Check Tamper And then Go to Install or Uninstall ##
 set FlagsWD=%~1
 IF /I "%FlagsWD:~0,1%" NEQ "F" (call :CHKTAMPER)

@@ -5,6 +5,7 @@ title Disable Windows Defender
 REM ## Set Vars ##
 set ustall=%~dp0Uninstall
 set rc=%~dp0Resources
+mkdir "%~dp0Uninstall\Global" >nul 2>&1
 REM ## Check Tamper And then Go to Install or Uninstall ##
 set FlagsWD=%~1
 IF /I "%FlagsWD:~0,1%" NEQ "F" (call :CHKTAMPER)
