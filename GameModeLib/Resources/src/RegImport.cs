@@ -465,6 +465,11 @@ namespace RegImport
                 try
                 {
                     System.IO.File.Delete(this.File);
+                    string dir = Path.GetDirectoryName(this.File);
+                    if(Program.IsDirectoryEmpty(dir))
+                    {
+                        Directory.Delete(dir);
+                    }
                 }
                 catch (Exception e)
                 {
