@@ -11,6 +11,7 @@ set u=^<u^>
 set g=^<g^>
 set rc=%~dp0Resources
 set udir=%~dp0Uninstall
+set uglobal=%~dp0Uninstall\Global
 set logs=%~dp0Logs\Uninstall
 set log_graphics=!logs!\log_graphics.txt
 set log_wd=!logs!\log_wd.txt
@@ -56,7 +57,64 @@ REM ## Uninstall GameMode Lib Modules ##
 echo Uninstalling GameModeLib
 call "!rc!\RegImport.exe" "!ImportGlobal!!ImportUSR!FFT" "!SIDS!" "!udir!;NULL;!regs:~1!" "!g!=Global/^;!u!=Users/<SID>/"
 
-REM echo "!regs:~1!"
+REM ## Main Module Revert Power Plan Settings ##
+IF /I "%Settings:~0,1%" NEQ "T" (GOTO MAIN)
+echo Uninstalling GameModeLib PowerPlan Settings
+REM ## Revert The Power Plan and Delete Default GameModeLib PowerPlan ##
+set gm=b8e6d75e-26e8-5e8f-efef-e94a209a3467
+FOR /F "delims=" %%I IN ('type "!uglobal!\PowerPlan.txt"') DO (
+set prevpp=%%I
+set prevpp=!prevpp: =!
+)
+IF "!prevpp!" EQU "!gm!" (set prevpp=381b4222-f694-41f0-9685-ff5bb260df2e)
+powercfg /SETACTIVE "!prevpp!"
+If !ERRORLEVEL! NEQ 0 (powercfg /SETACTIVE "381b4222-f694-41f0-9685-ff5bb260df2e")
+powercfg /DELETE "!gm!"
+del /F /Q /A "!uglobal!\PowerPlan.txt" >nul 2>&1
+REM ## Sync Registry Changes for the PowerMode Overlay ##
+call "!rc!\PowerModeOverlay.exe" "sync"
+:MAIN
+
+IF /I "%Settings:~1,1%" NEQ "T" (GOTO GRAPHICS)
+echo Uninstalling GameModeLib Graphics
+IF EXIST "!uglobal!\AMD3DSettings.bat" (
+call "!uglobal!\AMD3DSettings.bat"
+del /F /Q /A "!uglobal!\AMD3DSettings.bat"
+del /F /Q /A "!uglobal!\AMD3DSettings.zip"
+)
+:GRAPHICS
+
+REM ## Uninstall Stickey Keys and Sync Changes ##
+IF /I "%Settings:~2,1%" NEQ "T" (GOTO STKYKYS)
+call "!rc!\StickyKeysSetFlag.exe" "sync"
+:STKYKYS
+
+REM ## Warn User that BitLocker Has to be Enabled through UI If they Tried Using Uninstall via CLI ##
+IF /I "%Settings:~6,1%" EQU "T" (echo ERR BitLocker Has To Be Manually Re-Installed Through Windows UI)
+
+REM ## Enable Windows Defender Low CPU Priority ##
+IF /I "%Settings:~7,1%" NEQ "T" (GOTO WDLOWCPU)
+echo Uninstalling GameModeLib Windows Defender Low CPU
+call :CHKTAMPER
+FOR /F "tokens=1-2" %%A IN ('type "!uglobal!\WDCPUStat.txt"') DO (
+set avg=%%A
+set lowcpu=%%B
+)
+del /F /Q /A "!uglobal!\WDCPUStat.txt" >nul 2>&1
+powershell -ExecutionPolicy Bypass -File "!rc!\WDSetLowCPU.ps1" -EnableLowCPU "!lowcpu!" -ScanAvg "!avg!"
+:WDLOWCPU
+
+REM ## Fully Disable Windows Defender Except FireWall ##
+IF /I "%Settings:~8,1%" NEQ "T" (GOTO WDDISABLE)
+echo Uninstalling WDDisable
+IF "!chkedtamper!" NEQ "T" (call :CHKTAMPER)
+set wdreg=!uglobal!\WDDisable.reg
+reg import "!wdreg!"
+regedit /S "!wdreg!"
+schtasks /DELETE /tn "WDStaticDisabler" /F
+powershell -ExecutionPolicy Bypass -File "!rc!\WDEnable.ps1"
+powershell Remove-MpPreference -ExclusionPath "!rc!"
+:WDDISABLE
 
 :END
 exit /b
@@ -76,4 +134,21 @@ exit /b
 set IsAdmin=F
 net session >nul 2>&1
 IF !ERRORLEVEL! EQU 0 (set IsAdmin=T)
+exit /b
+
+:CHKTAMPER
+set tameper=F
+FOR /F "delims=" %%I IN ('powershell "Get-MpComputerStatus | select IsTamperProtected"') DO (
+set a=%%I
+set a=!a: =!
+IF "!a!" EQU "True" (set tameper=T)
+IF "!a!" EQU "true" (set tameper=T)
+)
+IF "!tameper!" EQU "T" (
+cscript /NOLOGO "!rc!\MSG.vbs" "Disable Tamper Protection"
+start windowsdefender://threatsettings/
+set /p a="Press ENTER To Continue..."
+GOTO CHKTAMPER
+)
+set chkedtamper=T
 exit /b
