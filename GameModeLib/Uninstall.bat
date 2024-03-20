@@ -9,6 +9,7 @@ set Settings=%Settings:~2%
 set SIDS=%~2
 set u=^<u^>
 set g=^<g^>
+set gg=!g!
 set rc=%~dp0Resources
 set udir=%~dp0Uninstall
 set uglobal=%~dp0Uninstall\Global
@@ -18,6 +19,14 @@ set log_wd=!logs!\log_wd.txt
 set log_wdlowcpu=!logs!\log_wdlowcpu.txt
 mkdir "!logs!" >nul 2>&1
 call :GETISA
+REM Enforce Non Admins Can Only Use Non Admin Reg Files
+call :CHKADMIN
+IF "!IsAdmin!" NEQ "T" (
+set "SIDS="
+set ImportGlobal=F
+set ImportUSR=T
+set gg=^<ACESS_DENIED^>
+)
 
 REM ## Enable Registry Access ##
 call "!rc!\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul 2>&1
@@ -55,7 +64,7 @@ set regs=!regs!^;!g!PowerThrottling.reg
 
 REM ## Uninstall GameMode Lib Modules ##
 echo Uninstalling GameModeLib
-call "!rc!\RegImport.exe" "!ImportGlobal!!ImportUSR!FFT" "!SIDS!" "!udir!;NULL;!regs:~1!" "!g!=Global/^;!u!=Users/<SID>/"
+call "!rc!\RegImport.exe" "!ImportGlobal!!ImportUSR!FFT" "!SIDS!" "!udir!;NULL;!regs:~1!" "!gg!=Global/^;!u!=Users/<SID>/"
 
 REM ## Main Module Revert Power Plan Settings ##
 IF /I "%Settings:~0,1%" NEQ "T" (GOTO MAIN)
@@ -89,8 +98,11 @@ IF /I "%Settings:~2,1%" NEQ "T" (GOTO STKYKYS)
 call "!rc!\StickyKeysSetFlag.exe" "sync"
 :STKYKYS
 
+REM ## Skip Admin Only Modules ##
+IF "!IsAdmin!" NEQ "T" (GOTO END)
+
 REM ## Warn User that BitLocker Has to be Enabled through UI If they Tried Using Uninstall via CLI ##
-IF /I "%Settings:~6,1%" EQU "T" (echo ERR BitLocker Has To Be Manually Re-Installed Through Windows UI)
+IF /I "%Settings:~6,1%" EQU "T" (echo ERROR BitLocker Has To Be Manually Re-Installed Through Windows UI)
 
 REM ## Enable Windows Defender Low CPU Priority ##
 IF /I "%Settings:~7,1%" NEQ "T" (GOTO WDLOWCPU)
