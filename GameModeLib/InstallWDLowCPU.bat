@@ -16,7 +16,7 @@ IF /I "!FlagsWD:~1,1!" EQU "T" (GOTO UNINSTALL)
 echo Enabling Windows Defender Low CPU Priority
 IF NOT EXIST "!WDFile!" (
 call :WDCPUSTAT
-echo !scanavg! !enablelowcpu!>"!WDFile!"
+echo !scanavg! !enablelowcpu! !perfmode!>"!WDFile!"
 )
 powershell -ExecutionPolicy Bypass -File "!rc!\WDEnableLowCPU.ps1"
 exit /b
@@ -24,12 +24,13 @@ exit /b
 :UNINSTALL
 IF NOT EXIST "!WDFile!" (exit /b)
 echo Uninstalling Windows Defender Low CPU Priority
-FOR /F "tokens=1-2" %%A IN ('type "!WDFile!"') DO (
+FOR /F "tokens=1-3" %%A IN ('type "!WDFile!"') DO (
 set avg=%%A
 set lowcpu=%%B
+set perfmode=%%C
 )
 del /F /Q /A "!WDFile!" >nul 2>&1
-powershell -ExecutionPolicy Bypass -File "!rc!\WDSetLowCPU.ps1" -EnableLowCPU "!lowcpu!" -ScanAvg "!avg!"
+powershell -ExecutionPolicy Bypass -File "!rc!\WDSetLowCPU.ps1" -EnableLowCPU "!lowcpu!" -ScanAvg "!avg!" -PerfDrive "!perfmode!"
 exit /b
 
 :CHKTAMPER
@@ -51,13 +52,14 @@ exit /b
 :WDCPUSTAT
 set scanavg=NULL
 set enablelowcpu=NULL
-FOR /F "delims=" %%I IN ('powershell "Get-MpPreference | select ScanAvgCPULoadFactor, EnableLowCpuPriority"') DO (
+FOR /F "delims=" %%I IN ('powershell "Get-MpPreference | select ScanAvgCPULoadFactor, EnableLowCpuPriority, PerformanceModeStatus"') DO (
 set l=%%I
 set l=!l: =!
 IF "!l!" NEQ "" (set lineavg=%%I)
 )
-FOR /F "tokens=1,2 delims= " %%A IN ("!lineavg!") DO (
+FOR /F "tokens=1,2,3 delims= " %%A IN ("!lineavg!") DO (
 IF "%%A" NEQ "" (set scanavg=%%A)
 IF "%%B" NEQ "" (set enablelowcpu=%%B)
+IF "%%C" NEQ "" (set perfmode=%%C)
 )
 exit /b
