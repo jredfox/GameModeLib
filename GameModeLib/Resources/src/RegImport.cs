@@ -456,7 +456,8 @@ namespace RegImport
                 }
                 catch (Exception e)
                 {
-                    Console.Error.WriteLine("Error:" + e);
+                    Console.Error.WriteLine($"Error Parsing Line: '{line}'");
+                    Console.Error.WriteLine(e);
                 }
             }
             //Delete File After Parsing if Specified to do so
