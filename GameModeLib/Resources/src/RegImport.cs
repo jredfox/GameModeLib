@@ -416,7 +416,7 @@ namespace RegImport
                             for (int i = 0; (i + 3) < str_data.Length; i += 4)
                             {
                                 string h = str_data.Substring(i, 4);
-                                if (h.Equals("0000") && (i + 4) < str_data.Length)
+                                if (h.Equals("0000") && ((i + 4) < str_data.Length || indexes.Count == 0))
                                 {
                                     indexes.Add(i);//NULL terminator seperates the strings
                                 }
@@ -466,7 +466,7 @@ namespace RegImport
                 {
                     System.IO.File.Delete(this.File);
                     string dir = Path.GetDirectoryName(this.File);
-                    if(Program.IsDirectoryEmpty(dir))
+                    if (Program.IsDirectoryEmpty(dir))
                     {
                         Directory.Delete(dir);
                     }
@@ -509,7 +509,7 @@ namespace RegImport
             else if (Program.HOTLOAD_USER && usr && this.SubKey.Length > 0)
             {
                 //Fix Lowercase SIDs as HotLoading checks for S- Case Sensitive to Be optimized
-                if(this.SubKey.StartsWith("s-"))
+                if (this.SubKey.StartsWith("s-"))
                 {
                     this.SubKey = "S" + this.SubKey.Substring(1);
                 }
@@ -518,7 +518,7 @@ namespace RegImport
                 if (!uname.StartsWith("S-") && !uname.Equals(".DEFAULT") && !uname.Equals("DEFAULT"))
                 {
                     string sid = HLSIDS.FirstOrDefault(x => x.Value.Equals(uname, StringComparison.OrdinalIgnoreCase)).Key;
-                    if(sid != null)
+                    if (sid != null)
                         this.SubKey = sid + this.SubKey.Substring(index);
                 }
             }
@@ -614,22 +614,22 @@ namespace RegImport
             long milliseconds = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             List<string> li = new List<string>(args.Length + 1);
             //Handle Optional Parameters
-            for(int i = 0; i < args.Length; i++)
+            for (int i = 0; i < args.Length; i++)
             {
                 string s = args[i].Trim().ToLower();
-                if(s.Equals("/?") || s.Equals("/help"))
+                if (s.Equals("/?") || s.Equals("/help"))
                 {
                     Help();
                 }
-                else if(s.StartsWith("/cachesize:"))
+                else if (s.StartsWith("/cachesize:"))
                 {
                     CACHESIZE = Convert.ToInt32(s.Substring(11));
-                    if(CACHESIZE <= 0)
+                    if (CACHESIZE <= 0)
                     {
                         CACHESIZE = -1;
                     }
                 }
-                else if(s.StartsWith("/hotloadcachesize:"))
+                else if (s.StartsWith("/hotloadcachesize:"))
                 {
                     HOTCACHESIZE = Convert.ToInt32(s.Substring(18));
                     if (HOTCACHESIZE <= 0)
@@ -895,7 +895,7 @@ namespace RegImport
             //Optimization if HOTLoading is enabled use the cached Dictionary instead of waiting 100+MS for PrincipalSearcher
             if (HOTLOAD_USER && RegKey.HLSIDS != null)
             {
-                foreach(var pair in RegKey.HLSIDS)
+                foreach (var pair in RegKey.HLSIDS)
                 {
                     string sid = pair.Key;
                     string usrname = pair.Value;
@@ -1153,7 +1153,7 @@ namespace RegImport
                                 Hive h = new Hive(USER_CURRENT + $"{RegKey.HLSIDS[OtherSID]}\\NTUSER.DAT", OtherSID, RegistryHive.Users);
                                 h.LoadSafely($"Loading:{h.file_hive}", "");
 
-                                if(HotCache.Count < HOTCACHESIZE || HOTCACHESIZE == -1)
+                                if (HotCache.Count < HOTCACHESIZE || HOTCACHESIZE == -1)
                                 {
                                     HotCache[OtherSID] = h;
                                 }
@@ -1246,7 +1246,7 @@ namespace RegImport
             Close(LastKey);
 
             //Close HotCached Hives
-            if(HOTLOAD_USER)
+            if (HOTLOAD_USER)
             {
                 if (LastHive != null)
                 {
