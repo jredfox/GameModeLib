@@ -52,6 +52,7 @@ exit /b
 :WDCPUSTAT
 set scanavg=NULL
 set enablelowcpu=NULL
+set perfmode=NULL
 FOR /F "delims=" %%I IN ('powershell "Get-MpPreference | select ScanAvgCPULoadFactor, EnableLowCpuPriority, PerformanceModeStatus"') DO (
 set l=%%I
 set l=!l: =!
