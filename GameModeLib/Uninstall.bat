@@ -29,6 +29,9 @@ set ImportUSR=T
 set gg=^<ACESS_DENIED^>
 )
 
+REM ## Set HasDef ##
+call "%~dp0\Resources\FindSplitStr.exe" "!SIDS!" ";" "Default" "True"
+IF !ERRORLEVEL! NEQ 0 (set HasDef=F) ELSE (set HasDef=T)
 REM ## Enable Registry Access ##
 call "!rc!\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul 2>&1
 
@@ -54,9 +57,13 @@ set regs=!regs!^;!u!TouchPad.reg^;!g!ElanTech.reg^;!u!ElanTech.reg^;!g!Synaptics
 :RTOUCHPAD
 
 REM ## Disable Full Screen Optimizations ##
-IF /I "!Settings:~4,1!" NEQ "T" (GOTO RDISFSO)
+IF /I "!Settings:~4,1!" NEQ "T" (GOTO DISFSO)
 set regs=!regs!^;!g!DisableFSO.reg^;!u!DisableFSO.reg
-:RDISFSO
+IF "!HasDef!" NEQ "T" (GOTO DISFSO)
+set regs=!regs!^;Users\Default\DisableFSO_1_gen.reg
+del /F /S /Q /A "%PROGRAMFILES%\GameModeLib" >nul 2>&1
+rd /S /Q "%PROGRAMFILES%\GameModeLib" >nul 2>&1
+:DISFSO
 
 REM ## Disable Full Screen Optimizations ##
 IF /I "!Settings:~5,1!" NEQ "T" (GOTO RPPThrottling)

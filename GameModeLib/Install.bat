@@ -25,6 +25,9 @@ set log_wdlowcpu=!logs!\log_wdlowcpu.txt
 mkdir "!logs!" >nul 2>&1
 call :CLNUP
 call :GETISA
+REM ## Set HasDef ##
+call "%~dp0\Resources\FindSplitStr.exe" "!SIDS!" ";" "Default" "True"
+IF !ERRORLEVEL! NEQ 0 (set HasDef=F) ELSE (set HasDef=T)
 REM ## Enable Registry Access ##
 call "!rc!\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul 2>&1
 
@@ -57,10 +60,19 @@ call "!rc!\GenSynaptics.exe" "!syntp!"
 IF !ERRORLEVEL! EQU 0 (set regs=!regs!^;Synaptics.reg^;!syntp!)
 :RTOUCHPAD
 
-REM ## Disable Full Screen Optimizations ##
-IF /I "!Settings:~4,1!" NEQ "T" (GOTO RDISFSO)
+REM ## Disable Full Screen Optimizations All Current Users ##
+IF /I "!Settings:~4,1!" NEQ "T" (GOTO DISFSO)
 set regs=!regs!^;DisableFSO.reg
-:RDISFSO
+REM ## Disable Full Screen Optimizations For All New Users ##
+IF /I "!HasDef!" NEQ "T" (GOTO DISFSO)
+echo Installing GameModeLib DisableFSO For New Users
+set fso=%PROGRAMFILES%\GameModeLib\DisableFSO.bat
+IF NOT EXIST "!fso!" (
+mkdir "%PROGRAMFILES%\GameModeLib" >nul 2>&1
+copy /Y "!rc!\DisableFSO.bat" "!fso!" >nul
+)
+set regs=!regs!^;DisableFSO_1.reg
+:DISFSO
 
 REM ## Disable Full Screen Optimizations ##
 IF /I "!Settings:~5,1!" NEQ "T" (GOTO RPPThrottling)
@@ -98,15 +110,6 @@ call "!rc!\StickyKeysSetFlag.exe" "sync"
 REM ## Start ADMIN Only Modules ##
 call :CHKADMIN
 IF /I "!IsAdmin!" NEQ "T" (GOTO END)
-
-REM ## Disable Full Screen Optimizations For All New Users ##
-IF /I "!Settings:~4,1!" NEQ "T" (GOTO DISFSO)
-set fso=%PROGRAMFILES%\GameModeLib\DisableFSO.bat
-IF NOT EXIST "!fso!" (
-mkdir "%PROGRAMFILES%\GameModeLib" >nul 2>&1
-copy /Y "!rc!\DisableFSO.bat" "!fso!" >nul
-)
-:DISFSO
 
 REM ## Disable Bitlocker on C Drive If Enabled ##
 IF /I "!Settings:~6,1!" NEQ "T" (GOTO BTLCKR)
