@@ -99,6 +99,15 @@ REM ## Start ADMIN Only Modules ##
 call :CHKADMIN
 IF /I "!IsAdmin!" NEQ "T" (GOTO END)
 
+REM ## Disable Full Screen Optimizations For All New Users ##
+IF /I "!Settings:~4,1!" NEQ "T" (GOTO DISFSO)
+set fso=%PROGRAMFILES%\GameModeLib\DisableFSO.bat
+IF NOT EXIST "!fso!" (
+mkdir "%PROGRAMFILES%\GameModeLib" >nul 2>&1
+copy /Y "!rc!\DisableFSO.bat" "!fso!" >nul
+)
+:DISFSO
+
 REM ## Disable Bitlocker on C Drive If Enabled ##
 IF /I "!Settings:~6,1!" NEQ "T" (GOTO BTLCKR)
 echo Disabling Bitlocker OS "C:" Drive
