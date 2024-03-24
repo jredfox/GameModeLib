@@ -11,6 +11,10 @@
 #include <string>
 #include <iomanip>
 #include <fcntl.h>
+#include <sstream>
+#include <cstring>
+#include <vector>
+#include <map>
 #include <io.h>
 #include <iostream>
 
@@ -153,7 +157,7 @@ void EnumerateProfilesOnSystem(NvDRSSessionHandle hSession)
 	NvDRSProfileHandle hProfile = 0;
 	unsigned int index = 0;
 	std::string pname = "3D App - Default Global Settings";
-	while ((status = NvAPI_DRS_EnumProfiles(hSession, index, &hProfile)) == NVAPI_OK) 
+	while ((status = NvAPI_DRS_EnumProfiles(hSession, index, &hProfile)) == NVAPI_OK)
 	{
 		index++;
 		NVDRS_PROFILE profileInformation = { 0 };
@@ -165,13 +169,57 @@ void EnumerateProfilesOnSystem(NvDRSSessionHandle hSession)
 		PrintError(status);
 }*/
 
-#include <sstream>
-#include <cstring>
+std::wstring ToWString(bool b)
+{
+	return b ? L"True" : L"False";
+}
+
 std::wstring ToHex(NvU32 v)
 {
 	std::wstringstream ss;
-	ss << L"0x" << std::setfill(L'0') << std::setw(8) << std::hex << v;
+	ss << L"0x" << std::uppercase << std::setfill(L'0') << std::setw(8) << std::hex << v;
 	return ss.str();
+}
+
+std::vector<std::wstring> Split(const std::wstring& input, wchar_t c) {
+	std::vector<std::wstring> arr;
+	size_t startPos = 0;
+	size_t foundPos = input.find(c, startPos);
+	while (foundPos != std::wstring::npos)
+	{
+		std::wstring sub = input.substr(startPos, foundPos - startPos);
+		arr.push_back(sub);
+		startPos = foundPos + 1;
+		foundPos = input.find(c, startPos);
+	}
+	std::wstring lastSub = input.substr(startPos);
+	arr.push_back(lastSub);
+	return arr;
+}
+
+DWORD FromHex(std::wstring v)
+{
+	return std::stoul(v, nullptr, 16);
+}
+
+std::wstring tolower(std::wstring s)
+{
+	for (auto& c : s)
+		c = tolower(c);
+	return s;
+}
+
+std::wstring ctow(const char* src)
+{
+	return std::wstring(src, src + strlen(src));
+}
+
+int IndexOf(std::wstring str, std::wstring key)
+{
+	size_t found = str.find(key);
+	if (found != std::string::npos)
+		return static_cast<int>(found);
+	return -1;
 }
 
 void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
@@ -180,15 +228,15 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 	NVDRS_SETTING USetting = { 0 };
 	USetting.version = NVDRS_SETTING_VER;
 	NvAPI_Status ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, VSYNCMODE_ID, &USetting);
-	std::wcout << ToHex((ustatus == NVAPI_OK ? USetting.u32CurrentValue : VSYNCMODE_PASSIVE));
+	std::wcout << ToHex(VSYNCMODE_ID) << L"=" << ToHex((ustatus == NVAPI_OK ? USetting.u32CurrentValue : VSYNCMODE_PASSIVE));
 	ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, PREFERRED_PSTATE_ID, &USetting);
-	std::wcout << L" " << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : PREFERRED_PSTATE_OPTIMAL_POWER);
+	std::wcout << L";" << ToHex(PREFERRED_PSTATE_ID) << L"=" << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : PREFERRED_PSTATE_OPTIMAL_POWER);
 	ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SHIM_MCCOMPAT_ID, &USetting);
-	std::wcout << L" " << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : SHIM_MCCOMPAT_AUTO_SELECT);
+	std::wcout << L";" << ToHex(SHIM_MCCOMPAT_ID) << L"=" << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : SHIM_MCCOMPAT_AUTO_SELECT);
 	ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SHIM_RENDERING_MODE_ID, &USetting);
-	std::wcout << L" " << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : SHIM_RENDERING_MODE_AUTO_SELECT);
+	std::wcout << L";" << ToHex(SHIM_RENDERING_MODE_ID) << L"=" << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : SHIM_RENDERING_MODE_AUTO_SELECT);
 	ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SHIM_RENDERING_OPTIONS_ID, &USetting);
-	std::wcout << L" " << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE);
+	std::wcout << L";" << ToHex(SHIM_RENDERING_OPTIONS_ID) << L"=" << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE);
 	std::wcout << std::endl;
 
 	//Set V-SYNC to Default Value
@@ -252,9 +300,122 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 		PrintError(status, L"OPTIMUS_3");
 }
 
+void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile, std::map<DWORD, DWORD> map)
+{
+	int index = 0;
+	std::map<DWORD, DWORD>::iterator it;
+	for (it = map.begin(); it != map.end(); it++)
+	{
+		DWORD SETTING_ID = it->first;
+		DWORD SETTING_VALUE = it->second;
+
+		//Print an NVIDIA Setting before setting it
+		NVDRS_SETTING USetting = { 0 };
+		USetting.version = NVDRS_SETTING_VER;
+		NvAPI_Status ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SETTING_ID, &USetting);
+		std::wcout << (index != 0 ? L";" : L"") << ToHex(SETTING_ID) << L"=" << (ustatus == NVAPI_OK ? ToHex(USetting.u32CurrentValue) : L"NULL");
+
+		//Set an NVIDIA Control Pannel Setting
+		NVDRS_SETTING setting = { 0 };
+		setting.version = NVDRS_SETTING_VER;
+		setting.settingId = SETTING_ID;
+		setting.settingType = NVDRS_DWORD_TYPE;
+		setting.u32CurrentValue = SETTING_VALUE;
+		NvAPI_Status status = NvAPI_DRS_SetSetting(hSession, hProfile, &setting);
+		if (status != NVAPI_OK)
+			PrintError(status, L"Setting ID:" + ToHex(SETTING_ID));
+		index++;
+	}
+	std::wcout << std::endl;
+}
+
+void RestoreDefaults(NvDRSSessionHandle hSession, NvDRSProfileHandle Base, NvDRSProfileHandle Global)
+{
+	NvAPI_Status status = NvAPI_DRS_RestoreProfileDefault(hSession, Base);
+	if (status != NVAPI_OK)
+		PrintError(status, L"RESTORE_BASE_PROFILE");
+	status = NvAPI_DRS_RestoreProfileDefault(hSession, Global);
+	if (status != NVAPI_OK)
+		PrintError(status, L"RESTORE_GLOBAL_PROFILE");
+}
+
+void Help()
+{
+	std::wcout << L"NVIDIA3DSettings.exe" << std::endl;
+	std::wcout << L"NVIDIA3DSettings.exe import <SETTING_ID=DWORD_VALUE;SETTING_ID2=DWORDVALUE2>" << std::endl;
+	std::wcout << L"NVIDIA3DSettings.exe export" << std::endl;
+	std::wcout << L"/Restore  Restores NVIDIA3D Settings on the Base & Global Profiles Before Importing or Exporting" << std::endl;
+	std::wcout << L"/Restore:true Restores NVIDIA3D Settings on the Base & Global Profiles After Exporting" << std::endl;
+	exit(0);
+}
+
 int main(int argc, char **argv)
 {
 	setlocale(LC_CTYPE, "");
+	bool SetIds = false;
+	bool Export = false;
+	bool Restore = false;
+	bool RestoreAfterExport = false;
+	std::map<DWORD, DWORD> map;
+	std::vector<std::wstring> args;
+	//Handle Arguments if any
+	if (argc > 1)
+	{
+		//Handle the Arguments
+		for (int i = 1; i < argc; i++)
+		{
+			std::wstring w = tolower(ctow(argv[i]));
+			if (w == L"/?" || w == L"/help")
+			{
+				Help();
+			}
+			else if (w == L"/restore:true")
+			{
+				RestoreAfterExport = true;
+			}
+			else if (w == L"/restore" || w == L"/restore:false")
+			{
+				Restore = true;
+			}
+			else
+			{
+				args.push_back(w);
+			}
+		}
+		if (static_cast<int>(args.size()) > 0)
+		{
+			std::wstring arg1 = args[0];
+			if (arg1 == L"import" || arg1 == L"set")
+			{
+				std::wstring strsettings = args[1];
+				SetIds = true;
+				std::vector<std::wstring> arr = Split(strsettings, L';');
+				for (auto it = std::begin(arr); it != std::end(arr); ++it)
+				{
+					std::wstring setting_entry = *it;
+					int index_split = IndexOf(setting_entry, L"=");
+					if (index_split == -1)
+					{
+						std::wcerr << L"ERROR Parsing:\"" << strsettings << "\"" << std::endl;
+						exit(-1);
+					}
+					DWORD setting_id = FromHex(setting_entry.substr(0, index_split));
+					DWORD setting_value = FromHex(setting_entry.substr(index_split + 1));
+					map[setting_id] = setting_value;
+				}
+			}
+			else if (arg1 == L"export")
+			{
+				Export = true;
+			}
+			//Help Command
+			else
+			{
+				Help();
+			}
+		}
+	}
+
 	// (0) Initialize NVAPI. This must be done first of all
 	NvAPI_Status status = NvAPI_Initialize();
 	if (status != NVAPI_OK)
@@ -280,10 +441,35 @@ int main(int argc, char **argv)
 	status = NvAPI_DRS_GetCurrentGlobalProfile(hSession, &GlobalProfile);
 	if (status != NVAPI_OK)
 		PrintError(status, L"GET_PROFILE_GLOBAL");
-	
+
+	//Restores the Global & Default Profile if flagged
+	if (Restore)
+	{
+		RestoreDefaults(hSession, hProfile, GlobalProfile);
+	}
+
+	//Export (Print Current Settings)
+	if (Export)
+	{
+		//TODO:
+
+		if (RestoreAfterExport)
+		{
+			RestoreDefaults(hSession, hProfile, GlobalProfile);
+		}
+	}
+	//Set Array of Setting ID to Setting Values (Uninstall For GameModeLib)
+	else if (SetIds) 
+	{
+		SetSettings(hSession, hProfile, map);
+		SetSettings(hSession, GlobalProfile, map);
+	}
 	//Apply Preffered Graphics Processor & Other Settings to All Default Global Profiles
-	SetSettings(hSession, hProfile);
-	SetSettings(hSession, GlobalProfile);
+	else
+	{
+		SetSettings(hSession, hProfile);
+		SetSettings(hSession, GlobalProfile);
+	}
 
 	// Save Changes
 	status = NvAPI_DRS_SaveSettings(hSession);
