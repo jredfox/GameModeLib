@@ -26,7 +26,6 @@ void PrintError(NvAPI_Status status, std::wstring id)
 	NvAPI_GetErrorMessage(status, szDesc);
 	printf("NVAPI Error: %s ", szDesc);
 	std::wcout << id << std::endl;
-	exit(-1);
 }
 
 void PrintError(NvAPI_Status status)
@@ -349,7 +348,7 @@ void Help()
 	exit(0);
 }
 
-void ExportProfile(NvDRSSessionHandle hSession, NvDRSProfileHandle profile)
+void ExportProfile(NvDRSSessionHandle hSession, NvDRSProfileHandle profile, std::map<DWORD, DWORD> &expmap)
 {
 	//INITIALIZE THE MAP
 	std::map<std::wstring, NvU32> SETTINGS_GLOBAL;
@@ -456,12 +455,8 @@ void ExportProfile(NvDRSSessionHandle hSession, NvDRSProfileHandle profile)
 	SETTINGS_GLOBAL[L"SET_VAB_DATA_ID"] = 0x00AB8687;
 	SETTINGS_GLOBAL[L"VSYNCMODE_ID"] = 0x00A879CF;
 	SETTINGS_GLOBAL[L"VSYNCTEARCONTROL_ID"] = 0x005A375C;
-	
-	//Initialize the Export Map
-	std::map<DWORD, DWORD> expmap;
 
 	//Populate the Map From all Known Settings
-	int index = 0;
 	std::map<std::wstring, NvU32>::iterator it;
 	for (it = SETTINGS_GLOBAL.begin(); it != SETTINGS_GLOBAL.end(); it++)
 	{
@@ -491,13 +486,16 @@ void ExportProfile(NvDRSSessionHandle hSession, NvDRSProfileHandle profile)
 			PrintError(status, L"EXPORT_GET_PROFILE_SETTINGS");
 			return;
 		}
-		//Print All Settings
-		for (i = 0; i < numSetRead; i++)
+		else 
 		{
-			NVDRS_SETTING setting = setArray[i];
-			if (setting.settingType == NVDRS_DWORD_TYPE)
+			//Print All Settings
+			for (i = 0; i < numSetRead; i++)
 			{
-				expmap[setting.settingId] = setting.u32CurrentValue;
+				NVDRS_SETTING setting = setArray[i];
+				if (setting.settingType == NVDRS_DWORD_TYPE)
+				{
+					expmap[setting.settingId] = setting.u32CurrentValue;
+				}
 			}
 		}
 	}
@@ -573,16 +571,25 @@ int main(int argc, char **argv)
 	// (0) Initialize NVAPI. This must be done first of all
 	NvAPI_Status status = NvAPI_Initialize();
 	if (status != NVAPI_OK)
+	{
 		PrintError(status, L"INIT");
+		exit(-1);
+	}
 	// (1) Create the session handle to access driver settings
 	NvDRSSessionHandle hSession = 0;
 	status = NvAPI_DRS_CreateSession(&hSession);
-	if (status != NVAPI_OK)
+	if (status != NVAPI_OK) 
+	{
 		PrintError(status, L"SESSION");
+		exit(-1);
+	}
 	// (2) load all the system settings into the session
 	status = NvAPI_DRS_LoadSettings(hSession);
-	if (status != NVAPI_OK)
+	if (status != NVAPI_OK) 
+	{
 		PrintError(status, L"GET_SETTINGS");
+		exit(-1);
+	}
 	// (3) Obtain the Base profile. Any setting needs to be inside
 	// a profile, putting a setting on the Base Profile enforces it
 	// for all the processes on the system
@@ -605,16 +612,26 @@ int main(int argc, char **argv)
 	//Export (Print Current Settings)
 	if (Export)
 	{
-		ExportProfile(hSession, hProfile);
-		ExportProfile(hSession, GlobalProfile);
+		std::map<DWORD, DWORD> expmap;
+		//Export Profile's Data into the Map
+		ExportProfile(hSession, hProfile, expmap);
+		ExportProfile(hSession, GlobalProfile, expmap);
+		//Print the Profile's Data
+		std::map<DWORD, DWORD>::iterator expit;
+		int index = 0;
+		for (expit = expmap.begin(); expit != expmap.end(); expit++)
+		{
+			std::wcout << (index != 0 ? L";" : L"") << ToHex(expit->first) << L"=" << ToHex(expit->second);
+			index++;
+		}
+		//Restore After Default If Flagged
 		if (RestoreAfterExport)
 		{
 			RestoreDefaults(hSession, hProfile, GlobalProfile);
 		}
 	}
-
 	//Set Array of Setting ID to Setting Values (Uninstall For GameModeLib)
-	else if (SetIds) 
+	else if (SetIds)
 	{
 		SetSettings(hSession, hProfile, map);
 		SetSettings(hSession, GlobalProfile, map);
