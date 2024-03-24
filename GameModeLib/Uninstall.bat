@@ -18,6 +18,7 @@ set logs=%~dp0Logs
 set log_graphics=!logs!\log_uninstall_graphics.txt
 set log_wd=!logs!\log_uninstall_wd.txt
 set log_wdlowcpu=!logs!\log_uninstall_wdlowcpu.txt
+set log_nvidia=!logs!\log_uninstall_nvidia.txt
 mkdir "!logs!" >nul 2>&1
 call :GETISA
 REM Enforce Non Admins Can Only Use Non Admin Reg Files
@@ -102,6 +103,16 @@ echo Uninstalling GameModeLib Graphics
 IF EXIST "!uglobal!\AMD3DSettings.bat" (
 start /MIN cmd /c call "!uglobal!\AMD3DSettings.bat" "T" ^>"!log_graphics!" ^2^>^&1
 )
+set nvidiafile=!uglobal!\NVIDIA.txt
+REM ## GET NVIDIA Settings From FILE ##
+IF NOT EXIST "!nvidiafile!" (GOTO GRAPHICS)
+FOR /F "delims=" %%I IN ('type "!nvidiafile!"') DO (
+set nvset=%%I
+set nvset=!nvset: =!
+IF "!nvset!" NEQ "" (GOTO NVBRK)
+)
+:NVBRK
+start /MIN cmd /c call "!rc!\NVIDIA3DSettings.exe" "import" "!nvset!" ^>"!log_nvidia!" ^2^>^&1
 :GRAPHICS
 
 REM ## Uninstall Stickey Keys and Sync Changes ##
