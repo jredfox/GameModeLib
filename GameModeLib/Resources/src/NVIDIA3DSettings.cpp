@@ -25,8 +25,12 @@ void PrintError(NvAPI_Status status, std::wstring id)
 	exit(-1);
 }
 
-bool DisplayProfileContents(NvDRSSessionHandle hSession,
-	NvDRSProfileHandle hProfile)
+void PrintError(NvAPI_Status status)
+{
+	PrintError(status, L"");
+}
+
+bool DisplayProfileContents(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 {
 	// (0) this function assumes that the hSession and hProfile are
 	// valid handles obtained from nvapi.
@@ -142,32 +146,50 @@ bool DisplayProfileContents(NvDRSSessionHandle hSession,
 	return true;
 }
 
-int main(int argc, char **argv)
+/**
+void EnumerateProfilesOnSystem(NvDRSSessionHandle hSession)
 {
-	setlocale(LC_CTYPE, "");
-	// (0) Initialize NVAPI. This must be done first of all
-	NvAPI_Status status = NvAPI_Initialize();
-	if (status != NVAPI_OK)
-		PrintError(status, L"INIT");
-	// (1) Create the session handle to access driver settings
-	NvDRSSessionHandle hSession = 0;
-	status = NvAPI_DRS_CreateSession(&hSession);
-	if (status != NVAPI_OK)
-		PrintError(status, L"SESSION");
-	// (2) load all the system settings into the session
-	status = NvAPI_DRS_LoadSettings(hSession);
-	if (status != NVAPI_OK)
-		PrintError(status, L"GET_SETTINGS");
-	// (3) Obtain the Base profile. Any setting needs to be inside
-	// a profile, putting a setting on the Base Profile enforces it
-	// for all the processes on the system
+	NvAPI_Status status;
 	NvDRSProfileHandle hProfile = 0;
-	status = NvAPI_DRS_GetBaseProfile(hSession, &hProfile);
-	if (status != NVAPI_OK)
-		PrintError(status, L"GET_BASE_PROFILE");
+	unsigned int index = 0;
+	std::string pname = "3D App - Default Global Settings";
+	while ((status = NvAPI_DRS_EnumProfiles(hSession, index, &hProfile)) == NVAPI_OK) 
+	{
+		index++;
+		NVDRS_PROFILE profileInformation = { 0 };
+		profileInformation.version = NVDRS_PROFILE_VER;
+		status = NvAPI_DRS_GetProfileInfo(hSession, hProfile, &profileInformation);
+		wprintf(L"Profile Name: %s\n", profileInformation.profileName);
+	}
+	if (status != NVAPI_END_ENUMERATION && status != NVAPI_OK)
+		PrintError(status);
+}*/
 
-	//Print Profile
-	//DisplayProfileContents(hSession, hProfile);
+#include <sstream>
+#include <cstring>
+std::wstring ToHex(NvU32 v)
+{
+	std::wstringstream ss;
+	ss << L"0x" << std::setfill(L'0') << std::setw(8) << std::hex << v;
+	return ss.str();
+}
+
+void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
+{
+	//Print Previous Values Seperated by Spaces
+	NVDRS_SETTING USetting = { 0 };
+	USetting.version = NVDRS_SETTING_VER;
+	NvAPI_Status ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, VSYNCMODE_ID, &USetting);
+	std::wcout << ToHex((ustatus == NVAPI_OK ? USetting.u32CurrentValue : VSYNCMODE_PASSIVE));
+	ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, PREFERRED_PSTATE_ID, &USetting);
+	std::wcout << L" " << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : PREFERRED_PSTATE_OPTIMAL_POWER);
+	ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SHIM_MCCOMPAT_ID, &USetting);
+	std::wcout << L" " << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : SHIM_MCCOMPAT_AUTO_SELECT);
+	ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SHIM_RENDERING_MODE_ID, &USetting);
+	std::wcout << L" " << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : SHIM_RENDERING_MODE_AUTO_SELECT);
+	ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SHIM_RENDERING_OPTIONS_ID, &USetting);
+	std::wcout << L" " << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE);
+	std::wcout << std::endl;
 
 	//Set V-SYNC to Default Value
 	NVDRS_SETTING drsSetting = { 0 };
@@ -175,7 +197,7 @@ int main(int argc, char **argv)
 	drsSetting.settingId = VSYNCMODE_ID;
 	drsSetting.settingType = NVDRS_DWORD_TYPE;
 	drsSetting.u32CurrentValue = VSYNCMODE_PASSIVE;
-	status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting);
+	NvAPI_Status status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting);
 	if (status != NVAPI_OK)
 		PrintError(status, L"V-SYNC");
 
@@ -228,6 +250,40 @@ int main(int argc, char **argv)
 	status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting3);
 	if (status != NVAPI_OK)
 		PrintError(status, L"OPTIMUS_3");
+}
+
+int main(int argc, char **argv)
+{
+	setlocale(LC_CTYPE, "");
+	// (0) Initialize NVAPI. This must be done first of all
+	NvAPI_Status status = NvAPI_Initialize();
+	if (status != NVAPI_OK)
+		PrintError(status, L"INIT");
+	// (1) Create the session handle to access driver settings
+	NvDRSSessionHandle hSession = 0;
+	status = NvAPI_DRS_CreateSession(&hSession);
+	if (status != NVAPI_OK)
+		PrintError(status, L"SESSION");
+	// (2) load all the system settings into the session
+	status = NvAPI_DRS_LoadSettings(hSession);
+	if (status != NVAPI_OK)
+		PrintError(status, L"GET_SETTINGS");
+	// (3) Obtain the Base profile. Any setting needs to be inside
+	// a profile, putting a setting on the Base Profile enforces it
+	// for all the processes on the system
+	NvDRSProfileHandle hProfile = 0;
+	status = NvAPI_DRS_GetBaseProfile(hSession, &hProfile);
+	if (status != NVAPI_OK)
+		PrintError(status, L"GET_BASE_PROFILE");
+
+	NvDRSProfileHandle GlobalProfile = 0;
+	status = NvAPI_DRS_GetCurrentGlobalProfile(hSession, &GlobalProfile);
+	if (status != NVAPI_OK)
+		PrintError(status, L"GET_PROFILE_GLOBAL");
+	
+	//Apply Preffered Graphics Processor & Other Settings to All Default Global Profiles
+	SetSettings(hSession, hProfile);
+	SetSettings(hSession, GlobalProfile);
 
 	// Save Changes
 	status = NvAPI_DRS_SaveSettings(hSession);
