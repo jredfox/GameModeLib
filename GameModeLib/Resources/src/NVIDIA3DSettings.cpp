@@ -1,30 +1,27 @@
 //NVIDIA3D Settings
 //3d Settings --> Preffered Graphics Processor --> High Performance
-//3d Settings --> Preffered OpenGL Graphics Processor --> High Performance?
-//3d Settings --> Preffered D3D Graphics Processor --> High Performance?
 //3d Settings --> VSYNC --> Application Settings
 //3d Settings --> PowerMode --> Optimal Power
 
-//TODO: 3D Settings Profile, Global Profile, All Settings Per Profile
 #include "Windows.h"
 #include "nvapi.h"
 #include "NvApiDriverSettings.h"
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <string>
+#include <iomanip>
+#include <fcntl.h>
+#include <io.h>
 #include <iostream>
 
 #pragma comment (lib, "nvapi.lib")
 
-/*
- This function is used to print to the command line a text message
- describing the nvapi error and quits
-*/
-void PrintError(NvAPI_Status status)
+void PrintError(NvAPI_Status status, std::wstring id)
 {
 	NvAPI_ShortString szDesc = { 0 };
 	NvAPI_GetErrorMessage(status, szDesc);
-	printf(" NVAPI error: %s\n", szDesc);
+	printf("NVAPI Error: %s ", szDesc);
+	std::wcout << id << std::endl;
 	exit(-1);
 }
 
@@ -43,7 +40,7 @@ bool DisplayProfileContents(NvDRSSessionHandle hSession,
 		hProfile,
 		&profileInformation);
 	if (status != NVAPI_OK) {
-		PrintError(status);
+		PrintError(status, L"GET_PROFILE");
 		return false;
 	}
 	wprintf(L"Profile Name: %s\n", profileInformation.profileName);
@@ -71,7 +68,7 @@ bool DisplayProfileContents(NvDRSSessionHandle hSession,
 			&numAppsRead,
 			appArray);
 		if (status != NVAPI_OK) {
-			PrintError(status);
+			PrintError(status, L"GET_PROFILE_INFO");
 			delete[] appArray;
 			return false;
 		}
@@ -97,7 +94,7 @@ bool DisplayProfileContents(NvDRSSessionHandle hSession,
 			&numSetRead,
 			setArray);
 		if (status != NVAPI_OK) {
-			PrintError(status);
+			PrintError(status, L"GET_PROFILE_ENUM_SETTINGS");
 			return false;
 		}
 		for (i = 0; i < numSetRead; i++) {
@@ -145,32 +142,29 @@ bool DisplayProfileContents(NvDRSSessionHandle hSession,
 	return true;
 }
 
-#include <iomanip>
-#include <fcntl.h>
-#include <io.h>
-
 int main(int argc, char **argv)
 {
 	setlocale(LC_CTYPE, "");
 	// (0) Initialize NVAPI. This must be done first of all
 	NvAPI_Status status = NvAPI_Initialize();
 	if (status != NVAPI_OK)
-		PrintError(status);
+		PrintError(status, L"INIT");
 	// (1) Create the session handle to access driver settings
 	NvDRSSessionHandle hSession = 0;
 	status = NvAPI_DRS_CreateSession(&hSession);
 	if (status != NVAPI_OK)
-		PrintError(status);
+		PrintError(status, L"SESSION");
 	// (2) load all the system settings into the session
 	status = NvAPI_DRS_LoadSettings(hSession);
 	if (status != NVAPI_OK)
-		PrintError(status);
+		PrintError(status, L"GET_SETTINGS");
 	// (3) Obtain the Base profile. Any setting needs to be inside
 	// a profile, putting a setting on the Base Profile enforces it
 	// for all the processes on the system
 	NvDRSProfileHandle hProfile = 0;
 	status = NvAPI_DRS_GetBaseProfile(hSession, &hProfile);
-	if (status != NVAPI_OK)		PrintError(status);
+	if (status != NVAPI_OK)
+		PrintError(status, L"GET_BASE_PROFILE");
 
 	//Print Profile
 	//DisplayProfileContents(hSession, hProfile);
@@ -183,7 +177,7 @@ int main(int argc, char **argv)
 	drsSetting.u32CurrentValue = VSYNCMODE_PASSIVE;
 	status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting);
 	if (status != NVAPI_OK)
-		PrintError(status);
+		PrintError(status, L"V-SYNC");
 
 	//Set PowerMode to PREFERRED_PSTATE_OPTIMAL_POWER
 	drsSetting = { 0 };
@@ -193,17 +187,7 @@ int main(int argc, char **argv)
 	drsSetting.u32CurrentValue = PREFERRED_PSTATE_OPTIMAL_POWER;
 	status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting);
 	if (status != NVAPI_OK)
-		PrintError(status);
-
-	//Set Preffered OpenGL Graphics Processor to 2 Is this High Performance?
-	drsSetting = { 0 };
-	drsSetting.version = NVDRS_SETTING_VER;
-	drsSetting.settingId = OGL_IMPLICIT_GPU_AFFINITY_ID;
-	drsSetting.settingType = NVDRS_DWORD_TYPE;
-	drsSetting.u32CurrentValue = 2;
-	status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting);
-	if (status != NVAPI_OK)
-		PrintError(status);
+		PrintError(status, L"POWER");
 
 	//Set Preffered Graphics Processor to High Performance
 	bool ForceIntegrated = false;
@@ -235,23 +219,20 @@ int main(int argc, char **argv)
 
 	status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting1);
 	if (status != NVAPI_OK)
-		PrintError(status);
+		PrintError(status, L"OPTIMUS_1");
 
 	status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting2);
 	if (status != NVAPI_OK)
-		PrintError(status);
+		PrintError(status, L"OPTIMUS_2");
 
 	status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting3);
 	if (status != NVAPI_OK)
-		PrintError(status);
-
-	//Setting IDs: OGL_IMPLICIT_GPU_AFFINITY_ID 
-	//10F9DC80
+		PrintError(status, L"OPTIMUS_3");
 
 	// Save Changes
 	status = NvAPI_DRS_SaveSettings(hSession);
 	if (status != NVAPI_OK)
-		PrintError(status);
+		PrintError(status, L"SAVING");
 	// Cleanup
 	NvAPI_DRS_DestroySession(hSession);
 }
