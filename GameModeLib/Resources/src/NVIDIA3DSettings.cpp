@@ -24,8 +24,7 @@ void PrintError(NvAPI_Status status, std::wstring id)
 {
 	NvAPI_ShortString szDesc = { 0 };
 	NvAPI_GetErrorMessage(status, szDesc);
-	printf("NVAPI Error: %s ", szDesc);
-	std::wcout << id << std::endl;
+	std::wcerr << L"NVAPI Error: " << szDesc << id << std::endl;
 }
 
 void PrintError(NvAPI_Status status)
@@ -486,7 +485,7 @@ void ExportProfile(NvDRSSessionHandle hSession, NvDRSProfileHandle profile, std:
 			PrintError(status, L"EXPORT_GET_PROFILE_SETTINGS");
 			return;
 		}
-		else 
+		else
 		{
 			//Print All Settings
 			for (i = 0; i < numSetRead; i++)
@@ -578,14 +577,14 @@ int main(int argc, char **argv)
 	// (1) Create the session handle to access driver settings
 	NvDRSSessionHandle hSession = 0;
 	status = NvAPI_DRS_CreateSession(&hSession);
-	if (status != NVAPI_OK) 
+	if (status != NVAPI_OK)
 	{
 		PrintError(status, L"SESSION");
 		exit(-1);
 	}
 	// (2) load all the system settings into the session
 	status = NvAPI_DRS_LoadSettings(hSession);
-	if (status != NVAPI_OK) 
+	if (status != NVAPI_OK)
 	{
 		PrintError(status, L"GET_SETTINGS");
 		exit(-1);
