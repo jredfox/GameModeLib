@@ -104,7 +104,6 @@ IF /I "!Settings:~1,1!" NEQ "T" (GOTO GRAPHICS)
 start /MIN cmd /c call "!rc!\AMD3dSettings.exe" "!ugen!" ^>"!log_amd!" ^2^>^&1
 ::NVIDIA 3D Graphics Settings Set Preffered Graphics Processor to High Performance
 set nvfile=!ugen!\NVIDIA.txt
-IF EXIST "!nvfile!" (GOTO GRAPHICS)
 start /MIN cmd /c call "!rc!\NVIDIAInstall.bat" "!nvfile!" "!log_nvidia!"
 :GRAPHICS
 
