@@ -19,7 +19,7 @@ set ustall=%~dp0Uninstall
 set ugen=!ustall!\Global
 set itmp=%~dp0TMP\Install
 set logs=%~dp0Logs
-set log_graphics=!logs!\log_graphics.txt
+set log_amd=!logs!\log_amd.txt
 set log_nvidia=!logs!\log_nvidia.txt
 set log_wd=!logs!\log_wd.txt
 set log_wdlowcpu=!logs!\log_wdlowcpu.txt
@@ -101,7 +101,7 @@ call "!rc!\PowerModeOverlay.exe" "ded574b5-45a0-4f42-8737-46345c09c238"
 REM ## Graphics 3D Settings ##
 IF /I "!Settings:~1,1!" NEQ "T" (GOTO GRAPHICS)
 ::AMD 3D Graphics Settings
-start /MIN cmd /c call "!rc!\AMD3dSettings.exe" "!ugen!" ^>"!log_graphics!" ^2^>^&1
+start /MIN cmd /c call "!rc!\AMD3dSettings.exe" "!ugen!" ^>"!log_amd!" ^2^>^&1
 ::NVIDIA 3D Graphics Settings Set Preffered Graphics Processor to High Performance
 set nvfile=!ugen!\NVIDIA.txt
 IF EXIST "!nvfile!" (GOTO GRAPHICS)

@@ -15,7 +15,7 @@ set rc=%~dp0Resources
 set udir=%~dp0Uninstall
 set uglobal=%~dp0Uninstall\Global
 set logs=%~dp0Logs
-set log_graphics=!logs!\log_uninstall_graphics.txt
+set log_amd=!logs!\log_uninstall_amd.txt
 set log_wd=!logs!\log_uninstall_wd.txt
 set log_wdlowcpu=!logs!\log_uninstall_wdlowcpu.txt
 set log_nvidia=!logs!\log_uninstall_nvidia.txt
@@ -101,7 +101,7 @@ call "!rc!\PowerModeOverlay.exe" "sync"
 IF /I "!Settings:~1,1!" NEQ "T" (GOTO GRAPHICS)
 echo Uninstalling GameModeLib Graphics
 IF EXIST "!uglobal!\AMD3DSettings.bat" (
-start /MIN cmd /c call "!uglobal!\AMD3DSettings.bat" "T" ^>"!log_graphics!" ^2^>^&1
+start /MIN cmd /c call "!uglobal!\AMD3DSettings.bat" "T" ^>"!log_amd!" ^2^>^&1
 )
 set nvidiafile=!uglobal!\NVIDIA.txt
 IF NOT EXIST "!nvidiafile!" (GOTO GRAPHICS)
