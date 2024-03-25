@@ -23,6 +23,7 @@ set log_graphics=!logs!\log_graphics.txt
 set log_nvidia=!logs!\log_nvidia.txt
 set log_wd=!logs!\log_wd.txt
 set log_wdlowcpu=!logs!\log_wdlowcpu.txt
+mkdir "!ugen!" >nul 2>&1
 mkdir "!logs!" >nul 2>&1
 call :CLNUP
 call :GETISA
