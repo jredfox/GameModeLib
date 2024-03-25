@@ -105,7 +105,7 @@ start /MIN cmd /c call "!uglobal!\AMD3DSettings.bat" "T" ^>"!log_graphics!" ^2^>
 )
 set nvidiafile=!uglobal!\NVIDIA.txt
 IF NOT EXIST "!nvidiafile!" (GOTO GRAPHICS)
-start /MIN cmd /c call "!rc!\NVIDIAUninstall.bat" "!nvidiafile!" "!log_nvidia!"
+start /MIN cmd /c call "!rc!\NVIDIAUninstall.bat" "!nvidiafile!" ^>"!log_nvidia!" ^2^>^&1
 :GRAPHICS
 
 REM ## Uninstall Stickey Keys and Sync Changes ##
