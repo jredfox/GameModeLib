@@ -257,7 +257,7 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 		PrintError(status, L"V-SYNC");
 
 	//Set PowerMode to PREFERRED_PSTATE_OPTIMAL_POWER if it's not max performance already
-	if (pwr != PREFERRED_PSTATE_PREFER_MAX && pwr != PREFERRED_PSTATE_PREFER_MAX)
+	if (pwr != PREFERRED_PSTATE_PREFER_MAX && pwr != PREFERRED_PSTATE_PREFER_CONSISTENT_PERFORMANCE)
 	{
 		drsSetting = { 0 };
 		drsSetting.version = NVDRS_SETTING_VER;
