@@ -392,8 +392,8 @@ void Help()
 	std::wcout << L"NVIDIA3DSettings.exe Import <SETTING_ID=DWORD_VALUE;SETTING_ID2=DWORDVALUE2>" << std::endl;
 	std::wcout << L"NVIDIA3DSettings.exe Export" << std::endl;
 	std::wcout << std::endl;
-	std::wcout << L"/Restore  Restores NVIDIA3D Settings on the Base & Global Profiles Before Importing or Exporting" << std::endl;
-	std::wcout << L"/Restore:true  Restores NVIDIA3D Settings on the Base & Global Profiles After Exporting" << std::endl;
+	std::wcout << L"/Restore  Restores NVIDIA 3D Settings Before the Command Runs" << std::endl;
+	std::wcout << L"/Restore:true  Restores NVIDIA 3D Settings After Exporting or Querying" << std::endl;
 	std::wcout << L"/SkipDefaultExports  Skips All Default Profile Settings when Exporting" << std::endl;
 	std::wcout << std::endl;
 	std::wcout << L"N/A While Importing / Exporting Flags Below" << std::endl;
@@ -561,13 +561,33 @@ void ExportProfile(NvDRSSessionHandle hSession, NvDRSProfileHandle profile, std:
 	}
 }
 
+void QueryProfile(NvDRSSessionHandle hSession, NvDRSProfileHandle profile, std::map<DWORD, DWORD> m)
+{
+	std::map<DWORD, DWORD>::iterator it;
+	int i = 0;
+	for (it = m.begin(); it != m.end(); it++)
+	{
+		DWORD SETTING_ID = it->first;
+		DWORD VAL = it->second;
+		bool hv = VAL != SETTING_DEFAULT_VALUE;
+
+		NVDRS_SETTING SETTING_GET = { 0 };
+		SETTING_GET.version = NVDRS_SETTING_VER;
+		SETTING_GET.settingType = NVDRS_DWORD_TYPE;
+		NvAPI_Status status_get = NvAPI_DRS_GetSetting(hSession, profile, SETTING_ID, &SETTING_GET);
+		std::wcout << (i != 0 ? L";" : L"") << (status_get == NVAPI_OK ? ToHex(SETTING_GET.u32CurrentValue) : (hv ? ToHex(VAL) : L"Default"));
+	}
+	std::wcout << std::endl;
+}
+
 int main(int argc, char **argv)
 {
 	setlocale(LC_CTYPE, "");
 	bool SetIds = false;
 	bool Export = false;
 	bool Restore = false;
-	bool RestoreAfterExport = false;
+	bool RestoreAfter = false;
+	bool Query = false;
 	std::map<DWORD, DWORD> map;
 	std::vector<std::wstring> args;
 	//Handle Arguments if any
@@ -583,7 +603,7 @@ int main(int argc, char **argv)
 			}
 			else if (w == L"/restore:true")
 			{
-				RestoreAfterExport = true;
+				RestoreAfter = true;
 			}
 			else if (w == L"/restore" || w == L"/restore:false")
 			{
@@ -623,8 +643,8 @@ int main(int argc, char **argv)
 			std::wstring arg1 = args[0];
 			if (arg1 == L"import" || arg1 == L"set")
 			{
-				std::wstring strsettings = args[1];
 				SetIds = true;
+				std::wstring strsettings = args[1];
 				std::vector<std::wstring> arr = Split(strsettings, L';');
 				for (auto it = std::begin(arr); it != std::end(arr); ++it)
 				{
@@ -644,6 +664,25 @@ int main(int argc, char **argv)
 			else if (arg1 == L"export")
 			{
 				Export = true;
+			}
+			else if (arg1 == L"query")
+			{
+				Query = true;
+				std::wstring strsettings = args[1];
+				std::vector<std::wstring> arr = Split(strsettings, L';');
+				for (auto it = std::begin(arr); it != std::end(arr); ++it)
+				{
+					std::wstring setting_entry = *it;
+					int index_split = IndexOf(setting_entry, L"=");
+					//Parse No Default Values
+					if (index_split == -1)
+					{
+						map[FromHex(setting_entry)] = SETTING_DEFAULT_VALUE;
+					}
+					DWORD setting_id = FromHex(setting_entry.substr(0, index_split));
+					DWORD setting_value = FromHex(setting_entry.substr(index_split + 1));
+					map[setting_id] = setting_value;
+				}
 			}
 			else if (arg1 == L"")
 			{
@@ -714,8 +753,20 @@ int main(int argc, char **argv)
 			std::wcout << (index != 0 ? L";" : L"") << ToHex(expit->first) << L"=" << (v == SETTING_DEFAULT_VALUE ? L"Default" : ToHex(v));
 			index++;
 		}
+		
 		//Restore After Default If Flagged
-		if (RestoreAfterExport)
+		if (RestoreAfter)
+		{
+			RestoreDefaults(hSession, hProfile, GlobalProfile);
+		}
+	}
+	else if (Query)
+	{
+		QueryProfile(hSession, hProfile, map);
+		QueryProfile(hSession, GlobalProfile, map);
+		
+		//Restore After Default If Flagged
+		if (RestoreAfter)
 		{
 			RestoreDefaults(hSession, hProfile, GlobalProfile);
 		}
