@@ -391,12 +391,14 @@ void Help()
 	std::wcout << L"NVIDIA3DSettings.exe" << std::endl;
 	std::wcout << L"NVIDIA3DSettings.exe Import <SETTING_ID=DWORD_VALUE;SETTING_ID2=DWORDVALUE2>" << std::endl;
 	std::wcout << L"NVIDIA3DSettings.exe Export" << std::endl;
+	std::wcout << L"NVIDIA3DSettings.exe Query <SETTING_ID;SETTING_ID=DEFAULT_VALUE>" << std::endl;
+	std::wcout << L"NOTE: Setting IDs & Values Must be in hex 0x00A879CF (Base 16 Hex Format Prefixed with 0x)" << std::endl;
 	std::wcout << std::endl;
 	std::wcout << L"/Restore  Restores NVIDIA 3D Settings Before the Command Runs" << std::endl;
 	std::wcout << L"/Restore:true  Restores NVIDIA 3D Settings After Exporting or Querying" << std::endl;
 	std::wcout << L"/SkipDefaultExports  Skips All Default Profile Settings when Exporting" << std::endl;
 	std::wcout << std::endl;
-	std::wcout << L"N/A While Importing / Exporting Flags Below" << std::endl;
+	std::wcout << L"N/A While Importing / Exporting Or Querying Flags Below" << std::endl;
 	std::wcout << L"/NoVSYNC  Doesn't Set VSYNC" << std::endl;
 	std::wcout << L"/NoPower /NoPWR  Doesn't Set GPU Power Mode" << std::endl;
 	std::wcout << L"/ForceIntegrated /Integrated  Sets Integrated Graphics" << std::endl;
@@ -575,7 +577,8 @@ void QueryProfile(NvDRSSessionHandle hSession, NvDRSProfileHandle profile, std::
 		SETTING_GET.version = NVDRS_SETTING_VER;
 		SETTING_GET.settingType = NVDRS_DWORD_TYPE;
 		NvAPI_Status status_get = NvAPI_DRS_GetSetting(hSession, profile, SETTING_ID, &SETTING_GET);
-		std::wcout << (i != 0 ? L";" : L"") << (status_get == NVAPI_OK ? ToHex(SETTING_GET.u32CurrentValue) : (hv ? ToHex(VAL) : L"Default"));
+		std::wcout << (i != 0 ? L";" : L"") << ToHex(SETTING_ID) << L"=" << (status_get == NVAPI_OK ? ToHex(SETTING_GET.u32CurrentValue) : (hv ? ToHex(VAL) : L"Default"));
+		i++;
 	}
 	std::wcout << std::endl;
 }
@@ -678,6 +681,7 @@ int main(int argc, char **argv)
 					if (index_split == -1)
 					{
 						map[FromHex(setting_entry)] = SETTING_DEFAULT_VALUE;
+						continue;
 					}
 					DWORD setting_id = FromHex(setting_entry.substr(0, index_split));
 					DWORD setting_value = FromHex(setting_entry.substr(index_split + 1));
@@ -753,7 +757,7 @@ int main(int argc, char **argv)
 			std::wcout << (index != 0 ? L";" : L"") << ToHex(expit->first) << L"=" << (v == SETTING_DEFAULT_VALUE ? L"Default" : ToHex(v));
 			index++;
 		}
-		
+
 		//Restore After Default If Flagged
 		if (RestoreAfter)
 		{
@@ -764,7 +768,7 @@ int main(int argc, char **argv)
 	{
 		QueryProfile(hSession, hProfile, map);
 		QueryProfile(hSession, GlobalProfile, map);
-		
+
 		//Restore After Default If Flagged
 		if (RestoreAfter)
 		{
