@@ -20,6 +20,10 @@
 
 #pragma comment (lib, "nvapi.lib")
 
+static bool HasVSYNC = true;
+static bool ForceAuto = false;
+static bool ForceIntegrated = false;
+
 void PrintError(NvAPI_Status status, std::wstring id)
 {
 	NvAPI_ShortString szDesc = { 0 };
@@ -222,16 +226,23 @@ int IndexOf(std::wstring str, std::wstring key)
 
 void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 {
+
+	NVDRS_SETTING USetting;
+	NvAPI_Status ustatus;
+	NvAPI_Status status;
 	//Print Previous Values Seperated by Spaces
-	NVDRS_SETTING USetting = { 0 };
-	USetting.version = NVDRS_SETTING_VER;
-	NvAPI_Status ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, VSYNCMODE_ID, &USetting);
-	std::wcout << ToHex(VSYNCMODE_ID) << L"=" << ToHex((ustatus == NVAPI_OK ? USetting.u32CurrentValue : VSYNCMODE_PASSIVE));
+	if (HasVSYNC)
+	{
+		USetting = { 0 };
+		USetting.version = NVDRS_SETTING_VER;
+		ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, VSYNCMODE_ID, &USetting);
+		std::wcout << ToHex(VSYNCMODE_ID) << L"=" << ToHex((ustatus == NVAPI_OK ? USetting.u32CurrentValue : VSYNCMODE_PASSIVE)) << L";";
+	}
 	USetting = { 0 };
 	USetting.version = NVDRS_SETTING_VER;
 	ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, PREFERRED_PSTATE_ID, &USetting);
 	NvU32 pwr = USetting.u32CurrentValue;
-	std::wcout << L";" << ToHex(PREFERRED_PSTATE_ID) << L"=" << ToHex(ustatus == NVAPI_OK ? pwr : PREFERRED_PSTATE_OPTIMAL_POWER);
+	std::wcout << ToHex(PREFERRED_PSTATE_ID) << L"=" << ToHex(ustatus == NVAPI_OK ? pwr : PREFERRED_PSTATE_OPTIMAL_POWER);
 	USetting = { 0 };
 	USetting.version = NVDRS_SETTING_VER;
 	ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SHIM_MCCOMPAT_ID, &USetting);
@@ -247,19 +258,22 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 	std::wcout << std::endl;
 
 	//Set V-SYNC to Default Value
-	NVDRS_SETTING drsSetting = { 0 };
-	drsSetting.version = NVDRS_SETTING_VER;
-	drsSetting.settingId = VSYNCMODE_ID;
-	drsSetting.settingType = NVDRS_DWORD_TYPE;
-	drsSetting.u32CurrentValue = VSYNCMODE_PASSIVE;
-	NvAPI_Status status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting);
-	if (status != NVAPI_OK)
-		PrintError(status, L"V-SYNC");
+	if (HasVSYNC)
+	{
+		NVDRS_SETTING drsSetting = { 0 };
+		drsSetting.version = NVDRS_SETTING_VER;
+		drsSetting.settingId = VSYNCMODE_ID;
+		drsSetting.settingType = NVDRS_DWORD_TYPE;
+		drsSetting.u32CurrentValue = VSYNCMODE_PASSIVE;
+		status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting);
+		if (status != NVAPI_OK)
+			PrintError(status, L"V-SYNC");
+	}
 
 	//Set PowerMode to PREFERRED_PSTATE_OPTIMAL_POWER if it's not max performance already
 	if (pwr != PREFERRED_PSTATE_PREFER_MAX && pwr != PREFERRED_PSTATE_PREFER_CONSISTENT_PERFORMANCE)
 	{
-		drsSetting = { 0 };
+		NVDRS_SETTING drsSetting = { 0 };
 		drsSetting.version = NVDRS_SETTING_VER;
 		drsSetting.settingId = PREFERRED_PSTATE_ID;
 		drsSetting.settingType = NVDRS_DWORD_TYPE;
@@ -270,7 +284,6 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 	}
 
 	//Set Preffered Graphics Processor to High Performance
-	bool ForceIntegrated = false;
 	NVDRS_SETTING drsSetting1 = { 0 };
 	drsSetting1.version = NVDRS_SETTING_VER;
 	drsSetting1.settingId = SHIM_MCCOMPAT_ID;
@@ -286,12 +299,23 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 	drsSetting3.settingId = SHIM_RENDERING_OPTIONS_ID;
 	drsSetting3.settingType = NVDRS_DWORD_TYPE;
 
-	if (ForceIntegrated) {
+	//Force Automatic NVIDIA Selection of Graphics
+	if (ForceAuto) 
+	{
+		drsSetting1.u32CurrentValue = SHIM_MCCOMPAT_AUTO_SELECT;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
+		drsSetting2.u32CurrentValue = SHIM_RENDERING_MODE_AUTO_SELECT;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
+		drsSetting3.u32CurrentValue = SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE;
+	}
+	//Force Integrated Graphics
+	else if (ForceIntegrated) 
+	{
 		drsSetting1.u32CurrentValue = SHIM_MCCOMPAT_INTEGRATED;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
 		drsSetting2.u32CurrentValue = SHIM_RENDERING_MODE_INTEGRATED;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
 		drsSetting3.u32CurrentValue = SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE;
 	}
-	else {
+	//Force Dedicated Graphics
+	else 
+	{
 		drsSetting1.u32CurrentValue = SHIM_MCCOMPAT_ENABLE;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
 		drsSetting2.u32CurrentValue = SHIM_RENDERING_MODE_ENABLE;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
 		drsSetting3.u32CurrentValue = SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE;
@@ -540,6 +564,18 @@ int main(int argc, char **argv)
 			{
 				Restore = true;
 			}
+			else if (w == L"/novsync")
+			{
+				HasVSYNC = false;
+			}
+			else if (w == L"/auto" || w == L"/forceauto")
+			{
+				ForceAuto = true;
+			}
+			else if (w == L"/forceintegrated" || w == L"/integrated")
+			{
+				ForceIntegrated = true;
+			}
 			else
 			{
 				args.push_back(w);
@@ -570,6 +606,10 @@ int main(int argc, char **argv)
 			else if (arg1 == L"export")
 			{
 				Export = true;
+			}
+			else if (arg1 == L"")
+			{
+
 			}
 			//Help Command
 			else

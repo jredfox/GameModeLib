@@ -18,6 +18,7 @@ set rc=%~dp0Resources
 set ustall=%~dp0Uninstall
 set ugen=!ustall!\Global
 set itmp=%~dp0TMP\Install
+set nvfile=!ugen!\NVIDIA.txt
 set logs=%~dp0Logs
 set log_amd=!logs!\log_amd.txt
 set log_nvidia=!logs!\log_nvidia.txt
@@ -85,6 +86,8 @@ REM ## Create Power Plan and Generate GPUEntries reg ##
 IF /I "!Settings:~0,1!" NEQ "T" (GOTO MAIN)
 call "%~dp0GameModeLib-!ISA!^.exe" -GenReg -UGenInfo "%~dp0TMP\Install" -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPlan -SetPowerPlan
 set regs=!regs!^;%~dp0TMP\Install\UGpuEntry.reg
+REM Enforce NVIDIA GPU Is Always Used Statically As It Should Be Part of the power plan
+IF /I "!Settings:~1,1!" NEQ "T" (start /MIN cmd /c call "!rc!\NVIDIAInstall.bat" "!nvfile!" "!log_nvidia!" "T")
 :MAIN
 
 REM ## Install Registry Settings of all Enabled Modules ##
@@ -103,7 +106,6 @@ IF /I "!Settings:~1,1!" NEQ "T" (GOTO GRAPHICS)
 ::AMD 3D Graphics Settings
 start /MIN cmd /c call "!rc!\AMD3dSettings.exe" "!ugen!" ^>"!log_amd!" ^2^>^&1
 ::NVIDIA 3D Graphics Settings Set Preffered Graphics Processor to High Performance
-set nvfile=!ugen!\NVIDIA.txt
 start /MIN cmd /c call "!rc!\NVIDIAInstall.bat" "!nvfile!" "!log_nvidia!"
 :GRAPHICS
 
