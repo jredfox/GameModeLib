@@ -21,6 +21,7 @@
 #pragma comment (lib, "nvapi.lib")
 
 static bool HasVSYNC = true;
+static bool HasPwr = true;
 static bool ForceAuto = false;
 static bool ForceIntegrated = false;
 static bool SkipDefaultExports = false;
@@ -270,7 +271,7 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 	}
 
 	//Set PowerMode to PREFERRED_PSTATE_OPTIMAL_POWER if it's not max performance already
-	if (ForceOptimal || pwr != PREFERRED_PSTATE_PREFER_MAX && pwr != PREFERRED_PSTATE_PREFER_CONSISTENT_PERFORMANCE)
+	if (HasPwr && (ForceOptimal || pwr != PREFERRED_PSTATE_PREFER_MAX && pwr != PREFERRED_PSTATE_PREFER_CONSISTENT_PERFORMANCE))
 	{
 		NVDRS_SETTING drsSetting = { 0 };
 		drsSetting.version = NVDRS_SETTING_VER;
@@ -598,6 +599,10 @@ int main(int argc, char **argv)
 			else if (w == L"/forceoptimal")
 			{
 				ForceOptimal = true;
+			}
+			else if (w == L"/nopower" || w == L"/nopwr")
+			{
+				HasPwr = false;
 			}
 			else
 			{

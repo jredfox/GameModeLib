@@ -86,8 +86,8 @@ REM ## Create Power Plan and Generate GPUEntries reg ##
 IF /I "!Settings:~0,1!" NEQ "T" (GOTO MAIN)
 call "%~dp0GameModeLib-!ISA!^.exe" -GenReg -UGenInfo "%~dp0TMP\Install" -GPUEntry "java.exe;javaw.exe;py.exe;pyw.exe" -PowerPlan -SetPowerPlan
 set regs=!regs!^;%~dp0TMP\Install\UGpuEntry.reg
-REM Enforce NVIDIA GPU Is Always Used Statically As It Should Be Part of the power plan
-IF /I "!Settings:~1,1!" NEQ "T" (start /MIN cmd /c call "!rc!\NVIDIAInstall.bat" "!nvfile!" "!log_nvidia!" "T")
+REM Enforce NVIDIA GPU Is Always Used Statically As It Should Be Part of the power plan TODO When GameModeLibNVPP.exe SubModule Is Installed Do Not Run this Code
+IF /I "!Settings:~1,1!" NEQ "T" (call "!rc!\NVIDIAInstall.bat" "!nvfile!" "!log_nvidia!" "T")
 :MAIN
 
 REM ## Install Registry Settings of all Enabled Modules ##
