@@ -389,12 +389,14 @@ void Help()
 	std::wcout << std::endl;
 	std::wcout << L"/Restore  Restores NVIDIA3D Settings on the Base & Global Profiles Before Importing or Exporting" << std::endl;
 	std::wcout << L"/Restore:true  Restores NVIDIA3D Settings on the Base & Global Profiles After Exporting" << std::endl;
-	std::wcout << L"/NoVSYNC  Doesn't Set VSYNC N/A when Importing" << std::endl;
-	std::wcout << L"/Forceintegrated /Integrated  Forces Integrated Graphics Instead" << std::endl;
+	std::wcout << L"/SkipDefaultExports  Skips All Default Profile Settings when Exporting" << std::endl;
+	std::wcout << std::endl;
+	std::wcout << L"N/A While Importing Flags Below" << std::endl;
+	std::wcout << L"/NoVSYNC  Doesn't Set VSYNC" << std::endl;
+	std::wcout << L"/NoPower /NoPWR  Doesn't Set GPU Power Mode" << std::endl;
+	std::wcout << L"/ForceIntegrated /Integrated  Forces Integrated Graphics" << std::endl;
 	std::wcout << L"/Auto /ForceAuto  Sets Graphics to Auo Mode" << std::endl;
 	std::wcout << L"/ForceOptimal  Forces Graphics Power to Optimal Regardless of High Performance" << std::endl;
-	std::wcout << L"/SkipDefaultExports  Skips All Default Profile Settings when Exporting" << std::endl;
-	std::wcout << L"/NoPower /NoPWR  Doesn't Set NVIDIA GPU Power Option" << std::endl;
 	exit(0);
 }
 
