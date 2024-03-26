@@ -23,6 +23,9 @@
 static bool HasVSYNC = true;
 static bool ForceAuto = false;
 static bool ForceIntegrated = false;
+static bool SkipDefaultExports = false;
+static const DWORD SETTING_DEFAULT_VALUE = 4294967295;
+static const std::wstring SETTING_DEFAULT_VALUE_STR = L"4294967295";
 
 void PrintError(NvAPI_Status status, std::wstring id)
 {
@@ -347,17 +350,25 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile, std::
 		NVDRS_SETTING USetting = { 0 };
 		USetting.version = NVDRS_SETTING_VER;
 		NvAPI_Status ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SETTING_ID, &USetting);
-		std::wcout << (index != 0 ? L";" : L"") << ToHex(SETTING_ID) << L"=" << (ustatus == NVAPI_OK ? ToHex(USetting.u32CurrentValue) : L"NULL");
+		std::wcout << (index != 0 ? L";" : L"") << ToHex(SETTING_ID) << L"=" << (ustatus == NVAPI_OK ? ToHex(USetting.u32CurrentValue) : L"Default");
 
-		//Set an NVIDIA Control Pannel Setting
-		NVDRS_SETTING setting = { 0 };
-		setting.version = NVDRS_SETTING_VER;
-		setting.settingId = SETTING_ID;
-		setting.settingType = NVDRS_DWORD_TYPE;
-		setting.u32CurrentValue = SETTING_VALUE;
-		NvAPI_Status status = NvAPI_DRS_SetSetting(hSession, hProfile, &setting);
-		if (status != NVAPI_OK)
-			PrintError(status, L"Setting ID:" + ToHex(SETTING_ID));
+		if (SETTING_VALUE != SETTING_DEFAULT_VALUE)
+		{
+			//Set an NVIDIA Control Pannel Setting
+			NVDRS_SETTING setting = { 0 };
+			setting.version = NVDRS_SETTING_VER;
+			setting.settingId = SETTING_ID;
+			setting.settingType = NVDRS_DWORD_TYPE;
+			setting.u32CurrentValue = SETTING_VALUE;
+			NvAPI_Status status = NvAPI_DRS_SetSetting(hSession, hProfile, &setting);
+			if (status != NVAPI_OK)
+				PrintError(status, L"Setting ID:" + ToHex(SETTING_ID));
+		}
+		//Restore Default Imports Back to their Default Value
+		else
+		{
+			NvAPI_DRS_RestoreProfileDefaultSetting(hSession, hProfile, SETTING_ID);
+		}
 		index++;
 	}
 	std::wcout << std::endl;
@@ -499,8 +510,9 @@ void ExportProfile(NvDRSSessionHandle hSession, NvDRSProfileHandle profile, std:
 		SETTING_GET.version = NVDRS_SETTING_VER;
 		DWORD SETTING_ID = (DWORD)it->second;
 		NvAPI_Status status_get = NvAPI_DRS_GetSetting(hSession, profile, SETTING_ID, &SETTING_GET);
-		if (status_get == NVAPI_OK)
-			expmap[SETTING_GET.settingId] = SETTING_GET.u32CurrentValue;
+		if (SkipDefaultExports && status_get != NVAPI_OK)
+			continue;
+		expmap[SETTING_ID] = status_get == NVAPI_OK ? SETTING_GET.u32CurrentValue : SETTING_DEFAULT_VALUE;
 	}
 
 	//Iterate Dynamically Over all NVAPI Settings for the Profile
@@ -576,6 +588,10 @@ int main(int argc, char **argv)
 			{
 				ForceIntegrated = true;
 			}
+			else if (w == L"/skipdefaultexports")
+			{
+				SkipDefaultExports = true;
+			}
 			else
 			{
 				args.push_back(w);
@@ -599,7 +615,8 @@ int main(int argc, char **argv)
 						exit(-1);
 					}
 					DWORD setting_id = FromHex(setting_entry.substr(0, index_split));
-					DWORD setting_value = FromHex(setting_entry.substr(index_split + 1));
+					std::wstring val = tolower(setting_entry.substr(index_split + 1));
+					DWORD setting_value = (val == L"null" || val == L"default") ? SETTING_DEFAULT_VALUE : FromHex(val);
 					map[setting_id] = setting_value;
 				}
 			}
@@ -666,13 +683,14 @@ int main(int argc, char **argv)
 		std::map<DWORD, DWORD> expmap;
 		//Export Profile's Data into the Map
 		ExportProfile(hSession, hProfile, expmap);
-		ExportProfile(hSession, GlobalProfile, expmap);
+		//ExportProfile(hSession, GlobalProfile, expmap);
 		//Print the Profile's Data
 		std::map<DWORD, DWORD>::iterator expit;
 		int index = 0;
 		for (expit = expmap.begin(); expit != expmap.end(); expit++)
 		{
-			std::wcout << (index != 0 ? L";" : L"") << ToHex(expit->first) << L"=" << ToHex(expit->second);
+			DWORD v = expit->second;
+			std::wcout << (index != 0 ? L";" : L"") << ToHex(expit->first) << L"=" << (v == SETTING_DEFAULT_VALUE ? L"Default" : ToHex(v));
 			index++;
 		}
 		//Restore After Default If Flagged
