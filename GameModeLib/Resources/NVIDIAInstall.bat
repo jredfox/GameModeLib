@@ -6,7 +6,7 @@ set log_nvidia=%~2
 IF /I "%~3" EQU "T" (set NVARGS=/NoVSYNC /NoPWR) ELSE (set "NVARGS=")
 REM ## Install NVIDIA Preffered Graphics Processor to High Performance and Gen Uninstall Data ##
 IF EXIST "!nvfile!" (
-call "!rc!\NVIDIA3DSettings.exe" !NVARGS! 2>"!log_nvidia!"
+call "!rc!\NVIDIA3DSettings.exe" !NVARGS! >nul 2>"!log_nvidia!"
 exit /b
 )
 call "!rc!\NVIDIA3DSettings.exe" !NVARGS! >"!nvfile!" 2>"!log_nvidia!"
