@@ -27,7 +27,6 @@ static bool ForceIntegrated = false;
 static bool SkipDefaultExports = false;
 static bool ForceOptimal = false;
 static const DWORD SETTING_DEFAULT_VALUE = 4294967295;
-static const std::wstring SETTING_DEFAULT_VALUE_STR = L"4294967295";
 
 void PrintError(NvAPI_Status status, std::wstring id)
 {
