@@ -133,7 +133,7 @@ bool DisplayProfileContents(NvDRSSessionHandle hSession, NvDRSProfileHandle hPro
 				break;
 			case NVDRS_BINARY_TYPE:
 			{
-				//unsigned int len;
+				unsigned int len;
 				printf("Setting Binary (length=%d) :",
 					setArray[i].binaryCurrentValue.valueLength);
 				/*for (len = 0;
@@ -394,6 +394,7 @@ void Help()
 	std::wcout << L"/Auto /ForceAuto  Sets Graphics to Auo Mode" << std::endl;
 	std::wcout << L"/ForceOptimal  Forces Graphics Power to Optimal Regardless of High Performance" << std::endl;
 	std::wcout << L"/SkipDefaultExports  Skips All Default Profile Settings when Exporting" << std::endl;
+	std::wcout << L"/NoPower /NoPWR  Doesn't Set NVIDIA GPU Power Option" << std::endl;
 	exit(0);
 }
 
