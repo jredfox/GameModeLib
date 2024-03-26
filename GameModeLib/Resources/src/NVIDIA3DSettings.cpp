@@ -24,6 +24,7 @@ static bool HasVSYNC = true;
 static bool ForceAuto = false;
 static bool ForceIntegrated = false;
 static bool SkipDefaultExports = false;
+static bool ForceOptimal = false;
 static const DWORD SETTING_DEFAULT_VALUE = 4294967295;
 static const std::wstring SETTING_DEFAULT_VALUE_STR = L"4294967295";
 
@@ -274,7 +275,7 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 	}
 
 	//Set PowerMode to PREFERRED_PSTATE_OPTIMAL_POWER if it's not max performance already
-	if (pwr != PREFERRED_PSTATE_PREFER_MAX && pwr != PREFERRED_PSTATE_PREFER_CONSISTENT_PERFORMANCE)
+	if (ForceOptimal || pwr != PREFERRED_PSTATE_PREFER_MAX && pwr != PREFERRED_PSTATE_PREFER_CONSISTENT_PERFORMANCE)
 	{
 		NVDRS_SETTING drsSetting = { 0 };
 		drsSetting.version = NVDRS_SETTING_VER;
@@ -389,8 +390,14 @@ void Help()
 	std::wcout << L"NVIDIA3DSettings.exe" << std::endl;
 	std::wcout << L"NVIDIA3DSettings.exe import <SETTING_ID=DWORD_VALUE;SETTING_ID2=DWORDVALUE2>" << std::endl;
 	std::wcout << L"NVIDIA3DSettings.exe export" << std::endl;
+	std::wcout << std::endl;
 	std::wcout << L"/Restore  Restores NVIDIA3D Settings on the Base & Global Profiles Before Importing or Exporting" << std::endl;
-	std::wcout << L"/Restore:true Restores NVIDIA3D Settings on the Base & Global Profiles After Exporting" << std::endl;
+	std::wcout << L"/Restore:true  Restores NVIDIA3D Settings on the Base & Global Profiles After Exporting" << std::endl;
+	std::wcout << L"/NoVSYNC  Doesn't Set VSYNC N/A when Importing" << std::endl;
+	std::wcout << L"/Forceintegrated /Integrated  Forces Integrated Graphics Instead" << std::endl;
+	std::wcout << L"/Auto /ForceAuto  Sets Graphics to Auo Mode" << std::endl;
+	std::wcout << L"/ForceOptimal  Forces Graphics Power to Optimal Regardless of High Performance" << std::endl;
+	std::wcout << L"/SkipDefaultExports  Skips All Default Profile Settings when Exporting" << std::endl;
 	exit(0);
 }
 
@@ -510,7 +517,8 @@ void ExportProfile(NvDRSSessionHandle hSession, NvDRSProfileHandle profile, std:
 		SETTING_GET.version = NVDRS_SETTING_VER;
 		DWORD SETTING_ID = (DWORD)it->second;
 		NvAPI_Status status_get = NvAPI_DRS_GetSetting(hSession, profile, SETTING_ID, &SETTING_GET);
-		if (SkipDefaultExports && status_get != NVAPI_OK)
+		//Skip If SkipDefaults And Is NULL or Map Already has the Key and is NULL
+		if ((SkipDefaultExports || expmap.count(SETTING_ID)) && status_get != NVAPI_OK)
 			continue;
 		expmap[SETTING_ID] = status_get == NVAPI_OK ? SETTING_GET.u32CurrentValue : SETTING_DEFAULT_VALUE;
 	}
@@ -591,6 +599,10 @@ int main(int argc, char **argv)
 			else if (w == L"/skipdefaultexports")
 			{
 				SkipDefaultExports = true;
+			}
+			else if (w == L"/forceoptimal")
+			{
+				ForceOptimal = true;
 			}
 			else
 			{
@@ -683,7 +695,7 @@ int main(int argc, char **argv)
 		std::map<DWORD, DWORD> expmap;
 		//Export Profile's Data into the Map
 		ExportProfile(hSession, hProfile, expmap);
-		//ExportProfile(hSession, GlobalProfile, expmap);
+		ExportProfile(hSession, GlobalProfile, expmap);
 		//Print the Profile's Data
 		std::map<DWORD, DWORD>::iterator expit;
 		int index = 0;
