@@ -232,23 +232,28 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 {
 	NVDRS_SETTING USetting = { 0 };
 	USetting.version = NVDRS_SETTING_VER;
+	USetting.settingType = NVDRS_DWORD_TYPE;
 	NvAPI_Status ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, VSYNCMODE_ID, &USetting);
 	std::wcout << ToHex(VSYNCMODE_ID) << L"=" << ToHex((ustatus == NVAPI_OK ? USetting.u32CurrentValue : VSYNCMODE_PASSIVE));
 	USetting = { 0 };
 	USetting.version = NVDRS_SETTING_VER;
+	USetting.settingType = NVDRS_DWORD_TYPE;
 	ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, PREFERRED_PSTATE_ID, &USetting);
 	NvU32 pwr = USetting.u32CurrentValue;
 	std::wcout << L";" << ToHex(PREFERRED_PSTATE_ID) << L"=" << ToHex(ustatus == NVAPI_OK ? pwr : PREFERRED_PSTATE_OPTIMAL_POWER);
 	USetting = { 0 };
 	USetting.version = NVDRS_SETTING_VER;
+	USetting.settingType = NVDRS_DWORD_TYPE;
 	ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SHIM_MCCOMPAT_ID, &USetting);
 	std::wcout << L";" << ToHex(SHIM_MCCOMPAT_ID) << L"=" << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : SHIM_MCCOMPAT_AUTO_SELECT);
 	USetting = { 0 };
 	USetting.version = NVDRS_SETTING_VER;
+	USetting.settingType = NVDRS_DWORD_TYPE;
 	ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SHIM_RENDERING_MODE_ID, &USetting);
 	std::wcout << L";" << ToHex(SHIM_RENDERING_MODE_ID) << L"=" << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : SHIM_RENDERING_MODE_AUTO_SELECT);
 	USetting = { 0 };
 	USetting.version = NVDRS_SETTING_VER;
+	USetting.settingType = NVDRS_DWORD_TYPE;
 	ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SHIM_RENDERING_OPTIONS_ID, &USetting);
 	std::wcout << L";" << ToHex(SHIM_RENDERING_OPTIONS_ID) << L"=" << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE);
 	std::wcout << std::endl;
@@ -345,6 +350,7 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile, std::
 		//Print an NVIDIA Setting before setting it
 		NVDRS_SETTING USetting = { 0 };
 		USetting.version = NVDRS_SETTING_VER;
+		USetting.settingType = NVDRS_DWORD_TYPE;
 		NvAPI_Status ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SETTING_ID, &USetting);
 		std::wcout << (index != 0 ? L";" : L"") << ToHex(SETTING_ID) << L"=" << (ustatus == NVAPI_OK ? ToHex(USetting.u32CurrentValue) : L"Default");
 
@@ -383,19 +389,19 @@ void RestoreDefaults(NvDRSSessionHandle hSession, NvDRSProfileHandle Base, NvDRS
 void Help()
 {
 	std::wcout << L"NVIDIA3DSettings.exe" << std::endl;
-	std::wcout << L"NVIDIA3DSettings.exe import <SETTING_ID=DWORD_VALUE;SETTING_ID2=DWORDVALUE2>" << std::endl;
-	std::wcout << L"NVIDIA3DSettings.exe export" << std::endl;
+	std::wcout << L"NVIDIA3DSettings.exe Import <SETTING_ID=DWORD_VALUE;SETTING_ID2=DWORDVALUE2>" << std::endl;
+	std::wcout << L"NVIDIA3DSettings.exe Export" << std::endl;
 	std::wcout << std::endl;
 	std::wcout << L"/Restore  Restores NVIDIA3D Settings on the Base & Global Profiles Before Importing or Exporting" << std::endl;
 	std::wcout << L"/Restore:true  Restores NVIDIA3D Settings on the Base & Global Profiles After Exporting" << std::endl;
 	std::wcout << L"/SkipDefaultExports  Skips All Default Profile Settings when Exporting" << std::endl;
 	std::wcout << std::endl;
-	std::wcout << L"N/A While Importing Flags Below" << std::endl;
+	std::wcout << L"N/A While Importing / Exporting Flags Below" << std::endl;
 	std::wcout << L"/NoVSYNC  Doesn't Set VSYNC" << std::endl;
 	std::wcout << L"/NoPower /NoPWR  Doesn't Set GPU Power Mode" << std::endl;
-	std::wcout << L"/ForceIntegrated /Integrated  Forces Integrated Graphics" << std::endl;
+	std::wcout << L"/ForceIntegrated /Integrated  Sets Integrated Graphics" << std::endl;
 	std::wcout << L"/Auto /ForceAuto  Sets Graphics to Auo Mode" << std::endl;
-	std::wcout << L"/ForceOptimal  Forces Graphics Power to Optimal Regardless of High Performance" << std::endl;
+	std::wcout << L"/ForceOptimal  Sets Graphics Power to Optimal Regardless of High Performance" << std::endl;
 	exit(0);
 }
 
@@ -513,6 +519,7 @@ void ExportProfile(NvDRSSessionHandle hSession, NvDRSProfileHandle profile, std:
 	{
 		NVDRS_SETTING SETTING_GET = { 0 };
 		SETTING_GET.version = NVDRS_SETTING_VER;
+		SETTING_GET.settingType = NVDRS_DWORD_TYPE;
 		DWORD SETTING_ID = (DWORD)it->second;
 		NvAPI_Status status_get = NvAPI_DRS_GetSetting(hSession, profile, SETTING_ID, &SETTING_GET);
 		//Skip If SkipDefaults And Is NULL or Map Already has the Key and is NULL
