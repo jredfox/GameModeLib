@@ -133,7 +133,7 @@ bool DisplayProfileContents(NvDRSSessionHandle hSession, NvDRSProfileHandle hPro
 				break;
 			case NVDRS_BINARY_TYPE:
 			{
-				unsigned int len;
+				//unsigned int len;
 				printf("Setting Binary (length=%d) :",
 					setArray[i].binaryCurrentValue.valueLength);
 				/*for (len = 0;
