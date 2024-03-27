@@ -6,6 +6,11 @@
 
 using namespace std;
 
+GUID ULTIMATE = { 0xE9A42B02, 0xD5DF, 0x448D, {0xAA, 0x00, 0x03, 0xF1,0x47, 0x49, 0xEB, 0x61 } };
+GUID SUB_GRAPHICS = { 0x4f971e89, 0xeebd, 0x4455,{ 0xa8, 0xde, 0x9e, 0x59, 0x04, 0x0b, 0xf5, 0x63 } };
+GUID SETTING_GRAPHICS = { 0x5fb4938d, 0x1ee8, 0x4b0f,{ 0x9a, 0x3c, 0x50, 0x3b, 0x37, 0x9f, 0x4c, 0x89 } };
+GUID SETTING_GRAPHICS_PWR = { 0x5fb4938d, 0x1ee8, 0x4b0f,{ 0x9a, 0x3c, 0x50, 0x3b, 0x68, 0x9f, 0x4c, 0x69 } };
+
 //Power Plan Start
 bool PowerPlanExists(GUID id)
 {
@@ -77,21 +82,9 @@ void PwrNameSetting(GUID* sub, GUID* setting, wstring name, wstring description)
 	PowerWriteDescription(NULL, NULL, sub, setting, bdesc, 256);
 }
 
-int main() {
-	GUID *ActiveGUID;
-	if (PowerGetActiveScheme(NULL, &ActiveGUID) != ERROR_SUCCESS) 
-	{
-		std::cerr << "Failed to get active power scheme." << std::endl;
-		return -1;
-	}
-	GUID ULTIMATE = { 0xE9A42B02, 0xD5DF, 0x448D, {0xAA, 0x00, 0x03, 0xF1,0x47, 0x49, 0xEB, 0x61 } };
-	GUID SUB_GRAPHICS = { 0x4f971e89, 0xeebd, 0x4455,{ 0xa8, 0xde, 0x9e, 0x59, 0x04, 0x0b, 0xf5, 0x63 } };
-	GUID SETTING_GRAPHICS = { 0x5fb4938d, 0x1ee8, 0x4b0f,{ 0x9a, 0x3c, 0x50, 0x3b, 0x37, 0x9f, 0x4c, 0x89 } };
-	GUID SETTING_GRAPHICS_PWR = { 0x5fb4938d, 0x1ee8, 0x4b0f,{ 0x9a, 0x3c, 0x50, 0x3b, 0x68, 0x9f, 0x4c, 0x69 } };
-	PrintGUID(&SUB_GRAPHICS);
-	PrintGUID(&SETTING_GRAPHICS);
-	PrintGUID(&SETTING_GRAPHICS_PWR);
-
+void CreateSettings()
+{
+	wcout << L"Creating GameMode Lib Graphics Settings" << endl;
 	//Create the Sub and the first Setting
 	PowerCreateSetting(NULL, &SUB_GRAPHICS, &SETTING_GRAPHICS); //Creates the Setting
 	PwrNameSub(&SUB_GRAPHICS, L"GameModeLib Graphics", L"Adds NVIDIA Preffered Graphics Processor & Power Level to the Power Plan");
@@ -132,4 +125,28 @@ int main() {
 	PowerWriteACDefaultIndex(NULL, &GUID_TYPICAL_POWER_SAVINGS, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, 3);//Balenced Scheme
 	PowerWriteDCDefaultIndex(NULL, &GUID_MAX_POWER_SAVINGS, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, 1);//Power Saver Scheme
 	PowerWriteACDefaultIndex(NULL, &GUID_MAX_POWER_SAVINGS, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, 1);//Power Saver Scheme
+}
+
+bool HasACValue(GUID* ACTIVE, GUID* SUB, GUID* SETTING)
+{
+	LPBYTE ValBytes[sizeof(DWORD) + 1];
+	ULONG t = REG_DWORD;
+	DWORD size = sizeof(ValBytes);
+	int ERR = PowerReadACValue(NULL, ACTIVE, SUB, SETTING, &t, reinterpret_cast<LPBYTE>(&ValBytes), &size);
+	//cout << ERR << endl;
+	return ERR == ERROR_SUCCESS;
+}
+
+int main() {
+	GUID* ActiveGUID;
+	if (PowerGetActiveScheme(NULL, &ActiveGUID) != ERROR_SUCCESS)
+	{
+		std::cerr << "Failed to get active power scheme." << std::endl;
+		return -1;
+	}
+
+	if (!HasACValue(ActiveGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS))
+	{
+		CreateSettings();
+	}
 }
