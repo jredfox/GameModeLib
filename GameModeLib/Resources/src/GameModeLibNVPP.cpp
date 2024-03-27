@@ -183,6 +183,17 @@ DWORD GetPwrValue(GUID* pp, GUID* sub, GUID* setting, bool ac)
 	return val;
 }
 
+void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
+{
+
+}
+
+void SyncFromNVAPI(GUID* CurrentPP)
+{
+	//TODO Get NVAPI Current Settings and then change them from the power plan
+	PowerSetActiveScheme(NULL, CurrentPP);//Sync Changes Instantly
+}
+
 int main() {
 	GUID* OrgGUID;
 	if (PowerGetActiveScheme(NULL, &OrgGUID) != ERROR_SUCCESS)
@@ -203,26 +214,21 @@ int main() {
 	bool IsAC = IsACPwr();
 	DWORD OrgPGP = GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS, IsAC);//Preffered Graphics Processor
 	DWORD OrgGP = GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC);//Graphics Power Level
-	DWORD CurrentPGP = 300;//Preffered Graphics Processor
-	DWORD CurrentGP = 300;//Graphics Power Level
+	DWORD CurrentPGP = OrgPGP;//Preffered Graphics Processor
+	DWORD CurrentGP = OrgGP;//Graphics Power Level
+	SyncToNVAPI(CurrentPGP, CurrentGP);
 	while (true)
 	{
 		Sleep(2500);
-		bool IsAC = IsACPwr();
+		IsAC = IsACPwr();
 		PowerGetActiveScheme(NULL, &CurrentGUID);
 		if (!IsEqual(OrgGUID, CurrentGUID))
 		{
-			cout << "Power Plan Changed:";
-			PrintGUID(OrgGUID, false);
-			cout << " To:";
-			PrintGUID(CurrentGUID, false);
-			cout << endl;
-
 			//Force Update on Settings
 			OrgGUID = CurrentGUID;
 			//Update Values
-			DWORD CurrentPGP = GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS, IsAC);//Preffered Graphics Processor
-			DWORD CurrentGP =  GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC);//Graphics Power Level
+			CurrentPGP = GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS, IsAC);//Preffered Graphics Processor
+			CurrentGP =  GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC);//Graphics Power Level
 		}
 		
 		//Detect Changes From the Power Plan
@@ -230,11 +236,12 @@ int main() {
 		{
 			OrgPGP = CurrentPGP;
 			OrgGP = CurrentGP;
+			SyncToNVAPI(CurrentPGP, CurrentGP);
 		}
 		//TODO SYNC NVIDIA with the power plan
 		else
 		{
-
+			SyncFromNVAPI(CurrentGUID);
 		}
 	}
 }
