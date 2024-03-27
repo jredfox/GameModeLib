@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <PowrProf.h>
+#include <string>
 #include <iostream>
 
 #pragma comment(lib, "PowrProf.lib")
@@ -29,13 +30,34 @@ bool PowerPlanExists(GUID id)
 	return false;
 }
 
-void PrintGUID(GUID* guid)
+void PrintGUID(GUID* guid, bool nline)
 {
 	printf("{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}",
 		guid->Data1, guid->Data2, guid->Data3,
 		guid->Data4[0], guid->Data4[1], guid->Data4[2], guid->Data4[3],
 		guid->Data4[4], guid->Data4[5], guid->Data4[6], guid->Data4[7]);
-	cout << endl;
+	if(nline)
+		cout << endl;
+}
+
+bool IsEqual(GUID* guid, GUID* guid2)
+{
+	return guid->Data1 == guid2->Data1 &&
+		guid->Data2 == guid2->Data2 &&
+		guid->Data3 == guid2->Data3 &&
+		guid->Data4[0] == guid2->Data4[0] &&
+		guid->Data4[1] == guid2->Data4[1] &&
+		guid->Data4[2] == guid2->Data4[2] &&
+		guid->Data4[3] == guid2->Data4[3] &&
+		guid->Data4[4] == guid2->Data4[4] &&
+		guid->Data4[5] == guid2->Data4[5] &&
+		guid->Data4[6] == guid2->Data4[6] &&
+		guid->Data4[7] == guid2->Data4[7];
+}
+
+void PrintGUID(GUID* guid)
+{
+	PrintGUID(guid, true);
 }
 
 //Probably Incorrect for 256 characters probably like 256 / 4? I don't know enough C++
@@ -84,7 +106,7 @@ void PwrNameSetting(GUID* sub, GUID* setting, wstring name, wstring description)
 
 void CreateSettings()
 {
-	wcout << L"Creating GameMode Lib Graphics Settings" << endl;
+	wcout << L"Creating Game Mode Lib Graphics Settings" << endl;
 	//Create the Sub and the first Setting
 	PowerCreateSetting(NULL, &SUB_GRAPHICS, &SETTING_GRAPHICS); //Creates the Setting
 	PwrNameSub(&SUB_GRAPHICS, L"GameModeLib Graphics", L"Adds NVIDIA Preffered Graphics Processor & Power Level to the Power Plan");
@@ -129,24 +151,90 @@ void CreateSettings()
 
 bool HasACValue(GUID* ACTIVE, GUID* SUB, GUID* SETTING)
 {
-	LPBYTE ValBytes[sizeof(DWORD) + 1];
+	UINT32 val = 300;
 	ULONG t = REG_DWORD;
-	DWORD size = sizeof(ValBytes);
-	int ERR = PowerReadACValue(NULL, ACTIVE, SUB, SETTING, &t, reinterpret_cast<LPBYTE>(&ValBytes), &size);
-	//cout << ERR << endl;
-	return ERR == ERROR_SUCCESS;
+	DWORD size = 4;
+	int ERR = PowerReadACValue(NULL, ACTIVE, SUB, SETTING, &t, (UCHAR *)&val, &size);
+	return ERR == ERROR_SUCCESS && val != 300;
+}
+
+string ToString(bool b)
+{
+	return b ? "True" : "False";
+}
+
+/**
+* Is The Power Currently Plugged In False Means it's on Battery
+*/
+bool IsACPwr()
+{
+	SYSTEM_POWER_STATUS PwrStatus = { 0 };
+	GetSystemPowerStatus(&PwrStatus);
+	int lvl = PwrStatus.ACLineStatus;
+	return lvl != 0;//If it's 256(Unkown) or 1 then it's AC otherwise it's DC
+}
+
+DWORD GetPwrValue(GUID* pp, GUID* sub, GUID* setting, bool ac)
+{
+	UINT32 val = 300;
+	ULONG t = REG_DWORD;
+	DWORD size = 4;
+	int ERR = ac ? PowerReadACValue(NULL, pp, sub, setting, &t, (UCHAR *)&val, &size) : PowerReadDCValue(NULL, pp, sub, setting, &t, (UCHAR *)&val, &size);
+	return val;
 }
 
 int main() {
-	GUID* ActiveGUID;
-	if (PowerGetActiveScheme(NULL, &ActiveGUID) != ERROR_SUCCESS)
+	GUID* OrgGUID;
+	if (PowerGetActiveScheme(NULL, &OrgGUID) != ERROR_SUCCESS)
 	{
 		std::cerr << "Failed to get active power scheme." << std::endl;
 		return -1;
 	}
 
-	if (!HasACValue(ActiveGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS))
+	//Create the Settings If They do not exist
+	if (!HasACValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS))
 	{
 		CreateSettings();
+		PowerSetActiveScheme(NULL, OrgGUID);//Sync Changes Instantly
+	}
+
+	//Start the Main Loop of the program
+	GUID* CurrentGUID;
+	bool IsAC = IsACPwr();
+	DWORD OrgPGP = GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS, IsAC);//Preffered Graphics Processor
+	DWORD OrgGP = GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC);//Graphics Power Level
+	DWORD CurrentPGP = 300;//Preffered Graphics Processor
+	DWORD CurrentGP = 300;//Graphics Power Level
+	while (true)
+	{
+		Sleep(2500);
+		bool IsAC = IsACPwr();
+		PowerGetActiveScheme(NULL, &CurrentGUID);
+		if (!IsEqual(OrgGUID, CurrentGUID))
+		{
+			cout << "Power Plan Changed:";
+			PrintGUID(OrgGUID, false);
+			cout << " To:";
+			PrintGUID(CurrentGUID, false);
+			cout << endl;
+
+			//Force Update on Settings
+			OrgGUID = CurrentGUID;
+			//Update Values
+			DWORD CurrentPGP = GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS, IsAC);//Preffered Graphics Processor
+			DWORD CurrentGP =  GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC);//Graphics Power Level
+		}
+		
+		//Detect Changes From the Power Plan
+		if (OrgPGP != CurrentPGP || OrgGP != CurrentGP)
+		{
+			OrgPGP = CurrentPGP;
+			OrgGP = CurrentGP;
+		}
+		//TODO SYNC NVIDIA with the power plan
+		else
+		{
+
+		}
 	}
 }
