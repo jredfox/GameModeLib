@@ -1,16 +1,49 @@
 #include <Windows.h>
 #include <PowrProf.h>
+#include "nvapi.h"
+#include "NvApiDriverSettings.h"
 #include <string>
 #include <iostream>
 
 #pragma comment(lib, "PowrProf.lib")
+#pragma comment (lib, "nvapi.lib")
 
 using namespace std;
+
+class EnumPwR {
+	public:
+	wstring Name;
+	DWORD PwRValue;
+	DWORD* NVAPIValue;
+
+	// Constructor
+	EnumPwR(const wstring name, DWORD pwr, DWORD nv[]) : Name(name), PwRValue(pwr) 
+	{
+		NVAPIValue = nv;
+	}
+};
 
 GUID ULTIMATE = { 0xE9A42B02, 0xD5DF, 0x448D, {0xAA, 0x00, 0x03, 0xF1,0x47, 0x49, 0xEB, 0x61 } };
 GUID SUB_GRAPHICS = { 0x4f971e89, 0xeebd, 0x4455,{ 0xa8, 0xde, 0x9e, 0x59, 0x04, 0x0b, 0xf5, 0x63 } };
 GUID SETTING_GRAPHICS = { 0x5fb4938d, 0x1ee8, 0x4b0f,{ 0x9a, 0x3c, 0x50, 0x3b, 0x37, 0x9f, 0x4c, 0x89 } };
 GUID SETTING_GRAPHICS_PWR = { 0x5fb4938d, 0x1ee8, 0x4b0f,{ 0x9a, 0x3c, 0x50, 0x3b, 0x68, 0x9f, 0x4c, 0x69 } };
+
+const EnumPwR NONE(L"", 0, NULL);
+const EnumPwR* NONE_REF = &NONE;
+const EnumPwR PERFORMANCE_OFF(L"Off", 0, NULL);
+const EnumPwR PERFORMANCE_SAVING(L"Power Savings (Integrated)", 1, new DWORD[3] { SHIM_MCCOMPAT_INTEGRATED, SHIM_RENDERING_MODE_INTEGRATED, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
+const EnumPwR PERFORMANCE_AUTO(L"Auto", 2, new DWORD[3]{ SHIM_MCCOMPAT_AUTO_SELECT, SHIM_RENDERING_MODE_AUTO_SELECT, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
+const EnumPwR PERFORMANCE_HIGH(L"High Performance (NVIDIA)", 3, new DWORD[3]{ SHIM_MCCOMPAT_ENABLE, SHIM_RENDERING_MODE_ENABLE, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
+EnumPwR ENUMGPUS[] = { PERFORMANCE_OFF, PERFORMANCE_SAVING, PERFORMANCE_AUTO, PERFORMANCE_HIGH };
+
+const EnumPwR PWR_OFF(L"Off", 0, NULL);
+const EnumPwR PWR_SAVING(L"Power Savings (Adaptive)", 1, new DWORD[1]{ PREFERRED_PSTATE_ADAPTIVE }); //Could Have Also Used PREFERRED_PSTATE_PREFER_MIN But TBH If your on High Performance Adaptive should be the lowest setting
+const EnumPwR PWR_AUTO(L"Driver Controlled", 2, new DWORD[1] { PREFERRED_PSTATE_DRIVER_CONTROLLED });
+const EnumPwR PWR_OPTIMAL(L"Optimal Power", 3, new DWORD[1] { PREFERRED_PSTATE_OPTIMAL_POWER });
+const EnumPwR PWR_HIGH(L"High Peformance", 4, new DWORD[1] { PREFERRED_PSTATE_PREFER_MAX });
+const EnumPwR PWR_HIGH_CONSISTENT(L"High Performance Consistent", 5, new DWORD[1]{ PREFERRED_PSTATE_PREFER_CONSISTENT_PERFORMANCE });
+
+EnumPwR ENUMPWRS[] = { PWR_OFF, PWR_SAVING, PWR_AUTO, PWR_OPTIMAL, PWR_HIGH, PWR_HIGH_CONSISTENT };
 
 //Power Plan Start
 bool PowerPlanExists(GUID id)
@@ -104,7 +137,7 @@ void PwrNameSetting(GUID* sub, GUID* setting, wstring name, wstring description)
 	PowerWriteDescription(NULL, NULL, sub, setting, bdesc, 256);
 }
 
-void CreateSettings()
+void CreateSettings(GUID* Current)
 {
 	wcout << L"Creating Game Mode Lib Graphics Settings" << endl;
 	//Create the Sub and the first Setting
@@ -147,6 +180,7 @@ void CreateSettings()
 	PowerWriteACDefaultIndex(NULL, &GUID_TYPICAL_POWER_SAVINGS, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, 3);//Balenced Scheme
 	PowerWriteDCDefaultIndex(NULL, &GUID_MAX_POWER_SAVINGS, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, 1);//Power Saver Scheme
 	PowerWriteACDefaultIndex(NULL, &GUID_MAX_POWER_SAVINGS, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, 1);//Power Saver Scheme
+	PowerSetActiveScheme(NULL, Current);//Sync Changes Instantly
 }
 
 bool HasACValue(GUID* ACTIVE, GUID* SUB, GUID* SETTING)
@@ -183,9 +217,131 @@ DWORD GetPwrValue(GUID* pp, GUID* sub, GUID* setting, bool ac)
 	return val;
 }
 
+void NVAPIError(NvAPI_Status status, std::wstring id)
+{
+	NvAPI_ShortString szDesc = { 0 };
+	NvAPI_GetErrorMessage(status, szDesc);
+	std::wcerr << L"NVAPI Error: " << szDesc << id << std::endl;
+}
+
+#include <sstream>
+#include <iomanip>
+wstring ToHex(DWORD v)
+{
+	std::wstringstream ss;
+	ss << L"0x" << std::uppercase << std::setfill(L'0') << std::setw(8) << std::hex << v;
+	return ss.str();
+}
+
+
 void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
 {
+	EnumPwR ENUM_PWR = NONE;
+	EnumPwR ENUM_GRAPHICS = NONE;
+	bool HasFoundPWR = false;
+	bool HasFoundG = false;
+	for (auto v : ENUMPWRS)
+	{
+		if (v.PwRValue == GPUPwRLVL)
+		{
+			ENUM_PWR = v;
+			HasFoundPWR = true;
+			break;
+		}
+	}
+	for (auto v : ENUMGPUS)
+	{
+		if (v.PwRValue == PrefGPU)
+		{
+			ENUM_GRAPHICS = v;
+			HasFoundG = true;
+			break;
+		}
+	}
+	if (!HasFoundG || !HasFoundPWR)
+	{
+		wcout << L"Critical ERROR EnumPwR Not Found" << endl;
+		exit(-1);
+	}
 
+	//Both Modules Are Disabled Return From Doing Any Operations
+	if (ENUM_GRAPHICS.PwRValue == 0 && ENUM_GRAPHICS.PwRValue == 0)
+		return;
+
+	NvAPI_Status status = NvAPI_Initialize();
+	if (status != NVAPI_OK)
+	{
+		NVAPIError(status, L"INIT");
+		exit(-1);
+	}
+	NvDRSSessionHandle hSession = 0;
+	status = NvAPI_DRS_CreateSession(&hSession);
+	if (status != NVAPI_OK)
+	{
+		NVAPIError(status, L"SESSION");
+		exit(-1);
+	}
+	status = NvAPI_DRS_LoadSettings(hSession);
+	if (status != NVAPI_OK)
+	{
+		NVAPIError(status, L"LOAD_SETTINGS");
+		exit(-1);
+	}
+
+	NvDRSProfileHandle hProfile = 0;
+	status = NvAPI_DRS_GetBaseProfile(hSession, &hProfile);
+	if (status != NVAPI_OK)
+		NVAPIError(status, L"GET_BASE_PROFILE");
+
+	if (ENUM_PWR.PwRValue != 0)
+	{
+		NVDRS_SETTING pwrsetting = { 0 };
+		pwrsetting.version = NVDRS_SETTING_VER;
+		pwrsetting.settingId = PREFERRED_PSTATE_ID;
+		pwrsetting.settingType = NVDRS_DWORD_TYPE;
+		pwrsetting.u32CurrentValue = ENUM_PWR.NVAPIValue[0];
+		status = NvAPI_DRS_SetSetting(hSession, hProfile, &pwrsetting);
+		if (status != NVAPI_OK)
+			NVAPIError(status, L"GPU_POWER_LVL");
+	}
+
+	if (ENUM_GRAPHICS.PwRValue != 0)
+	{
+		NVDRS_SETTING gsetting1 = { 0 };
+		gsetting1.version = NVDRS_SETTING_VER;
+		gsetting1.settingId = SHIM_MCCOMPAT_ID;
+		gsetting1.settingType = NVDRS_DWORD_TYPE;
+		gsetting1.u32CurrentValue = ENUM_GRAPHICS.NVAPIValue[0];
+
+		NVDRS_SETTING gsetting2 = { 0 };
+		gsetting2.version = NVDRS_SETTING_VER;
+		gsetting2.settingId = SHIM_RENDERING_MODE_ID;
+		gsetting2.settingType = NVDRS_DWORD_TYPE;
+		gsetting2.u32CurrentValue = ENUM_GRAPHICS.NVAPIValue[1];
+
+		NVDRS_SETTING gsetting3 = { 0 };
+		gsetting3.version = NVDRS_SETTING_VER;
+		gsetting3.settingId = SHIM_RENDERING_OPTIONS_ID;
+		gsetting3.settingType = NVDRS_DWORD_TYPE;
+		gsetting3.u32CurrentValue = ENUM_GRAPHICS.NVAPIValue[2];
+
+		status = NvAPI_DRS_SetSetting(hSession, hProfile, &gsetting1);
+		if (status != NVAPI_OK)
+			NVAPIError(status, L"PREF_GPU_1");
+		status = NvAPI_DRS_SetSetting(hSession, hProfile, &gsetting2);
+		if (status != NVAPI_OK)
+			NVAPIError(status, L"PREF_GPU_2");
+		status = NvAPI_DRS_SetSetting(hSession, hProfile, &gsetting3);
+		if (status != NVAPI_OK)
+			NVAPIError(status, L"PREF_GPU_3");
+	}
+
+	// Save Changes
+	status = NvAPI_DRS_SaveSettings(hSession);
+	if (status != NVAPI_OK)
+		NVAPIError(status, L"SAVING");
+	// Cleanup
+	NvAPI_DRS_DestroySession(hSession);
 }
 
 void SyncFromNVAPI(GUID* CurrentPP)
@@ -205,8 +361,7 @@ int main() {
 	//Create the Settings If They do not exist
 	if (!HasACValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS))
 	{
-		CreateSettings();
-		PowerSetActiveScheme(NULL, OrgGUID);//Sync Changes Instantly
+		CreateSettings(OrgGUID);
 	}
 
 	//Start the Main Loop of the program
@@ -242,6 +397,11 @@ int main() {
 		else
 		{
 			SyncFromNVAPI(CurrentGUID);
+			//Update Checker Values
+			CurrentPGP = GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS, IsAC);//Preffered Graphics Processor
+			CurrentGP = GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC);//Graphics Power Level
+			OrgPGP = CurrentPGP;
+			OrgGP = CurrentGP;
 		}
 	}
 }
