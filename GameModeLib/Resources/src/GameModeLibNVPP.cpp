@@ -12,6 +12,8 @@
 
 using namespace std;
 
+bool IsACPwr();
+
 //Start Generic Functions
 string ToString(bool b)
 {
@@ -112,7 +114,6 @@ GUID SETTING_GRAPHICS = { 0x5fb4938d, 0x1ee8, 0x4b0f,{ 0x9a, 0x3c, 0x50, 0x3b, 0
 GUID SETTING_GRAPHICS_PWR = { 0x5fb4938d, 0x1ee8, 0x4b0f,{ 0x9a, 0x3c, 0x50, 0x3b, 0x68, 0x9f, 0x4c, 0x69 } };
 
 const EnumPwR NONE(L"", 0, NULL);
-const EnumPwR* NONE_REF = &NONE;
 const EnumPwR PERFORMANCE_OFF(L"Off", 0, NULL);
 const EnumPwR PERFORMANCE_SAVING(L"Power Savings (Integrated)", 1, new DWORD[3]{ SHIM_MCCOMPAT_INTEGRATED, SHIM_RENDERING_MODE_INTEGRATED, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
 const EnumPwR PERFORMANCE_AUTO(L"Auto", 2, new DWORD[3]{ SHIM_MCCOMPAT_AUTO_SELECT, SHIM_RENDERING_MODE_AUTO_SELECT, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
@@ -126,12 +127,13 @@ const EnumPwR PWR_OPTIMAL(L"Optimal Power", 3, new DWORD[1]{ PREFERRED_PSTATE_OP
 const EnumPwR PWR_HIGH(L"High Peformance", 4, new DWORD[1]{ PREFERRED_PSTATE_PREFER_MAX });
 const EnumPwR PWR_HIGH_CONSISTENT(L"High Performance Consistent", 5, new DWORD[1]{ PREFERRED_PSTATE_PREFER_CONSISTENT_PERFORMANCE });
 
-EnumPwR ENUMPWRS[] = { PWR_OFF, PWR_SAVING, PWR_AUTO, PWR_OPTIMAL, PWR_HIGH, PWR_HIGH_CONSISTENT };
+EnumPwR ENUMPWRS[] = { PWR_OFF, PWR_SAVING, PWR_AUTO, PWR_OPTIMAL, PWR_HIGH, PWR_HIGH_CONSISTENT};
 
 //start program arguments
 static bool HasPwr = true;
 static bool ForceInstall = false;
 static bool FirstSync = true;
+static bool IsAC = IsACPwr();
 
 //Probably Incorrect for 256 characters probably like 256 / 4? I don't know enough C++
 void PwrCreateSettingValue(GUID* sub, GUID* setting, int index, wstring name, wstring description)
@@ -237,6 +239,15 @@ bool HasACValue(GUID* ACTIVE, GUID* SUB, GUID* SETTING)
 	return ERR == ERROR_SUCCESS && val != 404;
 }
 
+bool HasPwrValue(GUID* pp, GUID* sub, GUID* setting, bool ac)
+{
+	UINT32 val = 404;
+	ULONG t = REG_DWORD;
+	DWORD size = 4;
+	int ERR = ac ? PowerReadACValue(NULL, pp, sub, setting, &t, (UCHAR *)&val, &size) : PowerReadDCValue(NULL, pp, sub, setting, &t, (UCHAR *)&val, &size);
+	return ERR == ERROR_SUCCESS && val != 404;
+}
+
 /**
 * Is The Power Currently Plugged In False Means it's on Battery
 */
@@ -259,7 +270,7 @@ DWORD GetPwrValue(GUID* pp, GUID* sub, GUID* setting, bool ac)
 
 DWORD SetPwrValue(GUID* pp, GUID* sub, GUID* setting, bool ac, DWORD val)
 {
-	ac ? PowerWriteACValueIndex(NULL, pp, sub, setting, val) : PowerWriteACValueIndex(NULL, pp, sub, setting, val);
+	return ac ? PowerWriteACValueIndex(NULL, pp, sub, setting, val) : PowerWriteACValueIndex(NULL, pp, sub, setting, val);
 }
 
 void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
@@ -288,11 +299,6 @@ void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
 			HasFoundG = true;
 			break;
 		}
-	}
-	if (!HasFoundG || !HasFoundPWR && HasPwr)
-	{
-		wcout << L"Critical ERROR EnumPwR Not Found" << endl;
-		exit(-1);
 	}
 
 	//Both Modules Are Disabled Return From Doing Any Operations
@@ -353,7 +359,7 @@ void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
 			NVAPIError(status, L"PREF_GPU_2");
 
 		//Only Change Optimus Rendering Flags When the Power Plan Changes not when the Program Launches to preserve Configurations from NVIDIA Control Pannel
-		if (!FirstSync)
+		if (!FirstSync || ForceInstall)
 		{
 			NVDRS_SETTING gsetting3 = { 0 };
 			gsetting3.version = NVDRS_SETTING_VER;
@@ -375,9 +381,10 @@ void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
 	hSession = 0;
 }
 
-void SyncFromNVAPI(GUID* CurrentPP, DWORD PrefGPU, DWORD pwr, bool IsAC)
+void SyncFromNVAPI(GUID* CurrentPP, DWORD prefgpu, DWORD pwr)
 {
-	if ((PrefGPU == 0 || PrefGPU == 404) && (pwr == 0 || pwr == 404))
+	//Cannot Sync if Either Both PrefGPU and PWR are Both Off or in an Errored State
+	if (prefgpu == 0 && pwr == 0)
 		return;
 	NvDRSSessionHandle hSession = 0;
 	NvAPI_Status status = NvAPI_DRS_CreateSession(&hSession);
@@ -401,43 +408,60 @@ void SyncFromNVAPI(GUID* CurrentPP, DWORD PrefGPU, DWORD pwr, bool IsAC)
 		exit(-1);
 	}
 
-	if (pwr != 0 && pwr != 404)
+	bool dirty = false;
+
+	//Sync Power Level
+	if (HasPwr && pwr != 0)
 	{
 		NVDRS_SETTING USetting = { 0 };
 		USetting.version = NVDRS_SETTING_VER;
 		USetting.settingType = NVDRS_DWORD_TYPE;
-		NvAPI_Status ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, PREFERRED_PSTATE_ID, &USetting);
+		status = NvAPI_DRS_GetSetting(hSession, hProfile, PREFERRED_PSTATE_ID, &USetting);
 		DWORD VAL_PWR = status == NVAPI_OK ? USetting.u32CurrentValue : PREFERRED_PSTATE_DEFAULT;
+		//Search for the Power Index that Matches the NVIDIA Power State
 		for (auto p : ENUMPWRS)
 		{
-			if (pwr != p.PwRValue && VAL_PWR == p.NVAPIValue[0])
+			if (VAL_PWR == p.NVAPIValue[0] && p.PwRValue != pwr)
 			{
+				dirty = true;
 				wcout << L"Syncing Changes:" << p.Name << L" " << p.PwRValue << L" Old Value:" << pwr << endl;
 				SetPwrValue(CurrentPP, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC, p.PwRValue);
 			}
 		}
 	}
 	
-	if (PrefGPU != 0 && PrefGPU != 404)
+	if (prefgpu != 0)
 	{
-		NVDRS_SETTING USetting = { 0 };
-		USetting.version = NVDRS_SETTING_VER;
-		USetting.settingType = NVDRS_DWORD_TYPE;
-		NvAPI_Status ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SHIM_MCCOMPAT_ID, &USetting);
-		DWORD VAL_PWR = status == NVAPI_OK ? USetting.u32CurrentValue : PREFERRED_PSTATE_DEFAULT;
+		NVDRS_SETTING PrefGPUSetting1 = { 0 };
+		PrefGPUSetting1.version = NVDRS_SETTING_VER;
+		PrefGPUSetting1.settingType = NVDRS_DWORD_TYPE;
+		status = NvAPI_DRS_GetSetting(hSession, hProfile, SHIM_MCCOMPAT_ID, &PrefGPUSetting1);
+		DWORD VAL_PWR = status == NVAPI_OK ? PrefGPUSetting1.u32CurrentValue : SHIM_MCCOMPAT_AUTO_SELECT;
 
-		NVDRS_SETTING USetting = { 0 };
-		USetting.version = NVDRS_SETTING_VER;
-		USetting.settingType = NVDRS_DWORD_TYPE;
-		NvAPI_Status ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SHIM_RENDERING_MODE_ID, &USetting);
-		DWORD VAL_PWR = status == NVAPI_OK ? USetting.u32CurrentValue : PREFERRED_PSTATE_DEFAULT;
+		NVDRS_SETTING PrefGPUSetting2 = { 0 };
+		PrefGPUSetting2.version = NVDRS_SETTING_VER;
+		PrefGPUSetting2.settingType = NVDRS_DWORD_TYPE;
+		status = NvAPI_DRS_GetSetting(hSession, hProfile, SHIM_RENDERING_MODE_ID, &PrefGPUSetting2);
+		DWORD VAL_PWR2 = status == NVAPI_OK ? PrefGPUSetting2.u32CurrentValue : SHIM_RENDERING_MODE_AUTO_SELECT;
+
+		//Search for the Power Index that Matches the NVIDIA Power State
+		for (auto p : ENUMGPUS)
+		{
+			if ((VAL_PWR == p.NVAPIValue[0] || VAL_PWR2 == p.NVAPIValue[1]) && p.PwRValue != prefgpu)
+			{
+				dirty = true;
+				wcout << L"Syncing Changes:" << p.Name << L" " << p.PwRValue << L" Old Value:" << pwr << endl;
+				SetPwrValue(CurrentPP, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC, p.PwRValue);
+			}
+		}
 	}
 
 	// Cleanup
 	NvAPI_DRS_DestroySession(hSession);
 	hSession = 0;
 
-	PowerSetActiveScheme(NULL, CurrentPP);//Sync Changes Instantly
+	if(dirty)
+		PowerSetActiveScheme(NULL, CurrentPP);//Sync Changes Instantly
 }
 
 void Uninstall()
@@ -448,14 +472,23 @@ void Uninstall()
 	PowerRemovePowerSetting(&SUB_GRAPHICS, NULL);
 }
 
+DWORD GetPrefGPU(GUID* pp)
+{
+	return GetPwrValue(pp, &SUB_GRAPHICS, &SETTING_GRAPHICS, IsAC);
+}
+
+DWORD GetPwrGPU(GUID* pp)
+{
+	return HasPwr ? GetPwrValue(pp, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC) : 0;
+}
+
 int main(int argc, char **argv)
 {
 	NvAPI_Status status = NvAPI_Initialize();
 	if (status != NVAPI_OK)
 	{
 		NVAPIError(status, L"INIT");
-		//TODO Uncomment once code works
-		//exit(-1);
+		//exit(-1); //TODO Uncomment once code works
 	}
 
 	//Handle Commands "/help" and "/uninstall"
@@ -502,58 +535,73 @@ int main(int argc, char **argv)
 		}
 	}
 
-	GUID* OrgGUID;
-	if (PowerGetActiveScheme(NULL, &OrgGUID) != ERROR_SUCCESS)
-	{
-		std::cerr << "Failed to get active power scheme." << std::endl;
-		return -1;
-	}
+	GUID* Org;
+	PowerGetActiveScheme(NULL, &Org);
+	DWORD OrgGPU = GetPrefGPU(Org);
+	DWORD OrgPwR = GetPwrGPU(Org);
 
-	//Create the Settings If They do not exist
-	if (ForceInstall || !HasACValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS))
+	//Install If Required
+	if (ForceInstall || !HasACValue(Org, &SUB_GRAPHICS, &SETTING_GRAPHICS))
 	{
-		CreateSettings(OrgGUID);
+		CreateSettings(Org);
 	}
+	//Update Has Power If it doesn't exist it will be false
+	HasPwr = HasPwr ? HasPwrValue(Org, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC) : false;
 
 	//Start the Main Loop of the program
-	GUID* CurrentGUID;
-	bool IsAC = IsACPwr();
-	DWORD OrgPGP = GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS, IsAC);//Preffered Graphics Processor
-	DWORD OrgGP = GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC);//Graphics Power Level
-	DWORD CurrentPGP = OrgPGP;//Preffered Graphics Processor
-	DWORD CurrentGP = OrgGP;//Graphics Power Level
-	SyncToNVAPI(CurrentPGP, CurrentGP);
+	GUID* Current = Org;
+	DWORD CurrentGPU = OrgGPU;
+	DWORD CurrentPwR = OrgPwR;
+	SyncToNVAPI(OrgGPU, OrgPwR);
 	FirstSync = false;
+	int tries = 0;
 	while (true)
 	{
 		Sleep(2500);
-		IsAC = IsACPwr();
-		PowerGetActiveScheme(NULL, &CurrentGUID);
-		if (!IsEqual(OrgGUID, CurrentGUID))
+		IsAC = IsACPwr();//Sync Power Changes
+		PowerGetActiveScheme(NULL, &Current);
+		if (!IsEqual(Org, Current))
 		{
 			//Force Update on Settings
-			OrgGUID = CurrentGUID;
+			Org = Current;
 			//Update Values
-			CurrentPGP = GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS, IsAC);//Preffered Graphics Processor
-			CurrentGP = GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC);//Graphics Power Level
+			CurrentGPU = GetPrefGPU(Current);
+			CurrentPwR = GetPwrGPU(Current);
+		}
+
+		//Refresh Errored State Power Plan Settings
+		while (CurrentGPU == 404 || CurrentPwR == 404)
+		{
+			if (tries > 254)
+			{
+				wcerr << L"Critical Error Has Occured Unable to Find Preffered Graphics Processor and or GPU Power Level Settings" << endl;
+				exit(-1);
+			}
+			//Refresh Critical Settings
+			IsAC = IsACPwr();
+			PowerGetActiveScheme(NULL, &Current);
+			CurrentGPU = GetPrefGPU(Current);
+			CurrentPwR = GetPwrGPU(Current);
+			tries++;
+			Sleep(250);
+			if (CurrentGPU != 404 && CurrentPwR != 404)
+				tries = 0;
 		}
 
 		//Detect Changes From the Power Plan
-		if (OrgPGP != CurrentPGP || OrgGP != CurrentGP)
+		if (OrgGPU != CurrentGPU || OrgPwR != CurrentPwR)
 		{
-			OrgPGP = CurrentPGP;
-			OrgGP = CurrentGP;
-			SyncToNVAPI(CurrentPGP, CurrentGP);
+			OrgGPU = CurrentGPU;
+			OrgPwR = CurrentPwR;
+			SyncToNVAPI(CurrentGPU, CurrentPwR);
 		}
-		//TODO SYNC NVIDIA with the power plan
 		else
 		{
-			SyncFromNVAPI(CurrentGUID, CurrentPGP, CurrentGP, IsAC);
-			//Update Checker Values
-			CurrentPGP = GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS, IsAC);//Preffered Graphics Processor
-			CurrentGP = GetPwrValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC);//Graphics Power Level
-			OrgPGP = CurrentPGP;
-			OrgGP = CurrentGP;
+			SyncFromNVAPI(Current, CurrentGPU, CurrentPwR);
+			CurrentGPU = GetPrefGPU(Current);
+			CurrentPwR = GetPwrGPU(Current);
+			OrgGPU = CurrentGPU;
+			OrgPwR = CurrentPwR;
 		}
 	}
 }
