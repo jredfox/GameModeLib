@@ -39,12 +39,21 @@ std::wstring ctow(const char* src)
 	return std::wstring(src, src + strlen(src));
 }
 
-void NVAPIError(NvAPI_Status status, std::wstring id)
+const static bool CanCrash = true;
+void NVAPIError(NvAPI_Status status, std::wstring id, bool crash)
 {
 	NvAPI_ShortString szDesc = { 0 };
 	NvAPI_GetErrorMessage(status, szDesc);
 	std::wcerr << L"NVAPI Error: " << szDesc << id << std::endl;
+	if (crash && CanCrash)
+		exit(-1);
 }
+
+void NVAPIError(NvAPI_Status status, std::wstring id)
+{
+	NVAPIError(status, id, false);
+}
+
 
 void PrintGUID(GUID* guid, bool nline)
 {
@@ -114,13 +123,13 @@ GUID SETTING_GRAPHICS = { 0x5fb4938d, 0x1ee8, 0x4b0f,{ 0x9a, 0x3c, 0x50, 0x3b, 0
 GUID SETTING_GRAPHICS_PWR = { 0x5fb4938d, 0x1ee8, 0x4b0f,{ 0x9a, 0x3c, 0x50, 0x3b, 0x68, 0x9f, 0x4c, 0x69 } };
 
 const EnumPwR NONE(L"", 0, NULL);
-const EnumPwR PERFORMANCE_OFF(L"Off", 0, new DWORD[1] { 4294967295 });
+const EnumPwR PERFORMANCE_OFF(L"Off", 0, new DWORD[1]{ 4294967295 });
 const EnumPwR PERFORMANCE_SAVING(L"Power Savings (Integrated)", 1, new DWORD[3]{ SHIM_MCCOMPAT_INTEGRATED, SHIM_RENDERING_MODE_INTEGRATED, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
 const EnumPwR PERFORMANCE_AUTO(L"Auto", 2, new DWORD[3]{ SHIM_MCCOMPAT_AUTO_SELECT, SHIM_RENDERING_MODE_AUTO_SELECT, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
 const EnumPwR PERFORMANCE_HIGH(L"High Performance (NVIDIA)", 3, new DWORD[3]{ SHIM_MCCOMPAT_ENABLE, SHIM_RENDERING_MODE_ENABLE, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
 EnumPwR ENUMGPUS[] = { PERFORMANCE_OFF, PERFORMANCE_SAVING, PERFORMANCE_AUTO, PERFORMANCE_HIGH };
 
-const EnumPwR PWR_OFF(L"Off", 0, new DWORD[1] { 4294967295 });
+const EnumPwR PWR_OFF(L"Off", 0, new DWORD[1]{ 4294967295 });
 const EnumPwR PWR_SAVING(L"Power Savings (Adaptive)", 1, new DWORD[1]{ PREFERRED_PSTATE_ADAPTIVE }); //Could Have Also Used PREFERRED_PSTATE_PREFER_MIN But TBH If your on High Performance Adaptive should be the lowest setting
 const EnumPwR PWR_AUTO(L"Driver Controlled", 2, new DWORD[1]{ PREFERRED_PSTATE_DRIVER_CONTROLLED });
 const EnumPwR PWR_OPTIMAL(L"Optimal Power", 3, new DWORD[1]{ PREFERRED_PSTATE_OPTIMAL_POWER });
@@ -309,14 +318,12 @@ void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
 	NvAPI_Status status = NvAPI_DRS_CreateSession(&hSession);
 	if (status != NVAPI_OK)
 	{
-		NVAPIError(status, L"SESSION");
-		exit(-1);
+		NVAPIError(status, L"SESSION", true);
 	}
 	status = NvAPI_DRS_LoadSettings(hSession);
 	if (status != NVAPI_OK)
 	{
-		NVAPIError(status, L"LOAD_SETTINGS");
-		exit(-1);
+		NVAPIError(status, L"LOAD_SETTINGS", true);
 	}
 
 	NvDRSProfileHandle hProfile = 0;
@@ -390,22 +397,19 @@ void SyncFromNVAPI(GUID* CurrentPP, DWORD prefgpu, DWORD pwr)
 	NvAPI_Status status = NvAPI_DRS_CreateSession(&hSession);
 	if (status != NVAPI_OK)
 	{
-		NVAPIError(status, L"SESSION");
-		exit(-1);
+		NVAPIError(status, L"SESSION", true);
 	}
 	status = NvAPI_DRS_LoadSettings(hSession);
 	if (status != NVAPI_OK)
 	{
-		NVAPIError(status, L"LOAD_SETTINGS");
-		exit(-1);
+		NVAPIError(status, L"LOAD_SETTINGS", true);
 	}
 
 	NvDRSProfileHandle hProfile = 0;
 	status = NvAPI_DRS_GetBaseProfile(hSession, &hProfile);
 	if (status != NVAPI_OK)
 	{
-		NVAPIError(status, L"GET_BASE_PROFILE");
-		exit(-1);
+		NVAPIError(status, L"GET_BASE_PROFILE", true);
 	}
 	bool dirty = false;
 
@@ -486,8 +490,7 @@ int main(int argc, char **argv)
 	NvAPI_Status status = NvAPI_Initialize();
 	if (status != NVAPI_OK)
 	{
-		NVAPIError(status, L"INIT");
-		//exit(-1); //TODO Uncomment once code works
+		NVAPIError(status, L"INIT", true);
 	}
 
 	//Handle Commands "/help" and "/uninstall"
@@ -596,11 +599,11 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			SyncFromNVAPI(Current, CurrentGPU, CurrentPwR);
+			/*SyncFromNVAPI(Current, CurrentGPU, CurrentPwR);
 			CurrentGPU = GetPrefGPU(Current);
 			CurrentPwR = GetPwrGPU(Current);
 			OrgGPU = CurrentGPU;
-			OrgPwR = CurrentPwR;
+			OrgPwR = CurrentPwR;*/
 		}
 	}
 }
