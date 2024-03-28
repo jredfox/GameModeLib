@@ -2,6 +2,8 @@
 #include <PowrProf.h>
 #include "nvapi.h"
 #include "NvApiDriverSettings.h"
+#include <sstream>
+#include <iomanip>
 #include <string>
 #include <iostream>
 
@@ -9,6 +11,69 @@
 #pragma comment (lib, "nvapi.lib")
 
 using namespace std;
+
+//Start Generic Functions
+string ToString(bool b)
+{
+	return b ? "True" : "False";
+}
+
+wstring ToHex(DWORD v)
+{
+	std::wstringstream ss;
+	ss << L"0x" << std::uppercase << std::setfill(L'0') << std::setw(8) << std::hex << v;
+	return ss.str();
+}
+
+std::wstring tolower(std::wstring s)
+{
+	for (auto& c : s)
+		c = tolower(c);
+	return s;
+}
+
+std::wstring ctow(const char* src)
+{
+	return std::wstring(src, src + strlen(src));
+}
+
+void NVAPIError(NvAPI_Status status, std::wstring id)
+{
+	NvAPI_ShortString szDesc = { 0 };
+	NvAPI_GetErrorMessage(status, szDesc);
+	std::wcerr << L"NVAPI Error: " << szDesc << id << std::endl;
+}
+
+void PrintGUID(GUID* guid, bool nline)
+{
+	printf("{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}",
+		guid->Data1, guid->Data2, guid->Data3,
+		guid->Data4[0], guid->Data4[1], guid->Data4[2], guid->Data4[3],
+		guid->Data4[4], guid->Data4[5], guid->Data4[6], guid->Data4[7]);
+	if (nline)
+		cout << endl;
+}
+
+bool IsEqual(GUID* guid, GUID* guid2)
+{
+	return guid->Data1 == guid2->Data1 &&
+		guid->Data2 == guid2->Data2 &&
+		guid->Data3 == guid2->Data3 &&
+		guid->Data4[0] == guid2->Data4[0] &&
+		guid->Data4[1] == guid2->Data4[1] &&
+		guid->Data4[2] == guid2->Data4[2] &&
+		guid->Data4[3] == guid2->Data4[3] &&
+		guid->Data4[4] == guid2->Data4[4] &&
+		guid->Data4[5] == guid2->Data4[5] &&
+		guid->Data4[6] == guid2->Data4[6] &&
+		guid->Data4[7] == guid2->Data4[7];
+}
+
+void PrintGUID(GUID* guid)
+{
+	PrintGUID(guid, true);
+}
+//End Generic Functions
 
 class EnumPwR {
 	public:
@@ -65,36 +130,6 @@ bool PowerPlanExists(GUID id)
 		bufferSize = sizeof(schemeGuid);
 	}
 	return false;
-}
-
-void PrintGUID(GUID* guid, bool nline)
-{
-	printf("{%08lX-%04hX-%04hX-%02hhX%02hhX-%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX}",
-		guid->Data1, guid->Data2, guid->Data3,
-		guid->Data4[0], guid->Data4[1], guid->Data4[2], guid->Data4[3],
-		guid->Data4[4], guid->Data4[5], guid->Data4[6], guid->Data4[7]);
-	if(nline)
-		cout << endl;
-}
-
-bool IsEqual(GUID* guid, GUID* guid2)
-{
-	return guid->Data1 == guid2->Data1 &&
-		guid->Data2 == guid2->Data2 &&
-		guid->Data3 == guid2->Data3 &&
-		guid->Data4[0] == guid2->Data4[0] &&
-		guid->Data4[1] == guid2->Data4[1] &&
-		guid->Data4[2] == guid2->Data4[2] &&
-		guid->Data4[3] == guid2->Data4[3] &&
-		guid->Data4[4] == guid2->Data4[4] &&
-		guid->Data4[5] == guid2->Data4[5] &&
-		guid->Data4[6] == guid2->Data4[6] &&
-		guid->Data4[7] == guid2->Data4[7];
-}
-
-void PrintGUID(GUID* guid)
-{
-	PrintGUID(guid, true);
 }
 
 //Probably Incorrect for 256 characters probably like 256 / 4? I don't know enough C++
@@ -201,11 +236,6 @@ bool HasACValue(GUID* ACTIVE, GUID* SUB, GUID* SETTING)
 	return ERR == ERROR_SUCCESS && val != 300;
 }
 
-string ToString(bool b)
-{
-	return b ? "True" : "False";
-}
-
 /**
 * Is The Power Currently Plugged In False Means it's on Battery
 */
@@ -225,23 +255,6 @@ DWORD GetPwrValue(GUID* pp, GUID* sub, GUID* setting, bool ac)
 	int ERR = ac ? PowerReadACValue(NULL, pp, sub, setting, &t, (UCHAR *)&val, &size) : PowerReadDCValue(NULL, pp, sub, setting, &t, (UCHAR *)&val, &size);
 	return val;
 }
-
-void NVAPIError(NvAPI_Status status, std::wstring id)
-{
-	NvAPI_ShortString szDesc = { 0 };
-	NvAPI_GetErrorMessage(status, szDesc);
-	std::wcerr << L"NVAPI Error: " << szDesc << id << std::endl;
-}
-
-#include <sstream>
-#include <iomanip>
-wstring ToHex(DWORD v)
-{
-	std::wstringstream ss;
-	ss << L"0x" << std::uppercase << std::setfill(L'0') << std::setw(8) << std::hex << v;
-	return ss.str();
-}
-
 
 void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
 {
@@ -299,6 +312,7 @@ void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
 	if (status != NVAPI_OK)
 		NVAPIError(status, L"GET_BASE_PROFILE");
 
+	//GPU Power Level SYNC
 	if (ENUM_PWR.PwRValue != 0)
 	{
 		NVDRS_SETTING pwrsetting = { 0 };
@@ -311,6 +325,7 @@ void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
 			NVAPIError(status, L"GPU_POWER_LVL");
 	}
 
+	//Preffered Graphics Processor SYNC
 	if (ENUM_GRAPHICS.PwRValue != 0)
 	{
 		NVDRS_SETTING gsetting1 = { 0 };
@@ -354,18 +369,6 @@ void SyncFromNVAPI(GUID* CurrentPP)
 {
 	//TODO Get NVAPI Current Settings and then change them from the power plan
 	PowerSetActiveScheme(NULL, CurrentPP);//Sync Changes Instantly
-}
-
-std::wstring tolower(std::wstring s)
-{
-	for (auto& c : s)
-		c = tolower(c);
-	return s;
-}
-
-std::wstring ctow(const char* src)
-{
-	return std::wstring(src, src + strlen(src));
 }
 
 void Uninstall()
