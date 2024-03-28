@@ -114,13 +114,13 @@ GUID SETTING_GRAPHICS = { 0x5fb4938d, 0x1ee8, 0x4b0f,{ 0x9a, 0x3c, 0x50, 0x3b, 0
 GUID SETTING_GRAPHICS_PWR = { 0x5fb4938d, 0x1ee8, 0x4b0f,{ 0x9a, 0x3c, 0x50, 0x3b, 0x68, 0x9f, 0x4c, 0x69 } };
 
 const EnumPwR NONE(L"", 0, NULL);
-const EnumPwR PERFORMANCE_OFF(L"Off", 0, NULL);
+const EnumPwR PERFORMANCE_OFF(L"Off", 0, new DWORD[1] { 4294967295 });
 const EnumPwR PERFORMANCE_SAVING(L"Power Savings (Integrated)", 1, new DWORD[3]{ SHIM_MCCOMPAT_INTEGRATED, SHIM_RENDERING_MODE_INTEGRATED, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
 const EnumPwR PERFORMANCE_AUTO(L"Auto", 2, new DWORD[3]{ SHIM_MCCOMPAT_AUTO_SELECT, SHIM_RENDERING_MODE_AUTO_SELECT, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
 const EnumPwR PERFORMANCE_HIGH(L"High Performance (NVIDIA)", 3, new DWORD[3]{ SHIM_MCCOMPAT_ENABLE, SHIM_RENDERING_MODE_ENABLE, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
 EnumPwR ENUMGPUS[] = { PERFORMANCE_OFF, PERFORMANCE_SAVING, PERFORMANCE_AUTO, PERFORMANCE_HIGH };
 
-const EnumPwR PWR_OFF(L"Off", 0, NULL);
+const EnumPwR PWR_OFF(L"Off", 0, new DWORD[1] { 4294967295 });
 const EnumPwR PWR_SAVING(L"Power Savings (Adaptive)", 1, new DWORD[1]{ PREFERRED_PSTATE_ADAPTIVE }); //Could Have Also Used PREFERRED_PSTATE_PREFER_MIN But TBH If your on High Performance Adaptive should be the lowest setting
 const EnumPwR PWR_AUTO(L"Driver Controlled", 2, new DWORD[1]{ PREFERRED_PSTATE_DRIVER_CONTROLLED });
 const EnumPwR PWR_OPTIMAL(L"Optimal Power", 3, new DWORD[1]{ PREFERRED_PSTATE_OPTIMAL_POWER });
@@ -407,7 +407,6 @@ void SyncFromNVAPI(GUID* CurrentPP, DWORD prefgpu, DWORD pwr)
 		NVAPIError(status, L"GET_BASE_PROFILE");
 		exit(-1);
 	}
-
 	bool dirty = false;
 
 	//Sync Power Level
@@ -451,7 +450,7 @@ void SyncFromNVAPI(GUID* CurrentPP, DWORD prefgpu, DWORD pwr)
 			{
 				dirty = true;
 				wcout << L"Syncing Changes:" << p.Name << L" " << p.PwRValue << L" Old Value:" << pwr << endl;
-				SetPwrValue(CurrentPP, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC, p.PwRValue);
+				SetPwrValue(CurrentPP, &SUB_GRAPHICS, &SETTING_GRAPHICS, IsAC, p.PwRValue);
 			}
 		}
 	}
@@ -462,7 +461,6 @@ void SyncFromNVAPI(GUID* CurrentPP, DWORD prefgpu, DWORD pwr)
 
 	if (dirty)
 		PowerSetActiveScheme(NULL, CurrentPP);//Sync Changes Instantly
-	wcout << "END" << endl;
 }
 
 void Uninstall()
@@ -598,11 +596,11 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			/*SyncFromNVAPI(Current, CurrentGPU, CurrentPwR);
+			SyncFromNVAPI(Current, CurrentGPU, CurrentPwR);
 			CurrentGPU = GetPrefGPU(Current);
 			CurrentPwR = GetPwrGPU(Current);
 			OrgGPU = CurrentGPU;
-			OrgPwR = CurrentPwR;*/
+			OrgPwR = CurrentPwR;
 		}
 	}
 }
