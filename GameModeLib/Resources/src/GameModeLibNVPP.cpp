@@ -45,6 +45,10 @@ const EnumPwR PWR_HIGH_CONSISTENT(L"High Performance Consistent", 5, new DWORD[1
 
 EnumPwR ENUMPWRS[] = { PWR_OFF, PWR_SAVING, PWR_AUTO, PWR_OPTIMAL, PWR_HIGH, PWR_HIGH_CONSISTENT };
 
+//start program arguments
+static bool HasPwr = true;
+static bool ForceInstall = false;
+
 //Power Plan Start
 bool PowerPlanExists(GUID id)
 {
@@ -160,6 +164,11 @@ void CreateSettings(GUID* Current)
 	PowerWriteDCDefaultIndex(NULL, &GUID_MAX_POWER_SAVINGS, &SUB_GRAPHICS, &SETTING_GRAPHICS, 1);//Power Saver Scheme
 	PowerWriteACDefaultIndex(NULL, &GUID_MAX_POWER_SAVINGS, &SUB_GRAPHICS, &SETTING_GRAPHICS, 1);//Power Saver Scheme
 
+	if (!HasPwr)
+	{
+		PowerRemovePowerSetting(&SUB_GRAPHICS, &SETTING_GRAPHICS_PWR);
+		return;
+	}
 	//Create GPU Power Level Settings
 	PowerCreateSetting(NULL, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR); //Creates the Setting
 	PowerWriteSettingAttributes(&SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, 0); //Sets the Attribute to SHOW
@@ -240,13 +249,16 @@ void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
 	EnumPwR ENUM_GRAPHICS = NONE;
 	bool HasFoundPWR = false;
 	bool HasFoundG = false;
-	for (auto v : ENUMPWRS)
+	if (HasPwr)
 	{
-		if (v.PwRValue == GPUPwRLVL)
+		for (auto v : ENUMPWRS)
 		{
-			ENUM_PWR = v;
-			HasFoundPWR = true;
-			break;
+			if (v.PwRValue == GPUPwRLVL)
+			{
+				ENUM_PWR = v;
+				HasFoundPWR = true;
+				break;
+			}
 		}
 	}
 	for (auto v : ENUMGPUS)
@@ -258,7 +270,7 @@ void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
 			break;
 		}
 	}
-	if (!HasFoundG || !HasFoundPWR)
+	if (!HasFoundG || !HasFoundPWR && HasPwr)
 	{
 		wcout << L"Critical ERROR EnumPwR Not Found" << endl;
 		exit(-1);
@@ -370,7 +382,8 @@ int main(int argc, char **argv)
 	if (status != NVAPI_OK)
 	{
 		NVAPIError(status, L"INIT");
-		exit(-1);
+		//TODO Uncomment once code works
+		//exit(-1);
 	}
 
 	//Handle Commands "/help" and "/uninstall"
@@ -385,7 +398,11 @@ int main(int argc, char **argv)
 				wcout << L"GameModeLibNVPP Adds NVIDIA Preffered Graphics Processor and GPU Power Levels to the \r\nWindows Power Plan and Syncs Changes" << endl;
 				wcout << endl;
 				wcout << L"GameModeLibNVPP.exe" << endl;
-				wcout << L"GameModeLibNVPP.exe uninstall" << endl;
+				wcout << L"GameModeLibNVPP.exe /Install" << endl;
+				wcout << L"GameModeLibNVPP.exe /Uninstall" << endl;
+				wcout << endl;
+				wcout << L"/Install  Forces Installation" << endl;
+				wcout << L"/NoPwr  Installs Without GPU Power Level Option" << endl;
 				exit(0);
 			}
 			else if (arg == L"")
@@ -396,6 +413,14 @@ int main(int argc, char **argv)
 			{
 				Uninstall();
 				exit(0);
+			}
+			else if (arg == L"install" || arg == L"/install")
+			{
+				ForceInstall = true;
+			}
+			else if (arg == L"/nopwr" || arg == L"/nopower")
+			{
+				HasPwr = false;
 			}
 			else
 			{
@@ -413,7 +438,7 @@ int main(int argc, char **argv)
 	}
 
 	//Create the Settings If They do not exist
-	if (!HasACValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS))
+	if (ForceInstall || !HasACValue(OrgGUID, &SUB_GRAPHICS, &SETTING_GRAPHICS))
 	{
 		CreateSettings(OrgGUID);
 	}
