@@ -127,7 +127,7 @@ const EnumPwR PWR_OPTIMAL(L"Optimal Power", 3, new DWORD[1]{ PREFERRED_PSTATE_OP
 const EnumPwR PWR_HIGH(L"High Peformance", 4, new DWORD[1]{ PREFERRED_PSTATE_PREFER_MAX });
 const EnumPwR PWR_HIGH_CONSISTENT(L"High Performance Consistent", 5, new DWORD[1]{ PREFERRED_PSTATE_PREFER_CONSISTENT_PERFORMANCE });
 
-EnumPwR ENUMPWRS[] = { PWR_OFF, PWR_SAVING, PWR_AUTO, PWR_OPTIMAL, PWR_HIGH, PWR_HIGH_CONSISTENT};
+EnumPwR ENUMPWRS[] = { PWR_OFF, PWR_SAVING, PWR_AUTO, PWR_OPTIMAL, PWR_HIGH, PWR_HIGH_CONSISTENT };
 
 //start program arguments
 static bool HasPwr = true;
@@ -302,7 +302,7 @@ void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
 	}
 
 	//Both Modules Are Disabled Return From Doing Any Operations
-	if (ENUM_GRAPHICS.PwRValue == 0 && ENUM_GRAPHICS.PwRValue == 0)
+	if (ENUM_GRAPHICS.PwRValue == 0 && ENUM_PWR.PwRValue == 0)
 		return;
 
 	NvDRSSessionHandle hSession = 0;
@@ -429,7 +429,7 @@ void SyncFromNVAPI(GUID* CurrentPP, DWORD prefgpu, DWORD pwr)
 			}
 		}
 	}
-	
+
 	if (prefgpu != 0)
 	{
 		NVDRS_SETTING PrefGPUSetting1 = { 0 };
@@ -460,8 +460,9 @@ void SyncFromNVAPI(GUID* CurrentPP, DWORD prefgpu, DWORD pwr)
 	NvAPI_DRS_DestroySession(hSession);
 	hSession = 0;
 
-	if(dirty)
+	if (dirty)
 		PowerSetActiveScheme(NULL, CurrentPP);//Sync Changes Instantly
+	wcout << "END" << endl;
 }
 
 void Uninstall()
@@ -564,10 +565,11 @@ int main(int argc, char **argv)
 		{
 			//Force Update on Settings
 			Org = Current;
-			//Update Values
-			CurrentGPU = GetPrefGPU(Current);
-			CurrentPwR = GetPwrGPU(Current);
 		}
+
+		//Update Values TODO put only when power shcemes or setting switch via notifications
+		CurrentGPU = GetPrefGPU(Current);
+		CurrentPwR = GetPwrGPU(Current);
 
 		//Refresh Errored State Power Plan Settings
 		while (CurrentGPU == 404 || CurrentPwR == 404)
@@ -588,7 +590,6 @@ int main(int argc, char **argv)
 				tries = 0;
 		}
 
-		//Detect Changes From the Power Plan
 		if (OrgGPU != CurrentGPU || OrgPwR != CurrentPwR)
 		{
 			OrgGPU = CurrentGPU;
@@ -597,11 +598,11 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			SyncFromNVAPI(Current, CurrentGPU, CurrentPwR);
+			/*SyncFromNVAPI(Current, CurrentGPU, CurrentPwR);
 			CurrentGPU = GetPrefGPU(Current);
 			CurrentPwR = GetPwrGPU(Current);
 			OrgGPU = CurrentGPU;
-			OrgPwR = CurrentPwR;
+			OrgPwR = CurrentPwR;*/
 		}
 	}
 }
