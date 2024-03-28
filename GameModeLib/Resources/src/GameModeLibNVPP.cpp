@@ -366,6 +366,13 @@ void Uninstall()
 
 int main(int argc, char **argv)
 {
+	NvAPI_Status status = NvAPI_Initialize();
+	if (status != NVAPI_OK)
+	{
+		NVAPIError(status, L"INIT");
+		exit(-1);
+	}
+
 	//Handle Commands "/help" and "/uninstall"
 	if (argc > 1)
 	{
@@ -396,13 +403,6 @@ int main(int argc, char **argv)
 				exit(-1);
 			}
 		}
-	}
-
-	NvAPI_Status status = NvAPI_Initialize();
-	if (status != NVAPI_OK)
-	{
-		NVAPIError(status, L"INIT");
-		exit(-1);
 	}
 
 	GUID* OrgGUID;
