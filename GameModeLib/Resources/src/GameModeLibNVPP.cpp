@@ -54,6 +54,11 @@ void PrintGUID(GUID* guid, bool nline)
 		cout << endl;
 }
 
+void PrintGUID(GUID* guid)
+{
+	PrintGUID(guid, true);
+}
+
 bool IsEqual(GUID* guid, GUID* guid2)
 {
 	return guid->Data1 == guid2->Data1 &&
@@ -69,9 +74,22 @@ bool IsEqual(GUID* guid, GUID* guid2)
 		guid->Data4[7] == guid2->Data4[7];
 }
 
-void PrintGUID(GUID* guid)
+//Power Plan Start
+bool PowerPlanExists(GUID id)
 {
-	PrintGUID(guid, true);
+	GUID schemeGuid;
+	DWORD bufferSize = sizeof(schemeGuid);
+	DWORD index = 0;
+	while (PowerEnumerate(NULL, NULL, NULL, ACCESS_SCHEME, index, (UCHAR*)&schemeGuid, &bufferSize) == ERROR_SUCCESS)
+	{
+		if (IsEqualGUID(id, schemeGuid))
+		{
+			return true;
+		}
+		index++;
+		bufferSize = sizeof(schemeGuid);
+	}
+	return false;
 }
 //End Generic Functions
 
@@ -113,24 +131,6 @@ EnumPwR ENUMPWRS[] = { PWR_OFF, PWR_SAVING, PWR_AUTO, PWR_OPTIMAL, PWR_HIGH, PWR
 //start program arguments
 static bool HasPwr = true;
 static bool ForceInstall = false;
-
-//Power Plan Start
-bool PowerPlanExists(GUID id)
-{
-	GUID schemeGuid;
-	DWORD bufferSize = sizeof(schemeGuid);
-	DWORD index = 0;
-	while (PowerEnumerate(NULL, NULL, NULL, ACCESS_SCHEME, index, (UCHAR*)&schemeGuid, &bufferSize) == ERROR_SUCCESS)
-	{
-		if (IsEqualGUID(id, schemeGuid))
-		{
-			return true;
-		}
-		index++;
-		bufferSize = sizeof(schemeGuid);
-	}
-	return false;
-}
 
 //Probably Incorrect for 256 characters probably like 256 / 4? I don't know enough C++
 void PwrCreateSettingValue(GUID* sub, GUID* setting, int index, wstring name, wstring description)
