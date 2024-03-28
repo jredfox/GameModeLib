@@ -268,14 +268,8 @@ void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
 	if (ENUM_GRAPHICS.PwRValue == 0 && ENUM_GRAPHICS.PwRValue == 0)
 		return;
 
-	NvAPI_Status status = NvAPI_Initialize();
-	if (status != NVAPI_OK)
-	{
-		NVAPIError(status, L"INIT");
-		exit(-1);
-	}
 	NvDRSSessionHandle hSession = 0;
-	status = NvAPI_DRS_CreateSession(&hSession);
+	NvAPI_Status status = NvAPI_DRS_CreateSession(&hSession);
 	if (status != NVAPI_OK)
 	{
 		NVAPIError(status, L"SESSION");
@@ -350,7 +344,67 @@ void SyncFromNVAPI(GUID* CurrentPP)
 	PowerSetActiveScheme(NULL, CurrentPP);//Sync Changes Instantly
 }
 
-int main() {
+std::wstring tolower(std::wstring s)
+{
+	for (auto& c : s)
+		c = tolower(c);
+	return s;
+}
+
+std::wstring ctow(const char* src)
+{
+	return std::wstring(src, src + strlen(src));
+}
+
+void Uninstall()
+{
+	//Remove the Power Plan Settings
+	PowerRemovePowerSetting(&SUB_GRAPHICS, &SETTING_GRAPHICS);
+	PowerRemovePowerSetting(&SUB_GRAPHICS, &SETTING_GRAPHICS_PWR);
+	PowerRemovePowerSetting(&SUB_GRAPHICS, NULL);
+}
+
+int main(int argc, char **argv)
+{
+	//Handle Commands "/help" and "/uninstall"
+	if (argc > 1)
+	{
+		for (int i = 1; i < argc; i++)
+		{
+			wstring arg = tolower(ctow(argv[i]));
+			if (arg == L"/?" || arg == L"/help")
+			{
+				wcout << endl << L"Description:" << endl;
+				wcout << L"GameModeLibNVPP Adds NVIDIA Preffered Graphics Processor and GPU Power Levels to the \r\nWindows Power Plan and Syncs Changes" << endl;
+				wcout << endl;
+				wcout << L"GameModeLibNVPP.exe" << endl;
+				wcout << L"GameModeLibNVPP.exe uninstall" << endl;
+				exit(0);
+			}
+			else if (arg == L"")
+			{
+				//User Command line Parse error ignore
+			}
+			else if (arg == L"uninstall" || arg == L"/uninstall")
+			{
+				Uninstall();
+				exit(0);
+			}
+			else
+			{
+				wcerr << L"Unregonized Option:\"" << arg << L"\" Use /? or /help to See a List of Options" << endl;
+				exit(-1);
+			}
+		}
+	}
+
+	NvAPI_Status status = NvAPI_Initialize();
+	if (status != NVAPI_OK)
+	{
+		NVAPIError(status, L"INIT");
+		exit(-1);
+	}
+
 	GUID* OrgGUID;
 	if (PowerGetActiveScheme(NULL, &OrgGUID) != ERROR_SUCCESS)
 	{
