@@ -15,7 +15,7 @@ IF /I "!FlagsWD:~1,1!" EQU "T" (GOTO UNINSTALL)
 :INSTALL
 echo Disabling Windows Defender
 call "!rc!\RegImport.exe" "FFT" "" "!rc!;!ustall!;WDDisable.reg"
-set wddisabler=!rc!\WDStaticDisable.bat
+set wddisabler=\"!rc!\WDStaticDisable.bat\"
 schtasks /create /tn "WDStaticDisabler" /ru system /sc onstart /tr "!wddisabler!" /F
 powershell Add-MpPreference -ExclusionPath "!rc!"
 call "!wddisabler!"

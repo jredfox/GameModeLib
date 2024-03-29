@@ -85,7 +85,7 @@ set regs=!regs!^;PowerThrottling.reg
 REM ## NVIDIA PowerPlan If Enabled ##
 IF /I "!Settings:~9,1!" NEQ "T" (GOTO RNVPP)
 IF "!HASNV!" NEQ "T" (GOTO RNVPP)
-IF /I "!IsAdmin!" EQU "T" (set regs=!regs!^;GameModeLibNVPP.reg) ELSE (set regs=!regs!^;GameModeLibNVPP_User.reg)
+IF /I "!IsAdmin!" NEQ "T" (set regs=!regs!^;GameModeLibNVPP.reg)
 :RNVPP
 
 REM ## Create Power Plan and Generate GPUEntries reg ##
@@ -124,9 +124,14 @@ REM ## NVIDIA Preffered GPU to the Power Plan ##
 IF /I "!Settings:~9,1!" NEQ "T" (GOTO NVPP)
 IF "!HASNV!" NEQ "T" (GOTO NVPP)
 taskkill /F /FI "IMAGENAME eq GameModeLibNVPP*"
-IF /I "!IsAdmin!" NEQ "T" (setx "GameModeLibNVPP" "!rc!\GameModeLibNVPP.exe")
-copy /Y "!rc!\GameModeLibNVPP.exe" "!gmpdir!\GameModeLibNVPP.exe" >nul 2>&1
 start /B "" "!rc!\GameModeLibNVPP-CLI.exe" "/Install" "/NoPwR" "/F"
+IF /I "!IsAdmin!" NEQ "T" (
+setx "GameModeLibNVPP" "!rc!\GameModeLibNVPP.exe"
+) ELSE (
+copy /Y "!rc!\GameModeLibNVPP.exe" "!gmpdir!\GameModeLibNVPP.exe" >nul 2>&1
+set nvpp=\"!gmpdir!\GameModeLibNVPP.exe\"
+schtasks /create /tn "GameModeLibNVPP" /tr "!nvpp!" /sc onlogon /F
+)
 :NVPP
 
 REM ## Start ADMIN Only Modules ##
@@ -200,4 +205,5 @@ exit /b
 :HASNV
 call "!rc!\GameModeLibNVPP-CLI.exe" "/?" >nul 2>&1
 IF !ERRORLEVEL! EQU 0 (set HasNV=T) ELSE (set HasNV=F)
+set HasNV=T
 exit /b
