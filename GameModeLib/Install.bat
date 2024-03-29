@@ -126,9 +126,9 @@ call "!rc!\StickyKeysSetFlag.exe" "sync"
 REM ## NVIDIA Preffered GPU to the Power Plan ##
 IF /I "!Settings:~9,1!" NEQ "T" (GOTO NVPP)
 IF "!HASNV!" NEQ "T" (GOTO NVPP)
-taskkill /F /FI "IMAGENAME eq GameModeLibNVPP.exe*"
+taskkill /F /FI "IMAGENAME eq GameModeLibNVPP*"
 IF /I "!IsAdmin!" EQU "T" (setx /m "GameModeLibNVPP_ALL" "!rc!\GameModeLibNVPP.exe") ELSE (setx "GameModeLibNVPP" "!rc!\GameModeLibNVPP.exe")
-start /B "!rc!\GameModeLibNVPP.exe" /Install /NoPwR /F
+start /B "" "!rc!\GameModeLibNVPP-CLI.exe" "/Install" "/NoPwR" "/F"
 :NVPP
 
 REM ## Start ADMIN Only Modules ##
