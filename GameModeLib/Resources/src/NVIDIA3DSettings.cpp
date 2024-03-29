@@ -27,6 +27,7 @@ static bool ForceIntegrated = false;
 static bool SkipDefaultExports = false;
 static bool ForceOptimal = false;
 static const DWORD SETTING_DEFAULT_VALUE = 4294967295;
+static DWORD SHIM_FIXED = SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE;
 
 void PrintError(NvAPI_Status status, std::wstring id)
 {
@@ -38,6 +39,43 @@ void PrintError(NvAPI_Status status, std::wstring id)
 void PrintError(NvAPI_Status status)
 {
 	PrintError(status, L"");
+}
+
+static bool IsWinModern = false;//Is Windows Windows 10 or Higher
+static bool IsWin8 = false;
+static bool IsWin8Dot1 = false;
+static bool IsWin7 = false;
+static bool IsVista = false;
+static bool IsXP = false;
+void GenIsWins()
+{
+	NTSTATUS(WINAPI *RtlGetVersion)(LPOSVERSIONINFOEXW);
+	OSVERSIONINFOEXW osInfo;
+	*(FARPROC*)&RtlGetVersion = GetProcAddress(GetModuleHandleA("ntdll"), "RtlGetVersion");
+	if (NULL != RtlGetVersion)
+	{
+		osInfo.dwOSVersionInfoSize = sizeof(osInfo);
+		RtlGetVersion(&osInfo);
+	}
+	if (osInfo.dwMajorVersion >= 10)
+	{
+		IsWinModern = true;
+	}
+	else if (osInfo.dwMajorVersion == 6)
+	{
+		if (osInfo.dwMinorVersion == 1)
+			IsWin7 = true;
+		else if (osInfo.dwMinorVersion == 0)
+			IsVista = true;
+		else if (osInfo.dwMinorVersion == 2)
+			IsWin8 = true;
+		else if (osInfo.dwMinorVersion >= 3)
+			IsWin8Dot1 = true;
+	}
+	else if (osInfo.dwMajorVersion <= 5)
+	{
+		IsXP = true;
+	}
 }
 
 bool DisplayProfileContents(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
@@ -255,7 +293,7 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 	USetting.version = NVDRS_SETTING_VER;
 	USetting.settingType = NVDRS_DWORD_TYPE;
 	ustatus = NvAPI_DRS_GetSetting(hSession, hProfile, SHIM_RENDERING_OPTIONS_ID, &USetting);
-	std::wcout << L";" << ToHex(SHIM_RENDERING_OPTIONS_ID) << L"=" << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE);
+	std::wcout << L";" << ToHex(SHIM_RENDERING_OPTIONS_ID) << L"=" << ToHex(ustatus == NVAPI_OK ? USetting.u32CurrentValue : SHIM_FIXED);
 	std::wcout << std::endl;
 
 	//Start Setting Settings
@@ -308,21 +346,21 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 	{
 		drsSetting1.u32CurrentValue = SHIM_MCCOMPAT_AUTO_SELECT;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
 		drsSetting2.u32CurrentValue = SHIM_RENDERING_MODE_AUTO_SELECT;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
-		drsSetting3.u32CurrentValue = SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE;
+		drsSetting3.u32CurrentValue = SHIM_FIXED;
 	}
 	//Force Integrated Graphics
 	else if (ForceIntegrated)
 	{
 		drsSetting1.u32CurrentValue = SHIM_MCCOMPAT_INTEGRATED;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
 		drsSetting2.u32CurrentValue = SHIM_RENDERING_MODE_INTEGRATED;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
-		drsSetting3.u32CurrentValue = SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE;
+		drsSetting3.u32CurrentValue = SHIM_FIXED;
 	}
 	//Force Dedicated Graphics
 	else
 	{
 		drsSetting1.u32CurrentValue = SHIM_MCCOMPAT_ENABLE;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
 		drsSetting2.u32CurrentValue = SHIM_RENDERING_MODE_ENABLE;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
-		drsSetting3.u32CurrentValue = SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE;
+		drsSetting3.u32CurrentValue = SHIM_FIXED;
 	}
 
 	status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting1);
@@ -586,6 +624,11 @@ void QueryProfile(NvDRSSessionHandle hSession, NvDRSProfileHandle profile, std::
 int main(int argc, char **argv)
 {
 	setlocale(LC_CTYPE, "");
+	GenIsWins();
+	if (IsWin7)
+	{
+		SHIM_FIXED = SHIM_RENDERING_OPTIONS_HANDLE_WIN7_ASYNC_RUNTIME_BUG;
+	}
 	bool SetIds = false;
 	bool Export = false;
 	bool Restore = false;

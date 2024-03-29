@@ -10,7 +10,7 @@
 #pragma comment(lib, "PowrProf.lib")
 #pragma comment (lib, "nvapi.lib")
 
-//#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 
 using namespace std;
 
@@ -21,6 +21,12 @@ string ToString(bool b)
 {
 	return b ? "True" : "False";
 }
+
+wstring ToWString(bool b)
+{
+	return b ? L"True" : L"False";
+}
+
 
 wstring ToHex(DWORD v)
 {
@@ -119,24 +125,61 @@ public:
 	}
 };
 
+static bool IsWinModern = false;//Is Windows Windows 10 or Higher
+static bool IsWin8 = false;
+static bool IsWin8Dot1 = false;
+static bool IsWin7 = false;
+static bool IsVista = false;
+static bool IsXP = false;
+void GenIsWins()
+{
+	NTSTATUS(WINAPI *RtlGetVersion)(LPOSVERSIONINFOEXW);
+	OSVERSIONINFOEXW osInfo;
+	*(FARPROC*)&RtlGetVersion = GetProcAddress(GetModuleHandleA("ntdll"), "RtlGetVersion");
+	if (NULL != RtlGetVersion)
+	{
+		osInfo.dwOSVersionInfoSize = sizeof(osInfo);
+		RtlGetVersion(&osInfo);
+	}
+	if (osInfo.dwMajorVersion >= 10)
+	{
+		IsWinModern = true;
+	}
+	else if (osInfo.dwMajorVersion == 6)
+	{
+		if (osInfo.dwMinorVersion == 1)
+			IsWin7 = true;
+		else if (osInfo.dwMinorVersion == 0)
+			IsVista = true;
+		else if (osInfo.dwMinorVersion == 2)
+			IsWin8 = true;
+		else if (osInfo.dwMinorVersion >= 3)
+			IsWin8Dot1 = true;
+	}
+	else if (osInfo.dwMajorVersion <= 5)
+	{
+		IsXP = true;
+	}
+}
+
 GUID ULTIMATE = { 0xE9A42B02, 0xD5DF, 0x448D, {0xAA, 0x00, 0x03, 0xF1,0x47, 0x49, 0xEB, 0x61 } };
 GUID SUB_GRAPHICS = { 0x4f971e89, 0xeebd, 0x4455,{ 0xa8, 0xde, 0x9e, 0x59, 0x04, 0x0b, 0xf5, 0x63 } };
 GUID SETTING_GRAPHICS = { 0x5fb4938d, 0x1ee8, 0x4b0f,{ 0x9a, 0x3c, 0x50, 0x3b, 0x37, 0x9f, 0x4c, 0x89 } };
 GUID SETTING_GRAPHICS_PWR = { 0x5fb4938d, 0x1ee8, 0x4b0f,{ 0x9a, 0x3c, 0x50, 0x3b, 0x68, 0x9f, 0x4c, 0x69 } };
 
-const EnumPwR NONE(L"", 0, NULL);
-const EnumPwR PERFORMANCE_OFF(L"Off", 0, new DWORD[1]{ 4294967295 });
-const EnumPwR PERFORMANCE_SAVING(L"Power Savings (Integrated)", 1, new DWORD[3]{ SHIM_MCCOMPAT_INTEGRATED, SHIM_RENDERING_MODE_INTEGRATED, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
-const EnumPwR PERFORMANCE_AUTO(L"Auto", 2, new DWORD[3]{ SHIM_MCCOMPAT_AUTO_SELECT, SHIM_RENDERING_MODE_AUTO_SELECT, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
-const EnumPwR PERFORMANCE_HIGH(L"High Performance (NVIDIA)", 3, new DWORD[3]{ SHIM_MCCOMPAT_ENABLE, SHIM_RENDERING_MODE_ENABLE, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
+EnumPwR NONE(L"", 0, NULL);
+EnumPwR PERFORMANCE_OFF(L"Off", 0, new DWORD[1]{ 4294967295 });
+EnumPwR PERFORMANCE_SAVING(L"Power Savings (Integrated)", 1, new DWORD[3]{ SHIM_MCCOMPAT_INTEGRATED, SHIM_RENDERING_MODE_INTEGRATED, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
+EnumPwR PERFORMANCE_AUTO(L"Auto", 2, new DWORD[3]{ SHIM_MCCOMPAT_AUTO_SELECT, SHIM_RENDERING_MODE_AUTO_SELECT, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
+EnumPwR PERFORMANCE_HIGH(L"High Performance (NVIDIA)", 3, new DWORD[3]{ SHIM_MCCOMPAT_ENABLE, SHIM_RENDERING_MODE_ENABLE, SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE });
 EnumPwR ENUMGPUS[] = { PERFORMANCE_OFF, PERFORMANCE_SAVING, PERFORMANCE_AUTO, PERFORMANCE_HIGH };
 
-const EnumPwR PWR_OFF(L"Off", 0, new DWORD[1]{ 4294967295 });
-const EnumPwR PWR_SAVING(L"Power Savings (Adaptive)", 1, new DWORD[1]{ PREFERRED_PSTATE_ADAPTIVE }); //Could Have Also Used PREFERRED_PSTATE_PREFER_MIN But TBH If your on High Performance Adaptive should be the lowest setting
-const EnumPwR PWR_AUTO(L"Driver Controlled", 2, new DWORD[1]{ PREFERRED_PSTATE_DRIVER_CONTROLLED });
-const EnumPwR PWR_OPTIMAL(L"Optimal Power", 3, new DWORD[1]{ PREFERRED_PSTATE_OPTIMAL_POWER });
-const EnumPwR PWR_HIGH(L"High Peformance", 4, new DWORD[1]{ PREFERRED_PSTATE_PREFER_MAX });
-const EnumPwR PWR_HIGH_CONSISTENT(L"High Performance Consistent", 5, new DWORD[1]{ PREFERRED_PSTATE_PREFER_CONSISTENT_PERFORMANCE });
+EnumPwR PWR_OFF(L"Off", 0, new DWORD[1]{ 4294967295 });
+EnumPwR PWR_SAVING(L"Power Savings (Adaptive)", 1, new DWORD[1]{ PREFERRED_PSTATE_ADAPTIVE }); //Could Have Also Used PREFERRED_PSTATE_PREFER_MIN But TBH If your on High Performance Adaptive should be the lowest setting
+EnumPwR PWR_AUTO(L"Driver Controlled", 2, new DWORD[1]{ PREFERRED_PSTATE_DRIVER_CONTROLLED });
+EnumPwR PWR_OPTIMAL(L"Optimal Power", 3, new DWORD[1]{ PREFERRED_PSTATE_OPTIMAL_POWER });
+EnumPwR PWR_HIGH(L"High Peformance", 4, new DWORD[1]{ PREFERRED_PSTATE_PREFER_MAX });
+EnumPwR PWR_HIGH_CONSISTENT(L"High Performance Consistent", 5, new DWORD[1]{ PREFERRED_PSTATE_PREFER_CONSISTENT_PERFORMANCE });
 
 EnumPwR ENUMPWRS[] = { PWR_OFF, PWR_SAVING, PWR_AUTO, PWR_OPTIMAL, PWR_HIGH, PWR_HIGH_CONSISTENT };
 
@@ -488,9 +531,15 @@ DWORD GetPwrGPU(GUID* pp)
 }
 
 static bool CloseAfter = false;
-
 int main(int argc, char **argv)
 {
+	GenIsWins();
+	if (IsWin7)
+	{
+		PERFORMANCE_SAVING.NVAPIValue[2] = SHIM_RENDERING_OPTIONS_HANDLE_WIN7_ASYNC_RUNTIME_BUG;
+		PERFORMANCE_AUTO.NVAPIValue[2] = SHIM_RENDERING_OPTIONS_HANDLE_WIN7_ASYNC_RUNTIME_BUG;
+		PERFORMANCE_HIGH.NVAPIValue[2] = SHIM_RENDERING_OPTIONS_HANDLE_WIN7_ASYNC_RUNTIME_BUG;
+	}
 	//Handle Commands "/help" and "/uninstall"
 	if (argc > 1)
 	{
@@ -634,14 +683,6 @@ int main(int argc, char **argv)
 			OrgGPU = CurrentGPU;
 			OrgPwR = CurrentPwR;
 			SyncToNVAPI(CurrentGPU, CurrentPwR);
-		}
-		else
-		{
-			/*SyncFromNVAPI(Current, CurrentGPU, CurrentPwR);
-			CurrentGPU = GetPrefGPU(Current);
-			CurrentPwR = GetPwrGPU(Current);
-			OrgGPU = CurrentGPU;
-			OrgPwR = CurrentPwR;*/
 		}
 	}
 }
