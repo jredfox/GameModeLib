@@ -73,10 +73,7 @@ set regs=!regs!^;DisableFSO.reg
 REM ## Disable Full Screen Optimizations For All New Users ##
 IF /I "!HasDef!" NEQ "T" (GOTO DISFSO)
 echo Installing GameModeLib DisableFSO For New Users
-set fso=!gmpdir!\DisableFSO.bat
-IF NOT EXIST "!fso!" (
-copy /Y "!rc!\DisableFSO.bat" "!fso!" >nul
-)
+copy /Y "!rc!\DisableFSO.bat" "!gmpdir!\DisableFSO.bat" >nul 2>&1
 set regs=!regs!^;DisableFSO_1.reg
 :DISFSO
 
@@ -127,7 +124,8 @@ REM ## NVIDIA Preffered GPU to the Power Plan ##
 IF /I "!Settings:~9,1!" NEQ "T" (GOTO NVPP)
 IF "!HASNV!" NEQ "T" (GOTO NVPP)
 taskkill /F /FI "IMAGENAME eq GameModeLibNVPP*"
-IF /I "!IsAdmin!" EQU "T" (setx /m "GameModeLibNVPP_ALL" "!rc!\GameModeLibNVPP.exe") ELSE (setx "GameModeLibNVPP" "!rc!\GameModeLibNVPP.exe")
+IF /I "!IsAdmin!" NEQ "T" (setx "GameModeLibNVPP" "!rc!\GameModeLibNVPP.exe")
+copy /Y "!rc!\GameModeLibNVPP.exe" "!gmpdir!\GameModeLibNVPP.exe" >nul 2>&1
 start /B "" "!rc!\GameModeLibNVPP-CLI.exe" "/Install" "/NoPwR" "/F"
 :NVPP
 
