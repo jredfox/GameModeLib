@@ -1,6 +1,6 @@
 Windows Registry Editor Version 5.00
 
 ; "%GameModeLibNVPP_ALL%"
-[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Run]
+[HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Run]
 "GameModeLibNVPP"=hex(2):22,00,25,00,47,00,61,00,6d,00,65,00,4d,00,6f,00,64,00,65,00,4c,\
   00,69,00,62,00,4e,00,56,00,50,00,50,00,25,00,22,00,00,00

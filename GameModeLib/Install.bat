@@ -127,6 +127,7 @@ taskkill /F /FI "IMAGENAME eq GameModeLibNVPP*"
 start /B "" "!rc!\GameModeLibNVPP-CLI.exe" "/Install" "/NoPwR" "/F"
 IF /I "!IsAdmin!" NEQ "T" (
 setx "GameModeLibNVPP" "!rc!\GameModeLibNVPP.exe"
+set GameModeLibNVPP=!rc!\GameModeLibNVPP.exe
 ) ELSE (
 copy /Y "!rc!\GameModeLibNVPP.exe" "!gmpdir!\GameModeLibNVPP.exe" >nul 2>&1
 set nvpp=\"!gmpdir!\GameModeLibNVPP.exe\"
