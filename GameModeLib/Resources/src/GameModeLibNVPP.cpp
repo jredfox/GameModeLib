@@ -9,7 +9,8 @@
 
 #pragma comment(lib, "PowrProf.lib")
 #pragma comment (lib, "nvapi.lib")
-#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+
+//#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 
 using namespace std;
 
@@ -40,7 +41,7 @@ std::wstring ctow(const char* src)
 	return std::wstring(src, src + strlen(src));
 }
 
-const static bool CanCrash = true;
+static bool CanCrash = true;
 void NVAPIError(NvAPI_Status status, std::wstring id, bool crash)
 {
 	NvAPI_ShortString szDesc = { 0 };
@@ -486,14 +487,10 @@ DWORD GetPwrGPU(GUID* pp)
 	return HasPwr ? GetPwrValue(pp, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC) : 0;
 }
 
+static bool CloseAfter = false;
+
 int main(int argc, char **argv)
 {
-	NvAPI_Status status = NvAPI_Initialize();
-	if (status != NVAPI_OK)
-	{
-		NVAPIError(status, L"INIT", true);
-	}
-
 	//Handle Commands "/help" and "/uninstall"
 	if (argc > 1)
 	{
@@ -511,7 +508,9 @@ int main(int argc, char **argv)
 				wcout << endl;
 				wcout << L"/Install  Forces Installation" << endl;
 				wcout << L"/NoPwr  Installs Without GPU Power Level Option" << endl;
-				exit(0);
+				//Check if NVIDIA is Installed and if Not Return 404
+				NvAPI_Status status = NvAPI_Initialize();
+				exit((status != NVAPI_OK ? 404 : 0));
 			}
 			else if (arg == L"")
 			{
@@ -530,12 +529,35 @@ int main(int argc, char **argv)
 			{
 				HasPwr = false;
 			}
+			else if (arg == L"/h" || arg == L"/hide")
+			{
+				HWND hWnd = GetConsoleWindow();
+				ShowWindow(hWnd, SW_HIDE);
+			}
+			else if (arg == L"/f")
+			{
+				FreeConsole();
+			}
+			else if (arg == L"/c")
+			{
+				CloseAfter = true;
+			}
+			else if (arg == L"/nocrash")
+			{
+				CanCrash = false;
+			}
 			else
 			{
 				wcerr << L"Unregonized Option:\"" << arg << L"\" Use /? or /help to See a List of Options" << endl;
 				exit(-1);
 			}
 		}
+	}
+
+	NvAPI_Status status = NvAPI_Initialize();
+	if (status != NVAPI_OK)
+	{
+		NVAPIError(status, L"INIT", true);
 	}
 
 	GUID* Org;
@@ -548,6 +570,13 @@ int main(int argc, char **argv)
 	{
 		CreateSettings(Org);
 	}
+
+	//Close After Installing If Flaged to do so
+	if (CloseAfter)
+	{
+		exit(0);
+	}
+
 	//Update Has Power If it doesn't exist it will be false
 	HasPwr = HasPwr ? HasPwrValue(Org, &SUB_GRAPHICS, &SETTING_GRAPHICS_PWR, IsAC) : false;
 
