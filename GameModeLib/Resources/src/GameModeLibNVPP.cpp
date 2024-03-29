@@ -10,7 +10,7 @@
 #pragma comment(lib, "PowrProf.lib")
 #pragma comment (lib, "nvapi.lib")
 
-//#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 
 using namespace std;
 
@@ -558,6 +558,14 @@ int main(int argc, char **argv)
 	if (status != NVAPI_OK)
 	{
 		NVAPIError(status, L"INIT", true);
+	}
+
+	//Enforce Singleton
+	CreateMutexA(0, FALSE, "Local\\GameModeLibNVPP");
+	if (GetLastError() == ERROR_ALREADY_EXISTS)
+	{
+		cerr << "Program Is Already Running" << endl;
+		exit(-1);
 	}
 
 	GUID* Org;
