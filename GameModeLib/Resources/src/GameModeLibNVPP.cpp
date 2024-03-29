@@ -10,7 +10,7 @@
 #pragma comment(lib, "PowrProf.lib")
 #pragma comment (lib, "nvapi.lib")
 
-#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+//#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 
 using namespace std;
 
@@ -186,7 +186,6 @@ EnumPwR ENUMPWRS[] = { PWR_OFF, PWR_SAVING, PWR_AUTO, PWR_OPTIMAL, PWR_HIGH, PWR
 //start program arguments
 static bool HasPwr = true;
 static bool ForceInstall = false;
-static bool FirstSync = true;
 static bool IsAC = IsACPwr();
 
 //Probably Incorrect for 256 characters probably like 256 / 4? I don't know enough C++
@@ -327,7 +326,7 @@ DWORD SetPwrValue(GUID* pp, GUID* sub, GUID* setting, bool ac, DWORD val)
 	return ac ? PowerWriteACValueIndex(NULL, pp, sub, setting, val) : PowerWriteACValueIndex(NULL, pp, sub, setting, val);
 }
 
-void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
+void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL, bool HasPPChanged)
 {
 	EnumPwR ENUM_PWR = NONE;
 	EnumPwR ENUM_GRAPHICS = NONE;
@@ -410,8 +409,8 @@ void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL)
 		if (status != NVAPI_OK)
 			NVAPIError(status, L"PREF_GPU_2");
 
-		//Only Change Optimus Rendering Flags When the Power Plan Changes not when the Program Launches to preserve Configurations from NVIDIA Control Pannel
-		if (!FirstSync || ForceInstall)
+		//Only Change Optimus Rendering Flags When the Power Plan Changes From one to Another or Before the Loop on Install
+		if (HasPPChanged)
 		{
 			NVDRS_SETTING gsetting3 = { 0 };
 			gsetting3.version = NVDRS_SETTING_VER;
@@ -626,6 +625,24 @@ int main(int argc, char **argv)
 	if (ForceInstall || !HasACValue(Org, &SUB_GRAPHICS, &SETTING_GRAPHICS))
 	{
 		CreateSettings(Org);
+
+		//Handle Errors with a timeout of 6.5s about
+		if (OrgGPU == 404)
+		{
+			int tries = 0;
+			while (OrgGPU == 404 && tries < 256)
+			{
+				Sleep(25);
+				OrgGPU = GetPrefGPU(Org);
+				tries++;
+			}
+			if (OrgGPU == 404)
+			{
+				wcerr << L"Critical Error Preffered Graphics Processor Not Found" << endl;
+				exit(-1);
+			}
+			OrgPwR = GetPwrGPU(Org);
+		}
 	}
 
 	//Close After Installing If Flaged to do so
@@ -641,18 +658,19 @@ int main(int argc, char **argv)
 	GUID* Current = Org;
 	DWORD CurrentGPU = OrgGPU;
 	DWORD CurrentPwR = OrgPwR;
-	SyncToNVAPI(OrgGPU, OrgPwR);
-	FirstSync = false;
+	SyncToNVAPI(OrgGPU, OrgPwR, ForceInstall);
 	int tries = 0;
 	while (true)
 	{
 		Sleep(2500);
 		IsAC = IsACPwr();//Sync Power Changes
 		PowerGetActiveScheme(NULL, &Current);
+		bool HasPPChanged = false;
 		if (!IsEqual(Org, Current))
 		{
 			//Force Update on Settings
 			Org = Current;
+			HasPPChanged = true;
 		}
 
 		//Update Values TODO put only when power shcemes or setting switch via notifications
@@ -682,7 +700,7 @@ int main(int argc, char **argv)
 		{
 			OrgGPU = CurrentGPU;
 			OrgPwR = CurrentPwR;
-			SyncToNVAPI(CurrentGPU, CurrentPwR);
+			SyncToNVAPI(CurrentGPU, CurrentPwR, HasPPChanged);
 		}
 	}
 }
