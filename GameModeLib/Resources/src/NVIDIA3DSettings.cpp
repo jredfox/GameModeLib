@@ -353,7 +353,7 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 	{
 		drsSetting1.u32CurrentValue = SHIM_MCCOMPAT_INTEGRATED;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
 		drsSetting2.u32CurrentValue = SHIM_RENDERING_MODE_INTEGRATED;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
-		drsSetting3.u32CurrentValue = SHIM_FIXED;
+		drsSetting3.u32CurrentValue = SHIM_FIXED | SHIM_RENDERING_OPTIONS_IGPU_TRANSCODING;
 	}
 	//Force Dedicated Graphics
 	else
@@ -627,7 +627,7 @@ int main(int argc, char **argv)
 	GenIsWins();
 	if (IsWin7)
 	{
-		SHIM_FIXED = SHIM_RENDERING_OPTIONS_HANDLE_WIN7_ASYNC_RUNTIME_BUG;
+		SHIM_FIXED = SHIM_RENDERING_OPTIONS_DEFAULT_RENDERING_MODE | SHIM_RENDERING_OPTIONS_HANDLE_WIN7_ASYNC_RUNTIME_BUG;
 	}
 	bool SetIds = false;
 	bool Export = false;
