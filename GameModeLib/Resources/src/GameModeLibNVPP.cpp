@@ -9,6 +9,7 @@
 
 #pragma comment(lib, "PowrProf.lib")
 #pragma comment (lib, "nvapi.lib")
+#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 
 using namespace std;
 
