@@ -1,3 +1,5 @@
+Windows Registry Editor Version 5.00
+
 ; Work Around For Windows Bug on Disabling FSO for new Users
 [HKEY_USERS\Default\Software\Microsoft\Windows\CurrentVersion\Run]
 "GMLDisableFSO"=hex(2):63,00,6d,00,64,00,20,00,2f,00,63,00,20,00,73,00,74,00,\
