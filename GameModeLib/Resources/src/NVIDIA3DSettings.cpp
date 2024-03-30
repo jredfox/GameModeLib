@@ -33,7 +33,7 @@ void PrintError(NvAPI_Status status, std::wstring id)
 {
 	NvAPI_ShortString szDesc = { 0 };
 	NvAPI_GetErrorMessage(status, szDesc);
-	std::wcerr << L"NVAPI Error: " << szDesc << id << std::endl;
+	std::wcerr << L"NVAPI Error: " << szDesc << L" Error Code:" << status << L" " << id << std::endl;
 }
 
 void PrintError(NvAPI_Status status)
@@ -367,25 +367,45 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 	//Handle Integrated Graphics Not Supported
 	if (status != NVAPI_OK)
 	{
-		std::wcerr << L"Error Preffered Graphics Processor Failed Falling back to Automatic" << std::endl;
-		drsSetting1 = { 0 };
-		drsSetting1.version = NVDRS_SETTING_VER;
-		drsSetting1.settingId = SHIM_MCCOMPAT_ID;
-		drsSetting1.settingType = NVDRS_DWORD_TYPE;
+		if (status == NVAPI_INVALID_USER_PRIVILEGE)
+		{
+			std::wcerr << L"Error SHIM_MCCOMPAT_ID Is Missing or Needs Admin" << std::endl;
+		}
+		else
+		{
+			std::wcerr << L"Error Preffered Graphics Processor Failed Falling back to Automatic" << std::endl;
+			drsSetting1 = { 0 };
+			drsSetting1.version = NVDRS_SETTING_VER;
+			drsSetting1.settingId = SHIM_MCCOMPAT_ID;
+			drsSetting1.settingType = NVDRS_DWORD_TYPE;
+			drsSetting1.u32CurrentValue = SHIM_MCCOMPAT_AUTO_SELECT;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
 
-		//FallBack to Defaults (Automatic)
-		drsSetting1.u32CurrentValue = SHIM_MCCOMPAT_AUTO_SELECT;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
-		drsSetting2.u32CurrentValue = SHIM_RENDERING_MODE_AUTO_SELECT;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
-		drsSetting3.u32CurrentValue = SHIM_FIXED;
-
-		status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting1);
-		if (status != NVAPI_OK)
-			PrintError(status, L"OPTIMUS_1");
+			status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting1);
+			if (status != NVAPI_OK)
+				PrintError(status, L"OPTIMUS_1");
+		}
 	}
 
 	status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting2);
 	if (status != NVAPI_OK)
-		PrintError(status, L"OPTIMUS_2");
+	{
+		if (status == NVAPI_INVALID_USER_PRIVILEGE)
+		{
+			std::wcerr << L"Error SHIM_RENDERING_MODE_ID Is Missing or Needs Admin" << std::endl;
+		}
+		else
+		{
+			drsSetting2 = { 0 };
+			drsSetting2.version = NVDRS_SETTING_VER;
+			drsSetting2.settingId = SHIM_RENDERING_MODE_ID;
+			drsSetting2.settingType = NVDRS_DWORD_TYPE;
+			drsSetting2.u32CurrentValue = SHIM_RENDERING_MODE_AUTO_SELECT;
+
+			status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting2);
+			if (status != NVAPI_OK)
+				PrintError(status, L"OPTIMUS_2");
+		}
+	}
 
 	status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting3);
 	//Handle Integrated Graphics Flags Error
