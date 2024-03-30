@@ -418,8 +418,19 @@ void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL, bool HasPPChanged)
 			gsetting3.settingType = NVDRS_DWORD_TYPE;
 			gsetting3.u32CurrentValue = ENUM_GRAPHICS.NVAPIValue[2];
 			status = NvAPI_DRS_SetSetting(hSession, hProfile, &gsetting3);
+			//Handle Integrated Graphics Flags Error
 			if (status != NVAPI_OK)
-				NVAPIError(status, L"PREF_GPU_3");
+			{
+				std::wcerr << L"Falling Back From Graphics To SHIM_FIX for SHIM_RENDERING_OPTIONS_ID" << std::endl;
+				NVDRS_SETTING fallback = { 0 };
+				fallback.version = NVDRS_SETTING_VER;
+				fallback.settingId = SHIM_RENDERING_OPTIONS_ID;
+				fallback.settingType = NVDRS_DWORD_TYPE;
+				fallback.u32CurrentValue = PERFORMANCE_AUTO.NVAPIValue[2];//Fallback to Default SHIM_RENDERING_OPTIONS
+				status = NvAPI_DRS_SetSetting(hSession, hProfile, &fallback);
+				if (status != NVAPI_OK)
+					NVAPIError(status, L"PREF_GPU_3");
+			}
 		}
 	}
 
