@@ -397,8 +397,20 @@ void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL, bool HasPPChanged)
 		gsetting1.settingType = NVDRS_DWORD_TYPE;
 		gsetting1.u32CurrentValue = ENUM_GRAPHICS.NVAPIValue[0];
 		status = NvAPI_DRS_SetSetting(hSession, hProfile, &gsetting1);
+		//Fallback to Default settings On Error Most Likely From Integrated Graphics Not Being Supported
 		if (status != NVAPI_OK)
-			NVAPIError(status, L"PREF_GPU_1");
+		{
+			wcerr << L"Falling Back to Auto Preffered Graphics Processor" << endl;
+			ENUM_GRAPHICS = PERFORMANCE_AUTO;
+			NVDRS_SETTING fallbackpref = { 0 };
+			fallbackpref.version = NVDRS_SETTING_VER;
+			fallbackpref.settingId = SHIM_MCCOMPAT_ID;
+			fallbackpref.settingType = NVDRS_DWORD_TYPE;
+			fallbackpref.u32CurrentValue = ENUM_GRAPHICS.NVAPIValue[0];
+			status = NvAPI_DRS_SetSetting(hSession, hProfile, &fallbackpref);
+			if (status != NVAPI_OK)
+				NVAPIError(status, L"PREF_GPU_1");
+		}
 
 		NVDRS_SETTING gsetting2 = { 0 };
 		gsetting2.version = NVDRS_SETTING_VER;
