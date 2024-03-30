@@ -3,4 +3,3 @@ Windows Registry Editor Version 5.00
 [HKEY_CURRENT_USER\SOFTWARE\Intel\Display\igfxcui\3D]
 "Default"=hex:03,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,\
   00,00,00,00,00,00,00,02,00,00,00
-
