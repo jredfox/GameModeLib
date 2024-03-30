@@ -372,8 +372,19 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 		PrintError(status, L"OPTIMUS_2");
 
 	status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting3);
+	//Handle Integrated Graphics Flags Error
 	if (status != NVAPI_OK)
-		PrintError(status, L"OPTIMUS_3");
+	{
+		std::wcerr << L"Falling Back From Graphics To SHIM_FIX for SHIM_RENDERING_OPTIONS_ID" << std::endl;
+		NVDRS_SETTING fallback = { 0 };
+		fallback.version = NVDRS_SETTING_VER;
+		fallback.settingId = SHIM_RENDERING_OPTIONS_ID;
+		fallback.settingType = NVDRS_DWORD_TYPE;
+		fallback.u32CurrentValue = SHIM_FIXED;
+		status = NvAPI_DRS_SetSetting(hSession, hProfile, &fallback);
+		if (status != NVAPI_OK)
+			PrintError(status, L"OPTIMUS_3");
+	}
 }
 
 void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile, std::map<DWORD, DWORD> map)
