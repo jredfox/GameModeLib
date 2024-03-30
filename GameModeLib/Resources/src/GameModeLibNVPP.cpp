@@ -52,7 +52,7 @@ void NVAPIError(NvAPI_Status status, std::wstring id, bool crash)
 {
 	NvAPI_ShortString szDesc = { 0 };
 	NvAPI_GetErrorMessage(status, szDesc);
-	std::wcerr << L"NVAPI Error: " << szDesc << id << std::endl;
+	std::wcerr << L"NVAPI Error: " << szDesc << L" Error Code:" << status << L" " << id << std::endl;
 	if (crash && CanCrash)
 		exit(-1);
 }
@@ -397,19 +397,25 @@ void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL, bool HasPPChanged)
 		gsetting1.settingType = NVDRS_DWORD_TYPE;
 		gsetting1.u32CurrentValue = ENUM_GRAPHICS.NVAPIValue[0];
 		status = NvAPI_DRS_SetSetting(hSession, hProfile, &gsetting1);
-		//Fallback to Default settings On Error Most Likely From Integrated Graphics Not Being Supported
+		//Fallback to Auto
 		if (status != NVAPI_OK)
 		{
-			wcerr << L"Falling Back to Auto Preffered Graphics Processor" << endl;
-			ENUM_GRAPHICS = PERFORMANCE_AUTO;
-			NVDRS_SETTING fallbackpref = { 0 };
-			fallbackpref.version = NVDRS_SETTING_VER;
-			fallbackpref.settingId = SHIM_MCCOMPAT_ID;
-			fallbackpref.settingType = NVDRS_DWORD_TYPE;
-			fallbackpref.u32CurrentValue = ENUM_GRAPHICS.NVAPIValue[0];
-			status = NvAPI_DRS_SetSetting(hSession, hProfile, &fallbackpref);
-			if (status != NVAPI_OK)
-				NVAPIError(status, L"PREF_GPU_1");
+			if (status == NVAPI_INVALID_USER_PRIVILEGE)
+			{
+				wcerr << L"Missing SHIM_MCCOMPAT_ID or User Needs Admin to Change it" << endl;
+			}
+			else 
+			{
+				wcerr << L"Falling Back to Auto Preffered Graphics Processor" << endl;
+				NVDRS_SETTING fallbackpref = { 0 };
+				fallbackpref.version = NVDRS_SETTING_VER;
+				fallbackpref.settingId = SHIM_MCCOMPAT_ID;
+				fallbackpref.settingType = NVDRS_DWORD_TYPE;
+				fallbackpref.u32CurrentValue = PERFORMANCE_AUTO.NVAPIValue[0];
+				status = NvAPI_DRS_SetSetting(hSession, hProfile, &fallbackpref);
+				if (status != NVAPI_OK)
+					NVAPIError(status, L"PREF_GPU_1");
+			}
 		}
 
 		NVDRS_SETTING gsetting2 = { 0 };
@@ -418,8 +424,26 @@ void SyncToNVAPI(DWORD PrefGPU, DWORD GPUPwRLVL, bool HasPPChanged)
 		gsetting2.settingType = NVDRS_DWORD_TYPE;
 		gsetting2.u32CurrentValue = ENUM_GRAPHICS.NVAPIValue[1];
 		status = NvAPI_DRS_SetSetting(hSession, hProfile, &gsetting2);
+		//Fallback to Auto
 		if (status != NVAPI_OK)
-			NVAPIError(status, L"PREF_GPU_2");
+		{
+			if (status == NVAPI_INVALID_USER_PRIVILEGE)
+			{
+				wcerr << L"Missing SHIM_RENDERING_MODE_ID or User Needs Admin to Change it" << endl;
+			}
+			else
+			{
+				wcerr << L"Falling Back to Auto Preffered Graphics Processor" << endl;
+				NVDRS_SETTING fallbackpref = { 0 };
+				fallbackpref.version = NVDRS_SETTING_VER;
+				fallbackpref.settingId = SHIM_RENDERING_MODE_ID;
+				fallbackpref.settingType = NVDRS_DWORD_TYPE;
+				fallbackpref.u32CurrentValue = PERFORMANCE_AUTO.NVAPIValue[1];
+				status = NvAPI_DRS_SetSetting(hSession, hProfile, &fallbackpref);
+				if (status != NVAPI_OK)
+					NVAPIError(status, L"PREF_GPU_2");
+			}
+		}
 
 		//Only Change Optimus Rendering Flags When the Power Plan Changes From one to Another or Before the Loop on Install
 		if (HasPPChanged)
