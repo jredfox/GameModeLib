@@ -364,8 +364,24 @@ void SetSettings(NvDRSSessionHandle hSession, NvDRSProfileHandle hProfile)
 	}
 
 	status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting1);
+	//Handle Integrated Graphics Not Supported
 	if (status != NVAPI_OK)
-		PrintError(status, L"OPTIMUS_1");
+	{
+		std::wcerr << L"Error Preffered Graphics Processor Failed Falling back to Automatic" << std::endl;
+		drsSetting1 = { 0 };
+		drsSetting1.version = NVDRS_SETTING_VER;
+		drsSetting1.settingId = SHIM_MCCOMPAT_ID;
+		drsSetting1.settingType = NVDRS_DWORD_TYPE;
+
+		//FallBack to Defaults (Automatic)
+		drsSetting1.u32CurrentValue = SHIM_MCCOMPAT_AUTO_SELECT;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
+		drsSetting2.u32CurrentValue = SHIM_RENDERING_MODE_AUTO_SELECT;//0 for Integrated 1 HIGH PERFORMANCE and 10 For Auto
+		drsSetting3.u32CurrentValue = SHIM_FIXED;
+
+		status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting1);
+		if (status != NVAPI_OK)
+			PrintError(status, L"OPTIMUS_1");
+	}
 
 	status = NvAPI_DRS_SetSetting(hSession, hProfile, &drsSetting2);
 	if (status != NVAPI_OK)
