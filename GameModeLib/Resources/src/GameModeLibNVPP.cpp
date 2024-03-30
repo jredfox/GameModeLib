@@ -596,6 +596,7 @@ int main(int argc, char **argv)
 			{
 				wcout << endl << L"Description:" << endl;
 				wcout << L"GameModeLibNVPP Adds NVIDIA Preffered Graphics Processor and GPU Power Levels to the \r\nWindows Power Plan and Syncs Changes" << endl;
+				wcout << L"This Program is a Singleton Program Meaning Two Instances of This Program Cannot Run at One Time" << endl;
 				wcout << endl;
 				wcout << L"GameModeLibNVPP.exe" << endl;
 				wcout << L"GameModeLibNVPP.exe /Install" << endl;
@@ -603,6 +604,10 @@ int main(int argc, char **argv)
 				wcout << endl;
 				wcout << L"/Install  Forces Installation" << endl;
 				wcout << L"/NoPwr  Installs Without GPU Power Level Option" << endl;
+				wcout << L"/H /Hide  Hides Console After Launching" << endl;
+				wcout << L"/F  Frees Console After Launching" << endl;
+				wcout << L"/C  Closes After Installing" << endl;
+				wcout << L"/NoCrash  When NVAPI Doesn't Exist Won't Crash" << endl;
 				//Check if NVIDIA is Installed and if Not Return 404
 				NvAPI_Status status = NvAPI_Initialize();
 				exit((status != NVAPI_OK ? 404 : 0));

@@ -486,7 +486,7 @@ void Help()
 	std::wcout << L"N/A While Importing / Exporting Or Querying Flags Below" << std::endl;
 	std::wcout << L"/NoVSYNC  Doesn't Set VSYNC" << std::endl;
 	std::wcout << L"/NoPower /NoPWR  Doesn't Set GPU Power Mode" << std::endl;
-	std::wcout << L"/ForceIntegrated /Integrated  Sets Integrated Graphics" << std::endl;
+	std::wcout << L"/Integrated /ForceIntegrated  Sets Integrated Graphics" << std::endl;
 	std::wcout << L"/Auto /ForceAuto  Sets Graphics to Auo Mode" << std::endl;
 	std::wcout << L"/ForceOptimal  Sets Graphics Power to Optimal Regardless of High Performance" << std::endl;
 	exit(0);
