@@ -62,14 +62,19 @@ IF /I "!Settings:~4,1!" NEQ "T" (GOTO DISFSO)
 set regs=!regs!^;!g!DisableFSO.reg^;!u!DisableFSO.reg
 IF "!HasDef!" NEQ "T" (GOTO DISFSO)
 set regs=!regs!^;Users\Default\DisableFSO_1_gen.reg
-del /F /S /Q /A "%PROGRAMFILES%\GameModeLib" >nul 2>&1
-rd /S /Q "%PROGRAMFILES%\GameModeLib" >nul 2>&1
+del /F /Q /A "%PROGRAMFILES%\GameModeLib\DisableFSO.bat" >nul 2>&1
+rd /Q "%PROGRAMFILES%\GameModeLib" >nul 2>&1
 :DISFSO
 
 REM ## Disable Full Screen Optimizations ##
 IF /I "!Settings:~5,1!" NEQ "T" (GOTO RPPThrottling)
 set regs=!regs!^;!g!PowerThrottling.reg
 :RPPThrottling
+
+REM ## NVIDIA PowerPlan If Enabled ##
+IF /I "!Settings:~9,1!" NEQ "T" (GOTO RNVPP)
+set regs=!regs!^;!u!GameModeLibNVPP.reg
+:RNVPP
 
 REM ## Uninstall GameMode Lib Modules ##
 IF "!regs!" NEQ "" (
@@ -112,6 +117,17 @@ REM ## Uninstall Stickey Keys and Sync Changes ##
 IF /I "!Settings:~2,1!" NEQ "T" (GOTO STKYKYS)
 call "!rc!\StickyKeysSetFlag.exe" "sync"
 :STKYKYS
+
+REM ## NVIDIA Preffered GPU to the Power Plan ##
+IF /I "!Settings:~9,1!" NEQ "T" (GOTO NVPP)
+taskkill /F /FI "IMAGENAME eq GameModeLibNVPP*"
+call "!rc!\GameModeLibNVPP-CLI.exe" "/Uninstall"
+schtasks /DELETE /tn "GameModeLibNVPP" /F >nul 2>&1
+set GameModeLibNVPP=
+del /F /Q /A "!PROGRAMFILES!\GameModeLib\GameModeLibNVPP.exe" >nul 2>&1
+REM Del Directory Only If It Is Empty
+rd /Q "%PROGRAMFILES%\GameModeLib" >nul 2>&1
+:NVPP
 
 REM ## Skip Admin Only Modules ##
 IF "!IsAdmin!" NEQ "T" (GOTO END)
