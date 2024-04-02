@@ -3,3 +3,13 @@ Windows Registry Editor Version 5.00
 ; ## Fix Limiting Games Power ##
 [HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling]
 "PowerThrottlingOff"=dword:00000001
+
+; ## Fix UWP Apps Power Throttling ##
+[HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power]
+"CsEnabled"=dword:00000000
+"PlatformAoAcOverride"=dword:00000000
+"PlatformAoDcOverride"=dword:00000000
+
+[-HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\ModernStandby]
+
+[-HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Power\ModernSleep]
