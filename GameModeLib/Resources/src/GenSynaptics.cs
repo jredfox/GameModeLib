@@ -12,9 +12,13 @@ namespace GenSynaptics
     {
         static void Main(string[] args)
         {
+            //Restore Synaptics Devices Back to their Default States
+            string a = args[0].ToLower();
+            bool Gen = !(a.Equals("/restore") || a.Equals("/restoredefaults"));
+
             //Get Absolute File and add Extension if Required
-            string str_file = Path.GetFullPath(args[0]);
-            if(!str_file.ToUpper().EndsWith(".REG"))
+            string str_file = Path.GetFullPath(args[Gen ? 0 : 1]);
+            if (!str_file.ToUpper().EndsWith(".REG"))
             {
                 str_file += ".reg";
             }
@@ -44,13 +48,22 @@ namespace GenSynaptics
                     try
                     {
                         RegistryKey key_device = key_syntp.OpenSubKey(device, false);
-                        writer.WriteLine("\r\n[" + key_device.Name + "]");
-                        writer.WriteLine("\"PalmDetectConfig\"=dword:00000000");
-                        writer.WriteLine("\"PalmRejectAlways\"=dword:00000000");
-                        writer.WriteLine("\"PalmRT\"=dword:00000000");
+                        if(Gen)
+                        {
+                            writer.WriteLine("\r\n[" + key_device.Name + "]");
+                            writer.WriteLine("\"PalmDetectConfig\"=dword:00000000");
+                            writer.WriteLine("\"PalmRejectAlways\"=dword:00000000");
+                            writer.WriteLine("\"PalmRT\"=dword:00000000");
+                        }
+                        else
+                        {
+                            writer.WriteLine("\r\n[-" + key_device.Name + "]");
+                            writer.WriteLine("\r\n[" + key_device.Name + "]");
+                            writer.WriteLine("\"NotifyDriverFirstLoadState\"=dword:00000000");
+                        }
                         Close(key_device);
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         Console.Error.WriteLine(e);
                     }
