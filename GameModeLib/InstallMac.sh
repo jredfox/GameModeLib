@@ -1,21 +1,17 @@
 #Set DP0 ##
 dir=$(dirname "$0")
-rc="$dir/Resources/mac"
+rc="$dir/Resources/Mac"
 
 echo "Installing GameModeLib Full Edition"
 
-#Changes Multi Media Keys to function Keys F1-F10 and F11-F12 When Shortcuts are Disabled #
+#Function Keys F1-F12 For the Current User Non Admin #
 defaults write com.apple.keyboard.fnState -bool TRUE
-
-# Disables F11-F12 For Current User Non Admin #
 bash "$rc/EnableFn.sh"
 
 #Start Power Plan ##
 echo "Setting Power Preferences"
 #Disable Low Power Mode ##
 sudo pmset -a lowpowermode 0
-#Disable Sleep on All Power States ##
-sudo pmset -a sleep 0
 #Enable PowerNapping while Plugged In ##
 sudo pmset -c powernap 1
 sudo pmset -b powernap 0

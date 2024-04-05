@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+; Work Around For Windows Bug on Disabling FSO for new Users
+[HKEY_USERS\Default\Software\Microsoft\Windows\CurrentVersion\Run]
+"GMLDisableFSO"=-
+
+[HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Run]
+"GMLDisableFSO"=-
