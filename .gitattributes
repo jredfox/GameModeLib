@@ -15,3 +15,6 @@
 *.cpp text eol=crlf
 *.cs text eol=crlf
 *.config text eol=crlf
+*.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
