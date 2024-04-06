@@ -95,6 +95,7 @@ IF /I "!Settings:~9,1!" NEQ "T" (GOTO NVPP)
 taskkill /F /FI "IMAGENAME eq GameModeLibNVPP*"
 schtasks /DELETE /tn "GameModeLibNVPP" /F
 set GameModeLibNVPP=
+Rem ## Restore NVIDIA 3D Settings If they Haven't Gotten Restored Already ##
 IF /I "!Settings:~1,1!" NEQ "T" (call "!rc!\NVIDIA3DSettings.exe" import "0x00A879CF=Default;0x1057EB71=Default;0x10F9DC80=Default;0x10F9DC81=Default;0x10F9DC84=Default" >nul 2>&1)
 call "!rc!\GameModeLibNVPP-CLI.exe" "/Uninstall" >nul 2>&1
 REM Del Old Files
