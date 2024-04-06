@@ -78,19 +78,22 @@ call "!rc!\StickyKeysSetFlag.exe" "sync"
 REM ## NVIDIA Preffered GPU to the Power Plan ##
 IF /I "!Settings:~9,1!" NEQ "T" (GOTO NVPP)
 taskkill /F /FI "IMAGENAME eq GameModeLibNVPP*"
+schtasks /DELETE /tn "GameModeLibNVPP" /F
 call "!rc!\GameModeLibNVPP-CLI.exe" "/Uninstall" >nul 2>&1
 :NVPP
 
 REM ## Enable Windows Defender Low CPU Priority ##
 IF /I "!Settings:~7,1!" NEQ "T" (GOTO WDLOWCPU)
 call :CHKTAMPER
-echo powershell -ExecutionPolicy Bypass -File "!rc!\WDDisableLowCPU.ps1"
+powershell -ExecutionPolicy Bypass -File "!rc!\WDDisableLowCPU.ps1"
 :WDLOWCPU
 
 REM ## Enable Windows Defender Low CPU Priority ##
 IF /I "!Settings:~8,1!" NEQ "T" (GOTO WDENABLE)
 call :CHKTAMPER
-echo powershell -ExecutionPolicy Bypass -File "!rc!\WDEnable.ps1"
+schtasks /DELETE /tn "WDStaticDisabler" /F
+powershell -ExecutionPolicy Bypass -File "!rc!\WDEnable.ps1"
+powershell Remove-MpPreference -ExclusionPath "!rc!"
 :WDENABLE
 
 :END

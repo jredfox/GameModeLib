@@ -6,13 +6,22 @@ param(
 if ($EnableLowCPU -eq "TRUE") {
     $LowCPU = $true
 }
+elseif ($EnableLowCPU -eq "1") {
+    $LowCPU = $true
+}
 else {
     $LowCPU = $false
 }
 if ($PerfDrive -eq "1") {
     $PerfDrive = "Enabled"
 }
-elseif ($PerfDrive -eq "0") {
+elseif ($PerfDrive -eq "TRUE") {
+    $PerfDrive = "Enabled"
+}
+elseif ($PerfDrive -eq "Enabled") {
+    $PerfDrive = "Enabled"
+}
+else {
     $PerfDrive = "Disabled"
 }
 
