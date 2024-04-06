@@ -5,12 +5,15 @@ REM ## Set Vars ##
 set Settings=%~1
 set SIDS=%~2
 set rc=%~dp0Resources
-set itmp=%~dp0TMP\Install
 set dirdef=!rc!\Defaults
+set itmp=%~dp0TMP\Install
+set uglobal=%~dp0Uninstall\Global
+set log_amd=!logs!\log_uninstall_amd.txt
 
-REM ## Enable Registry Access ##
+REM ## INIT ##
 call "!rc!\RegGrant.exe" "HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes" >nul 2>&1
 call :CLNUP
+mkdir "!logs!" >nul 2>&1
 
 REM ## Main Registry Settings ##
 IF /I "!Settings:~0,1!" NEQ "T" (GOTO RMAIN)
@@ -62,11 +65,17 @@ call "!rc!\RegImport.exe" "TT" "!SIDS!" "!dirdef!;NULL;!regs:~1!"
 
 REM ## Graphics 3D Settings Registry ##
 IF /I "!Settings:~0,1!" NEQ "T" (GOTO MAIN)
+powercfg /SETACTIVE "381b4222-f694-41f0-9685-ff5bb260df2e"
+powercfg /DELETE "b8e6d75e-26e8-5e8f-efef-e94a209a3467"
 REM call "!rc!\PowerModeOverlay.exe" "sync" TODO After Power Plan Overlay Gets Restored Uncomment this
 :MAIN
 
 REM ## Graphics 3D Settings Registry ##
 IF /I "!Settings:~1,1!" NEQ "T" (GOTO GRAPHICS)
+REM We can only uninstall AMD3DSettings if Uninstall Gen Data was created CNCMD.exe if it does support a restore command it's not documented
+IF EXIST "!uglobal!\AMD3DSettings.bat" (
+start /MIN cmd /c call "!uglobal!\AMD3DSettings.bat" "F" ^>"!log_amd!" ^2^>^&1
+)
 call "!rc!\NVIDIA3DSettings.exe" import "0x00A879CF=Default;0x1057EB71=Default;0x10F9DC80=Default;0x10F9DC81=Default;0x10F9DC84=Default" >nul 2>&1
 :GRAPHICS
 
