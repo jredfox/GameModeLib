@@ -8,6 +8,7 @@ set rc=%~dp0Resources
 set dirdef=!rc!\Defaults
 set itmp=%~dp0TMP\Install
 set uglobal=%~dp0Uninstall\Global
+set logs=%~dp0Logs
 set log_amd=!logs!\log_uninstall_amd.txt
 
 REM ## INIT ##
