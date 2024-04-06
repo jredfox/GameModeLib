@@ -75,11 +75,21 @@ IF /I "!Settings:~2,1!" NEQ "T" (GOTO STKYKYS)
 call "!rc!\StickyKeysSetFlag.exe" "sync"
 :STKYKYS
 
+REM ## Full Screen Optimizations ##
+IF /I "!Settings:~4,1!" NEQ "T" (GOTO FSO)
+del /F /Q /A "%PROGRAMFILES%\GameModeLib\DisableFSO.bat" >nul 2>&1
+rd /Q "%PROGRAMFILES%\GameModeLib" >nul 2>&1
+:FSO
+
 REM ## NVIDIA Preffered GPU to the Power Plan ##
 IF /I "!Settings:~9,1!" NEQ "T" (GOTO NVPP)
 taskkill /F /FI "IMAGENAME eq GameModeLibNVPP*"
 schtasks /DELETE /tn "GameModeLibNVPP" /F
+set GameModeLibNVPP=
 call "!rc!\GameModeLibNVPP-CLI.exe" "/Uninstall" >nul 2>&1
+REM Del Old Files
+del /F /Q /A "!PROGRAMFILES!\GameModeLib\GameModeLibNVPP.exe" >nul 2>&1
+rd /Q "%PROGRAMFILES%\GameModeLib" >nul 2>&1
 :NVPP
 
 REM ## Enable Windows Defender Low CPU Priority ##

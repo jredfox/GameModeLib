@@ -121,9 +121,9 @@ call "!rc!\StickyKeysSetFlag.exe" "sync"
 REM ## NVIDIA Preffered GPU to the Power Plan ##
 IF /I "!Settings:~9,1!" NEQ "T" (GOTO NVPP)
 taskkill /F /FI "IMAGENAME eq GameModeLibNVPP*"
-call "!rc!\GameModeLibNVPP-CLI.exe" "/Uninstall"
 schtasks /DELETE /tn "GameModeLibNVPP" /F >nul 2>&1
 set GameModeLibNVPP=
+call "!rc!\GameModeLibNVPP-CLI.exe" "/Uninstall"
 del /F /Q /A "!PROGRAMFILES!\GameModeLib\GameModeLibNVPP.exe" >nul 2>&1
 REM Del Directory Only If It Is Empty
 rd /Q "%PROGRAMFILES%\GameModeLib" >nul 2>&1
