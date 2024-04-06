@@ -100,7 +100,7 @@ powershell -ExecutionPolicy Bypass -File "!rc!\WDDisableLowCPU.ps1"
 
 REM ## Enable Windows Defender Low CPU Priority ##
 IF /I "!Settings:~8,1!" NEQ "T" (GOTO WDENABLE)
-call :CHKTAMPER
+IF "!chkedtamper!" NEQ "T" (call :CHKTAMPER)
 schtasks /DELETE /tn "WDStaticDisabler" /F
 powershell -ExecutionPolicy Bypass -File "!rc!\WDEnable.ps1"
 powershell Remove-MpPreference -ExclusionPath "!rc!"
