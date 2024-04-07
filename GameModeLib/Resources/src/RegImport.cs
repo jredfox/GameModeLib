@@ -460,9 +460,18 @@ namespace RegImport
                     Console.Error.WriteLine(e);
                 }
             }
+
             //Delete File After Parsing if Specified to do so
             if (Program.REG_DEL && CanDelete)
             {
+                //If Cannot Fully Import When Importing is Enabled Do not Delete the Reg File Or If Cannot Fully Uninstall Gen when Importing Is Not Enabled Then Do not Delete the Reg File
+                bool IMPORT_G = Program.HasImport ? Program.IMPORT_GLOBAL : Program.UNINSTALL_GLOBAL;
+                bool IMPORT_U = Program.HasImport ? Program.IMPORT_USER : Program.UNINSTALL_USER;
+                if (!IMPORT_G && this.HasGlobal() || !IMPORT_U && this.HasUser())
+                {
+                    return;
+                }
+
                 try
                 {
                     System.IO.File.Delete(this.File);
@@ -477,6 +486,16 @@ namespace RegImport
                     Console.Error.WriteLine(e);
                 }
             }
+        }
+
+        bool HasGlobal()
+        {
+            return this.Global.Count > 0;
+        }
+
+        bool HasUser()
+        {
+            return this.CurrentUser.Count > 0 || this.User.Count > 0;
         }
     }
 
@@ -596,6 +615,7 @@ namespace RegImport
     class Program
     {
         public static bool IMPORT_GLOBAL, IMPORT_USER, UNINSTALL_GLOBAL, UNINSTALL_USER, REG_DEL, UNINSTALL_OVERWRITE, HOTLOAD_USER;
+        public static bool HasImport;
         public static string BaseDir;
         public static string UninstallDir;
         public static bool CDH = false;//CUSTOM DEFAULT HIVE
@@ -672,6 +692,7 @@ namespace RegImport
             UNINSTALL_OVERWRITE = set[5] == 'T';//Overwrites Previously Generated Uninstall Data if the file exists
             HOTLOAD_USER = set[6] == 'T';//Loads User Outside of applying HKCU data when inside the Reg Import / Gen Uninstall
             RegKey.HLSIDS = HOTLOAD_USER ? Program.GetSIDS("*") : null;
+            HasImport = IMPORT_GLOBAL || IMPORT_USER;
 
             //Get Command Line Variables
             if (args.Length > 3)
