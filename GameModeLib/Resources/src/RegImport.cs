@@ -86,7 +86,7 @@ namespace RegImport
         public override void Close() { }
     }
 
-    class Hive
+    public class Hive
     {
         [DllImport("advapi32.dll", SetLastError = true)]
         static extern int RegLoadKey(IntPtr hKey, string lpSubKey, string lpFile);
@@ -228,6 +228,8 @@ namespace RegImport
         public List<RegObj> Global { get; set; }
         public List<RegObj> User { get; set; }
         public List<RegObj> CurrentUser { get; set; }
+        public Hive LastHive = null;
+        public Dictionary<string, Hive> HotCache = null;
 
         public static bool CanDelete = true;
 
@@ -242,6 +244,10 @@ namespace RegImport
                 this.RelPath = this.RelPath.Substring(this.RelPath.IndexOf('\\', this.RelPath.IndexOf('\\') + 1) + 1);
             }
             this.IsMeta = this.File.Contains("<SID>");
+            if(!this.IsMeta)
+            {
+                HotCache = Program.HOTLOAD_USER ? new Dictionary<string, Hive>(Math.Max(256, Program.HOTCACHESIZE + 1)) : null;
+            }
         }
 
         public RegFile GetRegFile(string sid)
@@ -496,6 +502,67 @@ namespace RegImport
         bool HasUser()
         {
             return this.CurrentUser.Count > 0 || this.User.Count > 0;
+        }
+
+        public void HotLoad(string OtherSID)
+        {
+            if (OtherSID.StartsWith("S-") && !OtherSID.Equals(Program.SID_CURRENT) && !HotCache.ContainsKey(OtherSID) && RegKey.HLSIDS.ContainsKey(OtherSID))
+            {
+                //Unload Previous UnCached Hive If it's not null
+                if (LastHive != null)
+                {
+                    LastHive.UnLoadSafely($"UnLoading:{LastHive.file_hive}", "");
+                    LastHive = null;
+                }
+
+                Hive h = new Hive(Program.USER_CURRENT + $"{RegKey.HLSIDS[OtherSID]}\\NTUSER.DAT", OtherSID, RegistryHive.Users);
+                h.LoadSafely($"Loading:{h.file_hive}", "");
+
+                if (HotCache.Count < Program.HOTCACHESIZE || Program.HOTCACHESIZE == -1)
+                {
+                    HotCache[OtherSID] = h;
+                }
+                else
+                {
+                    LastHive = h;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Hot Unloads the Hive from the cache and Removes it
+        /// </summary>
+        /// <param name="SID"></param>
+        public void HotUnload(string SID)
+        {
+            if (!HotCache.ContainsKey(SID))
+                return;
+
+            Hive h = HotCache[SID];
+            h.UnLoadSafely();
+            HotCache.Remove(SID);
+        }
+
+        /// <summary>
+        /// Unloads all Hives and Clears the Cache
+        /// </summary>
+        public void HotUnload()
+        {
+            if (this.HotCache == null)
+                return;
+            //Unload the HotLoadCache
+            if (LastHive != null)
+            {
+                LastHive.UnLoadSafely($"UnLoading:{LastHive.file_hive}", "");
+            }
+            foreach (Hive h in HotCache.Values)
+            {
+                if (h.IsLoaded)
+                {
+                    h.UnLoadSafely();
+                }
+            }
+            this.HotCache.Clear();
         }
     }
 
@@ -1140,8 +1207,6 @@ namespace RegImport
 
             //Gen Uninstall Data
             RegistryKey LastKey = null;
-            Hive LastHive = null;
-            Dictionary<string, Hive> HotCache = HOTLOAD_USER ? new Dictionary<string, Hive>(Math.Max(256, HOTCACHESIZE + 1)) : null;
             foreach (RegObj o in (IsHKCU ? reg.CurrentUser : (IsUser ? reg.User : reg.Global)))
             {
                 if (o is RegKey k)
@@ -1162,28 +1227,13 @@ namespace RegImport
                         if (writer_org.IsDummy || IsUser && !k.SubKey.StartsWith(SID))
                         {
                             string OtherSID = k.SubKey.Split('\\')[0];
+                            
                             //HOTLOAD NTUSER.DAT
-                            if (HOTLOAD_USER && OtherSID.StartsWith("S-") && !OtherSID.Equals(SID_CURRENT) && !HotCache.ContainsKey(OtherSID) && RegKey.HLSIDS.ContainsKey(OtherSID))
+                            if (HOTLOAD_USER && IsHKU)
                             {
-                                //Unload Previous UnCached Hive If it's not null
-                                if (LastHive != null)
-                                {
-                                    LastHive.UnLoadSafely($"UnLoading:{LastHive.file_hive}", "");
-                                    LastHive = null;
-                                }
-
-                                Hive h = new Hive(USER_CURRENT + $"{RegKey.HLSIDS[OtherSID]}\\NTUSER.DAT", OtherSID, RegistryHive.Users);
-                                h.LoadSafely($"Loading:{h.file_hive}", "");
-
-                                if (HotCache.Count < HOTCACHESIZE || HOTCACHESIZE == -1)
-                                {
-                                    HotCache[OtherSID] = h;
-                                }
-                                else
-                                {
-                                    LastHive = h;
-                                }
+                                reg.HotLoad(OtherSID);
                             }
+
                             if (!writer_cache.ContainsKey(OtherSID))
                             {
                                 RegWriter w = GetRegWriter(!reg.WasMeta ? (Path.GetFileNameWithoutExtension(reg.RelPath) + "_gen.reg") : reg.RelPath, OtherSID, true);
@@ -1270,17 +1320,7 @@ namespace RegImport
             //Close HotCached Hives
             if (HOTLOAD_USER)
             {
-                if (LastHive != null)
-                {
-                    LastHive.UnLoadSafely($"UnLoading:{LastHive.file_hive}", "");
-                }
-                foreach (Hive h in HotCache.Values)
-                {
-                    if (h.IsLoaded)
-                    {
-                        h.UnLoadSafely();
-                    }
-                }
+                reg.HotUnload();
             }
 
             //Delete Blank Reg Files
@@ -1326,10 +1366,6 @@ namespace RegImport
                 return;
 
             RegistryKey LastKey = null;
-
-            Hive LastHive = null;
-            Dictionary<string, Hive> HotCache = HOTLOAD_USER ? new Dictionary<string, Hive>(Math.Max(256, HOTCACHESIZE + 1)) : null;
-
             foreach (RegObj o in (IsHKCU ? reg.CurrentUser : (IsUser ? reg.User : reg.Global)))
             {
                 if (o is RegKey k)
@@ -1337,32 +1373,12 @@ namespace RegImport
                     Close(LastKey);
                     k = IsHKCU ? k.GetRegKey(SID) : k; //Redirect Current User Keys to SID User Keys
                     RegistryKey root = k.Hive;
-
+                    
                     //HOTLOAD NTUSER.DAT
                     if (HOTLOAD_USER && IsHKU)
                     {
                         string OtherSID = k.SubKey.Split('\\')[0];
-                        if (OtherSID.StartsWith("S-") && !OtherSID.Equals(SID_CURRENT) && !HotCache.ContainsKey(OtherSID) && RegKey.HLSIDS.ContainsKey(OtherSID))
-                        {
-                            //Unload Previous UnCached Hive If it's not null
-                            if (LastHive != null)
-                            {
-                                LastHive.UnLoadSafely($"UnLoading:{LastHive.file_hive}", "");
-                                LastHive = null;
-                            }
-
-                            Hive h = new Hive(USER_CURRENT + $"{RegKey.HLSIDS[OtherSID]}\\NTUSER.DAT", OtherSID, RegistryHive.Users);
-                            h.LoadSafely($"Loading:{h.file_hive}", "");
-
-                            if (HotCache.Count < HOTCACHESIZE || HOTCACHESIZE == -1)
-                            {
-                                HotCache[OtherSID] = h;
-                            }
-                            else
-                            {
-                                LastHive = h;
-                            }
-                        }
+                        reg.HotLoad(OtherSID);
                     }
 
                     if (o.Delete)
@@ -1438,20 +1454,8 @@ namespace RegImport
             Close(LastKey);
 
             //Close HotCached Hives
-            if (HOTLOAD_USER)
-            {
-                if (LastHive != null)
-                {
-                    LastHive.UnLoadSafely($"UnLoading:{LastHive.file_hive}", "");
-                }
-                foreach (Hive h in HotCache.Values)
-                {
-                    if (h.IsLoaded)
-                    {
-                        h.UnLoadSafely();
-                    }
-                }
-            }
+            if(HOTLOAD_USER)
+                reg.HotUnload();
         }
 
         public static string GetBinaryHex(string hexString, int index_line, List<string> filelines)
