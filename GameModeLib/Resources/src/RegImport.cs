@@ -244,7 +244,7 @@ namespace RegImport
                 this.RelPath = this.RelPath.Substring(this.RelPath.IndexOf('\\', this.RelPath.IndexOf('\\') + 1) + 1);
             }
             this.IsMeta = this.File.Contains("<SID>");
-            if(!this.IsMeta)
+            if (!this.IsMeta)
             {
                 HotCache = Program.HOTLOAD_USER ? new Dictionary<string, Hive>(Math.Max(256, Program.HOTCACHESIZE + 1)) : null;
             }
@@ -307,6 +307,19 @@ namespace RegImport
                             bool delkey = tl.StartsWith("[-");
                             string str_key = Program.SubStringIndex(tl, (delkey ? 2 : 1), tl.Length - 2);
                             LastKey = new RegKey(str_key, delkey);
+                            
+                            //Skip Without SIDS IMPL
+                            if (Program.SKIP_WITHOUT_SIDS && LastKey.IsUser && LastKey.SubKey.Length > 0)
+                            {
+                                string sid = LastKey.SubKey.Split('\\')[0].ToUpper();
+                                if ((!Program.SID_ALL || !sid.StartsWith("S-")) && (Program.SKIP_ALL || Program.SKIP_SIDS.Contains(sid)) && !Program.SKIP_BL.Contains(sid) && !Program.usrs.ContainsKey(sid))
+                                {
+                                    LastKey = null;
+                                    Console.WriteLine("Skipping SID:" + sid);
+                                    continue;
+                                }
+                            }
+
                             if (LastKey.IsCurrentUser)
                             {
                                 CurrentUser.Add(LastKey);
@@ -701,8 +714,10 @@ namespace RegImport
         public static Hive DefHive = null;
         public static string[] dirs;
         public static Dictionary<string, string> fields = new Dictionary<string, string>();
+        public static Dictionary<string, string> usrs;
         public static string SID_CURRENT = GetCurrentSID();
         public static string USER_CURRENT = GetUsersDir() + @"\";
+        public static bool SID_ALL = false;
         public static int HOTCACHESIZE = 256;
         public static int CACHESIZE = 256;
         public const string NAME = "Reg Import";
@@ -743,7 +758,7 @@ namespace RegImport
                     }
                 }
                 //Process
-                else if(s.StartsWith("/skipwithoutsids"))
+                else if (s.StartsWith("/skipwithoutsids"))
                 {
                     SKIP_WITHOUT_SIDS = true;
                     if (s.Equals("/skipwithoutsids"))
@@ -820,6 +835,8 @@ namespace RegImport
 
             //Get ARG_SID
             string ARG_SID = args[1].Trim().ToUpper();
+            SID_ALL = ARG_SID.Contains("*");
+            usrs = (IMPORT_USER || UNINSTALL_USER) ? GetSIDS(ARG_SID) : new Dictionary<string, string>(1);
 
             //Parse the Reg File Into Objects
             dirs = args[2].Split(';');
@@ -855,7 +872,6 @@ namespace RegImport
             }
 
             //Start Main Program Process
-            Dictionary<string, string> usrs = (IMPORT_USER || UNINSTALL_USER) ? GetSIDS(ARG_SID) : new Dictionary<string, string>(1);
             string Users = USER_CURRENT;
             Dictionary<string, Hive> USER_CACHE = new Dictionary<string, Hive>(256);
             bool CacheNoCap = CACHESIZE == -1;
@@ -984,7 +1000,7 @@ namespace RegImport
                     else
                     {
                         string sid = RegKey.HLSIDS.FirstOrDefault(x => x.Value.Equals(r, StringComparison.OrdinalIgnoreCase)).Key;
-                        SKIP_BL.Add(sid != null ? sid : rules[j]);
+                        SKIP_BL.Add(sid != null ? sid : r.ToUpper());
                     }
                 }
                 else
@@ -996,7 +1012,7 @@ namespace RegImport
                     else
                     {
                         string sid = RegKey.HLSIDS.FirstOrDefault(x => x.Value.Equals(r, StringComparison.OrdinalIgnoreCase)).Key;
-                        SKIP_SIDS.Add(sid != null ? sid : rules[j]);
+                        SKIP_SIDS.Add(sid != null ? sid : r.ToUpper());
                     }
                 }
             }
@@ -1104,7 +1120,7 @@ namespace RegImport
                     {
                         if (!Char.IsDigit(s[0]) && !s.StartsWith("S-", StringComparison.OrdinalIgnoreCase) && !s.StartsWith(".DEFAULT", StringComparison.OrdinalIgnoreCase) && !s.StartsWith("DEFAULT", StringComparison.OrdinalIgnoreCase) && !s.EndsWith("_classes", StringComparison.OrdinalIgnoreCase))
                         {
-                            USER_SIDS[s] = "UnKnown";
+                            USER_SIDS[s.ToUpper()] = "UnKnown";
                         }
                     }
                 }
@@ -1300,7 +1316,7 @@ namespace RegImport
                         if (writer_org.IsDummy || IsUser && !k.SubKey.StartsWith(SID))
                         {
                             string OtherSID = k.SubKey.Split('\\')[0];
-                            
+
                             //HOTLOAD NTUSER.DAT
                             if (HOTLOAD_USER && IsHKU)
                             {
@@ -1446,7 +1462,7 @@ namespace RegImport
                     Close(LastKey);
                     k = IsHKCU ? k.GetRegKey(SID) : k; //Redirect Current User Keys to SID User Keys
                     RegistryKey root = k.Hive;
-                    
+
                     //HOTLOAD NTUSER.DAT
                     if (HOTLOAD_USER && IsHKU)
                     {
@@ -1527,7 +1543,7 @@ namespace RegImport
             Close(LastKey);
 
             //Close HotCached Hives
-            if(HOTLOAD_USER)
+            if (HOTLOAD_USER)
                 reg.HotUnload();
         }
 
@@ -1789,6 +1805,7 @@ namespace RegImport
             Console.WriteLine("Optional Parameters:");
             Console.WriteLine("  /CacheSize:<num>");
             Console.WriteLine("  /HotLoadCacheSize:<num>");
+            Console.WriteLine("  /SkipWithoutSIDS  /SkipWithoutSIDS:*;-<SID>;  /SkipWithoutSIDS:User;<SID>");
             Console.WriteLine("NOTE: Setting a CacheSize param -1 Disables Cacheing Limits");
             Console.WriteLine();
             Console.WriteLine("_________________________________________________________________________________");
