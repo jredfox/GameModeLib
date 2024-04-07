@@ -574,6 +574,7 @@ namespace RegImport
         public bool IsCurrentUser;
         //HashMap<User, SID>
         public static Dictionary<string, string> HLSIDS = null;
+        public static bool HasHLSIDS = false;
         public RegKey(string key, bool delete)
         {
             int i = key.IndexOf(@"\");
@@ -585,15 +586,16 @@ namespace RegImport
             }
             this.Hive = Program.GetRegTree(Program.SubStringIndex(key, 0, i));
             this.SubKey = key.Substring(i + 1);
-            bool usr = (Program.CDH || Program.HOTLOAD_USER) ? this.Hive.Name.Equals("HKEY_USERS") : false;
+            bool usr = this.Hive.Name.Equals("HKEY_USERS");
             //Redirect the Default Hive
-            if (Program.CDH && this.Hive.Name.Equals("HKEY_USERS") && (this.SubKey.StartsWith(@"DEFAULT\", StringComparison.OrdinalIgnoreCase) || this.SubKey.Equals(@"DEFAULT", StringComparison.OrdinalIgnoreCase)))
+            if (Program.CDH && usr && (this.SubKey.StartsWith(@"DEFAULT\", StringComparison.OrdinalIgnoreCase) || this.SubKey.Equals(@"DEFAULT", StringComparison.OrdinalIgnoreCase)))
             {
                 this.Hive = Program.GetRegTree(Program.DefHive.rootname);
                 this.SubKey = Program.DefHive.subkey + (this.SubKey.Length > 8 ? (@"\" + this.SubKey.Substring(8)) : "");
+                usr = this.Hive.Name.Equals("HKEY_USERS");
             }
             //Transform Usernames to SIDS when Possible
-            else if (Program.HOTLOAD_USER && usr && this.SubKey.Length > 0)
+            else if (HasHLSIDS && usr && this.SubKey.Length > 0)
             {
                 //Fix Lowercase SIDs as HotLoading checks for S- Case Sensitive to Be optimized
                 if (this.SubKey.StartsWith("s-"))
@@ -612,20 +614,21 @@ namespace RegImport
             this.Name = this.Hive.Name + (this.SubKey.Length != 0 ? (@"\" + this.SubKey) : "");
             this.Delete = delete;
             this.IsCurrentUser = this.Hive.Name.Equals("HKEY_CURRENT_USER");
-            this.IsUser = this.IsCurrentUser || this.Hive.Name.Equals("HKEY_USERS");
+            this.IsUser = usr;
         }
         public RegKey(string hive, string subkey, bool delete)
         {
             this.Hive = Program.GetRegTree(hive);
-            bool usr = (Program.CDH || Program.HOTLOAD_USER) ? this.Hive.Name.Equals("HKEY_USERS") : false;
+            bool usr = this.Hive.Name.Equals("HKEY_USERS");
             //Redirect the Default Hive
             if (Program.CDH && usr && (subkey.StartsWith(@"DEFAULT\", StringComparison.OrdinalIgnoreCase) || subkey.Equals(@"DEFAULT", StringComparison.OrdinalIgnoreCase)))
             {
                 this.Hive = Program.GetRegTree(Program.DefHive.rootname);
                 subkey = Program.DefHive.subkey + (subkey.Length > 8 ? (@"\" + subkey.Substring(8)) : "");
+                usr = this.Hive.Name.Equals("HKEY_USERS");
             }
             //Transform Usernames to SIDS when Possible
-            else if (Program.HOTLOAD_USER && usr && subkey.Length > 0)
+            else if (HasHLSIDS && usr && subkey.Length > 0)
             {
                 //Fix Lowercase SIDs as HotLoading checks for S- Case Sensitive to Be optimized
                 if (subkey.StartsWith("s-"))
@@ -645,12 +648,21 @@ namespace RegImport
             this.Name = this.Hive.Name + (this.SubKey.Length != 0 ? (@"\" + this.SubKey) : "");
             this.Delete = delete;
             this.IsCurrentUser = this.Hive.Name.Equals("HKEY_CURRENT_USER");
-            this.IsUser = this.IsCurrentUser || this.Hive.Name.Equals("HKEY_USERS");
+            this.IsUser = usr;
         }
 
         public RegKey GetRegKey(string sid)
         {
             return this.IsCurrentUser ? new RegKey("HKEY_USERS", sid + @"\" + this.SubKey, this.Delete) : this;
+        }
+
+        public static void SetHLSIDS()
+        {
+            //Sanity Check only Parse the HLSIDS Once
+            if (HasHLSIDS)
+                return;
+            HLSIDS = (Program.HOTLOAD_USER || Program.SKIP_WITHOUT_SIDS) ? Program.GetSIDS("*") : null;
+            HasHLSIDS = HLSIDS != null;
         }
     }
 
@@ -681,7 +693,7 @@ namespace RegImport
 
     class Program
     {
-        public static bool IMPORT_GLOBAL, IMPORT_USER, UNINSTALL_GLOBAL, UNINSTALL_USER, REG_DEL, UNINSTALL_OVERWRITE, HOTLOAD_USER;
+        public static bool IMPORT_GLOBAL, IMPORT_USER, UNINSTALL_GLOBAL, UNINSTALL_USER, REG_DEL, UNINSTALL_OVERWRITE, HOTLOAD_USER, SKIP_WITHOUT_SIDS;
         public static bool HasImport;
         public static string BaseDir;
         public static string UninstallDir;
@@ -696,6 +708,11 @@ namespace RegImport
         public const string NAME = "Reg Import";
         public const string VERSION = "1.0.0";
         public const string AUTHOR = "jredfox";
+
+        public static bool SKIP_ALL;
+        public static string SKIP_WITHOUT_SIDS_ARG = null;
+        public static List<string> SKIP_SIDS = new List<string>();
+        public static List<string> SKIP_BL = new List<string>();
 
         static void Main(string[] args)
         {
@@ -724,6 +741,17 @@ namespace RegImport
                     {
                         HOTCACHESIZE = -1;
                     }
+                }
+                //Process
+                else if(s.StartsWith("/skipwithoutsids"))
+                {
+                    SKIP_WITHOUT_SIDS = true;
+                    if (s.Equals("/skipwithoutsids"))
+                    {
+                        SKIP_ALL = true;
+                    }
+                    int index = s.IndexOf(':');
+                    SKIP_WITHOUT_SIDS_ARG = index >= 0 ? args[i].Substring(index + 1) : "";
                 }
                 else
                 {
@@ -758,8 +786,9 @@ namespace RegImport
             REG_DEL = set[4] == 'T';//Deletes the Reg File After Parsing Usefull for when Uninstalling
             UNINSTALL_OVERWRITE = set[5] == 'T';//Overwrites Previously Generated Uninstall Data if the file exists
             HOTLOAD_USER = set[6] == 'T';//Loads User Outside of applying HKCU data when inside the Reg Import / Gen Uninstall
-            RegKey.HLSIDS = HOTLOAD_USER ? Program.GetSIDS("*") : null;
             HasImport = IMPORT_GLOBAL || IMPORT_USER;
+            RegKey.SetHLSIDS();
+            ParseSkipWithoutSIDS(SKIP_WITHOUT_SIDS_ARG);//Parse SkipWithoutSID Rules
 
             //Get Command Line Variables
             if (args.Length > 3)
@@ -929,6 +958,50 @@ namespace RegImport
             Console.WriteLine("Reg Import Settings Done in MS:" + (done - milliseconds));
         }
 
+        public static void ParseSkipWithoutSIDS(string str)
+        {
+            if (!SKIP_WITHOUT_SIDS || str.Length <= 0)
+                return;
+
+            string[] rules = str.Split(';');
+            for (int j = 0; j < rules.Length; j++)
+            {
+                string r = rules[j].Trim().ToLower();
+
+                //Skip Empty Strings
+                if (r.Length <= 0)
+                    continue;
+
+                if (r.Equals("*"))
+                    SKIP_ALL = true;
+                else if (r.StartsWith("-"))
+                {
+                    r = r.Substring(1);
+                    if (r.StartsWith("s-") || r.Equals(".default") || r.Equals("default"))
+                    {
+                        SKIP_BL.Add(r.ToUpper());
+                    }
+                    else
+                    {
+                        string sid = RegKey.HLSIDS.FirstOrDefault(x => x.Value.Equals(r, StringComparison.OrdinalIgnoreCase)).Key;
+                        SKIP_BL.Add(sid != null ? sid : rules[j]);
+                    }
+                }
+                else
+                {
+                    if (r.StartsWith("s-") || r.Equals(".default") || r.Equals("default"))
+                    {
+                        SKIP_SIDS.Add(r.ToUpper());
+                    }
+                    else
+                    {
+                        string sid = RegKey.HLSIDS.FirstOrDefault(x => x.Value.Equals(r, StringComparison.OrdinalIgnoreCase)).Key;
+                        SKIP_SIDS.Add(sid != null ? sid : rules[j]);
+                    }
+                }
+            }
+        }
+
         public static Dictionary<string, string> GetSIDS(string str_filter)
         {
             str_filter = str_filter.Trim().ToUpper();
@@ -982,7 +1055,7 @@ namespace RegImport
                 return USER_SIDS;
 
             //Optimization if HOTLoading is enabled use the cached Dictionary instead of waiting 100+MS for PrincipalSearcher
-            if (HOTLOAD_USER && RegKey.HLSIDS != null)
+            if (RegKey.HasHLSIDS)
             {
                 foreach (var pair in RegKey.HLSIDS)
                 {
