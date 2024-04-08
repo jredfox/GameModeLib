@@ -312,10 +312,10 @@ namespace RegImport
                             if (Program.SKIP_WITHOUT_SIDS && LastKey.IsUser && LastKey.SubKey.Length > 0)
                             {
                                 string sid = LastKey.SubKey.Split('\\')[0].ToUpper();
-                                if ((!Program.SID_ALL || !sid.StartsWith("S-")) && (Program.SKIP_ALL || Program.SKIP_SIDS.Contains(sid)) && !Program.SKIP_BL.Contains(sid) && !Program.usrs.ContainsKey(sid))
+                                if ((Program.SKIP_ALL || Program.SKIP_SIDS.Contains(sid)) && !Program.SKIP_BL.Contains(sid) && !Program.usrs.ContainsKey(sid))
                                 {
                                     LastKey = null;
-                                    Console.WriteLine("Skipping SID:" + sid);
+                                    Console.WriteLine($"Skipping SID:{sid}");
                                     continue;
                                 }
                             }
@@ -717,7 +717,6 @@ namespace RegImport
         public static Dictionary<string, string> usrs;
         public static string SID_CURRENT = GetCurrentSID();
         public static string USER_CURRENT = GetUsersDir() + @"\";
-        public static bool SID_ALL = false;
         public static int HOTCACHESIZE = 256;
         public static int CACHESIZE = 256;
         public const string NAME = "Reg Import";
@@ -835,7 +834,6 @@ namespace RegImport
 
             //Get ARG_SID
             string ARG_SID = args[1].Trim().ToUpper();
-            SID_ALL = ARG_SID.Contains("*");
             usrs = (IMPORT_USER || UNINSTALL_USER) ? GetSIDS(ARG_SID) : new Dictionary<string, string>(1);
 
             //Parse the Reg File Into Objects
