@@ -519,7 +519,7 @@ namespace RegImport
 
         public void HotLoad(string OtherSID)
         {
-            if (OtherSID.StartsWith("S-") && !OtherSID.Equals(Program.SID_CURRENT) && !HotCache.ContainsKey(OtherSID) && RegKey.HLSIDS.ContainsKey(OtherSID))
+            if (OtherSID.StartsWith("S-") && !OtherSID.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase) && !OtherSID.Equals(".DEFAULT", StringComparison.OrdinalIgnoreCase) && !OtherSID.Equals(Program.SID_CURRENT) && !HotCache.ContainsKey(OtherSID) && RegKey.HLSIDS.ContainsKey(OtherSID))
             {
                 //Unload Previous UnCached Hive If it's not null
                 if (LastHive != null)
@@ -883,7 +883,7 @@ namespace RegImport
                 {
                     string sid = usr.Key;
                     string usrname = usr.Value;
-                    bool lh = !sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase) && !SID_CURRENT.Equals(sid) && !sid.Equals(".DEFAULT") && !usrname.Equals("UnKnown");
+                    bool lh = !sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase) && !SID_CURRENT.Equals(sid) && !sid.Equals(".DEFAULT", StringComparison.OrdinalIgnoreCase) && !usrname.Equals("UnKnown");
                     int Size = USER_CACHE.Count;
                     //Load the Hive (NTUSER.DAT to it's SID)
                     Hive h = new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
@@ -936,7 +936,7 @@ namespace RegImport
                     {
                         string sid = usr.Key;
                         string usrname = usr.Value;
-                        bool lh = !sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase) && !SID_CURRENT.Equals(sid) && !sid.Equals(".DEFAULT") && !usrname.Equals("UnKnown");
+                        bool lh = !sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase) && !SID_CURRENT.Equals(sid) && !sid.Equals(".DEFAULT", StringComparison.OrdinalIgnoreCase) && !usrname.Equals("UnKnown");
 
                         //Load the Hive (NTUSER.DAT to it's SID)
                         Hive h = USER_CACHE.ContainsKey(sid) ? USER_CACHE[sid] : new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
