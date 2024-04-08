@@ -229,6 +229,7 @@ namespace RegImport
         public List<RegObj> User { get; set; }
         public List<RegObj> CurrentUser { get; set; }
         public Hive LastHive = null;
+        public string LastSID = null;
         public Dictionary<string, Hive> HotCache = null;
 
         public static bool CanDelete = true;
@@ -524,8 +525,12 @@ namespace RegImport
                 //Unload Previous UnCached Hive If it's not null
                 if (LastHive != null)
                 {
+                    if(OtherSID.Equals(LastSID))
+                        return;
+
                     LastHive.UnLoadSafely($"UnLoading:{LastHive.file_hive}", "");
                     LastHive = null;
+                    LastSID = null;
                 }
 
                 Hive h = new Hive(Program.USER_CURRENT + $"{RegKey.HLSIDS[OtherSID]}\\NTUSER.DAT", OtherSID, RegistryHive.Users);
@@ -538,6 +543,7 @@ namespace RegImport
                 else
                 {
                     LastHive = h;
+                    LastSID = OtherSID;
                 }
             }
         }
@@ -563,10 +569,13 @@ namespace RegImport
         {
             if (this.HotCache == null)
                 return;
+
             //Unload the HotLoadCache
             if (LastHive != null)
             {
                 LastHive.UnLoadSafely($"UnLoading:{LastHive.file_hive}", "");
+                LastHive = null;
+                LastSID = null;
             }
             foreach (Hive h in HotCache.Values)
             {
@@ -1409,7 +1418,7 @@ namespace RegImport
             Close(LastKey);
 
             //Close HotCached Hives
-            if (HOTLOAD_USER)
+            if (HOTLOAD_USER && IsHKU)
             {
                 reg.HotUnload();
             }
@@ -1545,7 +1554,7 @@ namespace RegImport
             Close(LastKey);
 
             //Close HotCached Hives
-            if (HOTLOAD_USER)
+            if (HOTLOAD_USER && IsHKU)
                 reg.HotUnload();
         }
 
