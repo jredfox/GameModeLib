@@ -130,8 +130,8 @@ setx "GameModeLibNVPP" "!rc!\GameModeLibNVPP.exe"
 set GameModeLibNVPP=!rc!\GameModeLibNVPP.exe
 ) ELSE (
 copy /Y "!rc!\GameModeLibNVPP.exe" "!gmpdir!\GameModeLibNVPP.exe" >nul 2>&1
-set nvpp=\"!gmpdir!\GameModeLibNVPP.exe\"
-schtasks /create /tn "GameModeLibNVPP" /tr "!nvpp!" /sc onlogon /F
+set nvp=\"!gmpdir!\GameModeLibNVPP.exe\"
+schtasks /create /tn "GameModeLibNVPP" /tr "!nvp!" /sc onlogon /F
 )
 :NVPP
 
