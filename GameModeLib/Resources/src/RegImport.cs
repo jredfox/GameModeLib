@@ -885,7 +885,7 @@ namespace RegImport
                 {
                     string sid = usr.Key;
                     string usrname = usr.Value;
-                    bool lh = !sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase) && !SID_CURRENT.Equals(sid) && !sid.Equals(".DEFAULT") && !sid.Equals("UnKnown");
+                    bool lh = !sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase) && !SID_CURRENT.Equals(sid) && !sid.Equals(".DEFAULT") && !usrname.Equals("UnKnown");
                     int Size = USER_CACHE.Count;
                     //Load the Hive (NTUSER.DAT to it's SID)
                     Hive h = new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
@@ -938,7 +938,7 @@ namespace RegImport
                     {
                         string sid = usr.Key;
                         string usrname = usr.Value;
-                        bool lh = !sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase) && !SID_CURRENT.Equals(sid) && !sid.Equals(".DEFAULT") && !sid.Equals("UnKnown");
+                        bool lh = !sid.Equals("DEFAULT", StringComparison.OrdinalIgnoreCase) && !SID_CURRENT.Equals(sid) && !sid.Equals(".DEFAULT") && !usrname.Equals("UnKnown");
 
                         //Load the Hive (NTUSER.DAT to it's SID)
                         Hive h = USER_CACHE.ContainsKey(sid) ? USER_CACHE[sid] : new Hive(Users + $"{usrname}\\NTUSER.DAT", sid, RegistryHive.Users);
