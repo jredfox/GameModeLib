@@ -307,7 +307,7 @@ namespace RegImport
                             bool delkey = tl.StartsWith("[-");
                             string str_key = Program.SubStringIndex(tl, (delkey ? 2 : 1), tl.Length - 2);
                             LastKey = new RegKey(str_key, delkey);
-                            
+
                             //Skip Without SIDS IMPL
                             if (Program.SKIP_WITHOUT_SIDS && LastKey.IsUser && LastKey.SubKey.Length > 0)
                             {
@@ -756,7 +756,11 @@ namespace RegImport
                         HOTCACHESIZE = -1;
                     }
                 }
-                //Process
+                else if(s.Equals("/hotload"))
+                {
+                    HOTLOAD_USER = true;
+                }
+                //Process Skip Without SIDS
                 else if (s.StartsWith("/skipwithoutsids"))
                 {
                     SKIP_WITHOUT_SIDS = true;
@@ -799,7 +803,7 @@ namespace RegImport
             UNINSTALL_USER = set[3] == 'T';//Generate Uninstall User Data Before Importing
             REG_DEL = set[4] == 'T';//Deletes the Reg File After Parsing Usefull for when Uninstalling
             UNINSTALL_OVERWRITE = set[5] == 'T';//Overwrites Previously Generated Uninstall Data if the file exists
-            HOTLOAD_USER = set[6] == 'T';//Loads User Outside of applying HKCU data when inside the Reg Import / Gen Uninstall
+            HOTLOAD_USER = HOTLOAD_USER || set[6] == 'T';//Loads User Outside of applying HKCU data when inside the Reg Import / Gen Uninstall
             HasImport = IMPORT_GLOBAL || IMPORT_USER;
             RegKey.SetHLSIDS();
             ParseSkipWithoutSIDS(SKIP_WITHOUT_SIDS_ARG);//Parse SkipWithoutSID Rules
@@ -1803,7 +1807,8 @@ namespace RegImport
             Console.WriteLine("Optional Parameters:");
             Console.WriteLine("  /CacheSize:<num>");
             Console.WriteLine("  /HotLoadCacheSize:<num>");
-            Console.WriteLine("  /SkipWithoutSIDS  /SkipWithoutSIDS:*;-<SID>;  /SkipWithoutSIDS:User;<SID>");
+            Console.WriteLine("  /HotLoad");
+            Console.WriteLine("  /SkipWithoutSIDS  /SkipWithoutSIDS:<*;-SID;-User>  /SkipWithoutSIDS:<User;SID>");
             Console.WriteLine("NOTE: Setting a CacheSize param -1 Disables Cacheing Limits");
             Console.WriteLine();
             Console.WriteLine("_________________________________________________________________________________");
