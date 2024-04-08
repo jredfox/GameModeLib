@@ -18,7 +18,7 @@ call "!rc!\RegImport.exe" "FFT" "" "!rc!;!ustall!;WDDisable.reg"
 set wddisabler=\"!rc!\WDStaticDisable.bat\"
 schtasks /create /tn "WDStaticDisabler" /ru system /sc onstart /tr "!wddisabler!" /F
 powershell Add-MpPreference -ExclusionPath "!rc!"
-call "!wddisabler!"
+call "!rc!\WDStaticDisable.bat"
 exit /b
 
 :UNINSTALL
