@@ -12,7 +12,6 @@ set u=^<u^>
 set g=^<g^>
 set gg=!g!
 set rc=%~dp0Resources
-set rcdef=!rc!\Defaults
 set udir=%~dp0Uninstall
 set uglobal=%~dp0Uninstall\Global
 set logs=%~dp0Logs
@@ -60,8 +59,9 @@ set regs=!regs!^;!u!TouchPad.reg^;!g!ElanTech.reg^;!u!ElanTech.reg^;!g!Synaptics
 
 REM ## Disable Full Screen Optimizations ##
 IF /I "!Settings:~4,1!" NEQ "T" (GOTO DISFSO)
-set regs=!regs!^;!rcdef!\FSO_1.reg
+set regs=!regs!^;!g!DisableFSO.reg^;!u!DisableFSO.reg
 IF "!HasDef!" NEQ "T" (GOTO DISFSO)
+set regs=!regs!^;Users\Default\DisableFSO_1_gen.reg
 del /F /Q /A "%PROGRAMFILES%\GameModeLib\DisableFSO.bat" >nul 2>&1
 rd /Q "%PROGRAMFILES%\GameModeLib" >nul 2>&1
 :DISFSO
@@ -73,13 +73,13 @@ set regs=!regs!^;!g!PowerThrottling.reg
 
 REM ## NVIDIA PowerPlan If Enabled ##
 IF /I "!Settings:~9,1!" NEQ "T" (GOTO RNVPP)
-set regs=!regs!^;!rcdef!\NVPP.reg
+set regs=!regs!^;!u!GameModeLibNVPP.reg
 :RNVPP
 
 REM ## Uninstall GameMode Lib Modules ##
 IF "!regs!" NEQ "" (
 echo Uninstalling GameModeLib Full Edition
-call "!rc!\RegImport.exe" "!ImportGlobal!!ImportUSR!FFT" "!SIDS!" "!udir!;NULL;!regs:~1!" "!gg!=Global/^;!u!=Users/<SID>/" /SkipWithoutSIDS:Default
+call "!rc!\RegImport.exe" "!ImportGlobal!!ImportUSR!FFT" "!SIDS!" "!udir!;NULL;!regs:~1!" "!gg!=Global/^;!u!=Users/<SID>/"
 )
 
 REM ## Main Module Revert Power Plan Settings ##
